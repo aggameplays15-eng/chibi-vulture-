@@ -42,10 +42,17 @@ module.exports = async (req, res) => {
     
     try {
       const { rows } = await db.query(
-        `UPDATE users SET ${fields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, role`,
+        `UPDATE users SET ${fields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status`,
         [id, ...values]
       );
-      res.status(200).json(rows[0]);
+      const user = rows[0];
+      // Map snake_case to camelCase for frontend compatibility
+      res.status(200).json({
+        ...user,
+        avatarColor: user.avatar_color,
+        avatarImage: user.avatar_image,
+        isApproved: user.is_approved
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to update user' });
@@ -83,10 +90,17 @@ module.exports = async (req, res) => {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const { rows } = await db.query(
-        'INSERT INTO users (name, handle, email, bio, avatar_color, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, handle, email, bio, avatar_color, role',
+        'INSERT INTO users (name, handle, email, bio, avatar_color, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status',
         [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword]
       );
-      res.status(201).json(rows[0]);
+      const user = rows[0];
+      // Map snake_case to camelCase for frontend compatibility
+      res.status(201).json({
+        ...user,
+        avatarColor: user.avatar_color,
+        avatarImage: user.avatar_image,
+        isApproved: user.is_approved
+      });
     } catch (error) {
       console.error(error);
       if (error.code === '23505') {

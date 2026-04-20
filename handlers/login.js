@@ -45,11 +45,17 @@ module.exports = async (req, res) => {
     // Sign JWT token
     const token = auth.signToken(user);
 
-    // Filter sensitive data
+    // Filter sensitive data and map snake_case to camelCase
     const { password: _, ...safeUser } = user;
+    const mappedUser = {
+      ...safeUser,
+      avatarColor: safeUser.avatar_color,
+      avatarImage: safeUser.avatar_image,
+      isApproved: safeUser.is_approved
+    };
 
     res.status(200).json({
-      user: safeUser,
+      user: mappedUser,
       token
     });
   } catch (error) {
