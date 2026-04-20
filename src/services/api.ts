@@ -4,34 +4,6 @@ import type { PostData, ProductData, OrderData, UserData, MessageData, LoginCred
 
 let authToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('cv_token') : null;
 
-// Mock data for local development when API is not available
-const MOCK_USER = {
-  id: 1,
-  email: 'user@example.com',
-  name: 'Test User',
-  handle: '@testuser',
-  role: 'Member',
-  is_approved: true,
-  isApproved: true,
-  status: 'Actif',
-  bio: 'Test user for local development',
-  avatarColor: '#94a3b8',
-  following: []
-};
-
-const MOCK_PRODUCTS = [
-  { id: 1, name: "T-Shirt Chibi Vulture", price: 250000, image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=300", category: "Vêtements", stock: 15, featured: true },
-  { id: 2, name: "Stickers Pack Kawaii", price: 125000, image: "https://images.unsplash.com/photo-1572375927902-d60e60ad1710?q=80&w=300", category: "Accessoires", stock: 5, featured: false },
-];
-
-const MOCK_POSTS = [
-  { id: 1, user: "ChibiMomo", handle: "@momo", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Momo", image: "https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=600", likes: 124, caption: "Mon premier dessin ! ✨", time: "2h", reports: 0 },
-  { id: 2, user: "VultureKing", handle: "@king", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=King", image: "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?q=80&w=600", likes: 89, caption: "Style Vulture activé 🦅", time: "5h", reports: 2 },
-];
-
-// Flag to use mock data in local development
-const USE_MOCK_DATA = true;
-
 const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   const headers: Record<string, string> = {
     ...options.headers,
@@ -71,9 +43,6 @@ export const apiService = {
   },
 
   getPosts: async (page = 1, limit = 10) => {
-    if (USE_MOCK_DATA) {
-      return MOCK_POSTS;
-    }
     const response = await fetchWithAuth(`/api/posts?page=${page}&limit=${limit}`);
     return safeJson(response);
   },
@@ -93,9 +62,6 @@ export const apiService = {
   },
 
   getProducts: async () => {
-    if (USE_MOCK_DATA) {
-      return MOCK_PRODUCTS;
-    }
     const response = await fetchWithAuth('/api/products');
     return safeJson(response);
   },
@@ -133,9 +99,6 @@ export const apiService = {
   },
 
   getOrders: async () => {
-    if (USE_MOCK_DATA) {
-      return [];
-    }
     const response = await fetchWithAuth('/api/orders');
     return safeJson(response);
   },
@@ -167,9 +130,6 @@ export const apiService = {
   },
 
   getUsers: async () => {
-    if (USE_MOCK_DATA) {
-      return [MOCK_USER];
-    }
     const response = await fetchWithAuth('/api/users');
     return safeJson(response);
   },
@@ -184,16 +144,6 @@ export const apiService = {
   },
 
   createUser: async (userData: UserData) => {
-    if (USE_MOCK_DATA) {
-      // Simulate successful user creation with mock data
-      return {
-        ...MOCK_USER,
-        ...userData,
-        id: Date.now(),
-        isAuthenticated: true,
-        isGuest: false
-      };
-    }
     const response = await fetchWithAuth('/api/users', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -247,18 +197,6 @@ export const apiService = {
   },
 
   login: async (credentials: LoginCredentials) => {
-    if (USE_MOCK_DATA) {
-      // Simulate successful login with mock data
-      return {
-        token: 'mock-token-' + Date.now(),
-        user: {
-          ...MOCK_USER,
-          ...credentials,
-          isAuthenticated: true,
-          isGuest: false
-        }
-      };
-    }
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -332,16 +270,60 @@ export const apiService = {
     // Admin login is fully server-side authenticated
     // Credentials are validated in api/admin-login.js using environment variables
     const response = await fetch('/api/admin-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(credentials),
+});
 
-    if (!response.ok) {
-      const err = await safeJson(response);
-      throw new Error(err?.error || 'Accès admin refusé');
-    }
+if (!response.ok) {
+  const err = await safeJson(response);
+  throw new Error(err?.error || 'Accès admin refusé');
+}
 
-    return safeJson(response);
-  },
+return safeJson(response);
+},
+
+getOrderTracking: async (orderId: string) => {
+  const response = await fetchWithAuth(`/api/orders/${orderId}/tracking`);
+  if (!response.ok) throw new Error('Failed to get order tracking');
+  return safeJson(response);
+},
+
+getArtistStats: async (artistId: number, period: 'week' | 'month' | 'year' = 'month') => {
+  const response = await fetchWithAuth(`/api/artist-stats?artist_id=${artistId}&period=${period}`);
+  if (!response.ok) throw new Error('Failed to get artist stats');
+  return safeJson(response);
+},
+
+getProductCategories: async () => {
+  const response = await fetch('/api/product-categories');
+  if (!response.ok) throw new Error('Failed to get product categories');
+  return safeJson(response);
+},
+
+createProductCategory: async (category: { name: string; description?: string; icon?: string; color?: string }) => {
+  const response = await fetchWithAuth('/api/product-categories', {
+    method: 'POST',
+    body: JSON.stringify(category),
+  });
+  if (!response.ok) throw new Error('Failed to create category');
+  return safeJson(response);
+},
+
+updateDeliveryTracking: async (data: {
+  order_id: number;
+  status: string;
+  description: string;
+  location?: string;
+  carrier?: string;
+  tracking_number?: string;
+}) => {
+  const response = await fetchWithAuth('/api/delivery-tracking', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update delivery tracking');
+  return safeJson(response);
+},
+
 };

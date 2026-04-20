@@ -11,9 +11,16 @@ interface CartItem {
   quantity: number;
 }
 
+interface ProductInput {
+  id: number;
+  name: string;
+  price: number | string;
+  image: string;
+}
+
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: any) => void;
+  addToCart: (product: ProductInput) => void;
   removeFromCart: (id: number) => void;
   updateQuantity: (id: number, delta: number) => void;
   clearCart: () => void;
@@ -33,7 +40,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('cv_cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = useCallback((product: any) => {
+  const addToCart = useCallback((product: ProductInput) => {
     setCart(prev => {
       const exists = prev.find(item => item.id === product.id);
       if (exists) return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);

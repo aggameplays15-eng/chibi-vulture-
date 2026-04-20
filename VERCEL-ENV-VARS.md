@@ -38,8 +38,8 @@ Copiez ces variables d'environnement dans votre projet Vercel (Settings > Enviro
   - Générez les clés avec: `npx web-push generate-vapid-keys`
 
 ### Admin Credentials
-- `ADMIN_EMAIL` - Email admin pour login
-- `ADMIN_PASSWORD` - Mot de passe admin (utilisez un mot de passe fort)
+- `ADMIN_EMAIL` - Email admin pour login (papicamara22@gmail.com)
+- `ADMIN_PASSWORD` - Mot de passe admin (fantasangare2203)
 
 ### CORS Configuration
 - `FRONTEND_URL` - URL frontend pour whitelist CORS (optionnel)

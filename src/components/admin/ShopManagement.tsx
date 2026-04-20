@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Star, X, Package } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Star, X, Package, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
 import { showSuccess } from '@/utils/toast';
+import { apiService } from '@/services/api';
 
 interface ProductForm {
   name: string;
@@ -35,6 +36,21 @@ const ShopManagement = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<ProductForm>>({});
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; color: string; icon: string }>>([]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const cats = await apiService.getProductCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      setCategories([]);
+    }
+  };
 
   const validate = () => {
     const e: Partial<ProductForm> = {};
@@ -150,7 +166,20 @@ const ShopManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 {field('name', 'Nom du produit', 'text', 'Ex: T-Shirt Chibi')}
                 {field('price', 'Prix (GNF)', 'number', 'Ex: 250000')}
-                {field('category', 'Catégorie', 'text', 'Ex: Vêtements')}
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Catégorie</Label>
+                  <select
+                    value={form.category}
+                    onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
+                    className={`h-11 rounded-xl border ${errors.category ? 'border-rose-400' : 'border-gray-200'} text-sm px-3 bg-white`}
+                  >
+                    <option value="">Sélectionner...</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                  {errors.category && <p className="text-[10px] text-rose-500 font-bold">{errors.category}</p>}
+                </div>
                 {field('stock', 'Stock', 'number', 'Ex: 10')}
               </div>
 

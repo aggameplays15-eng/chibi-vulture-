@@ -11,15 +11,15 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON
 app.use(express.json());
 
-// Serve API routes from the api folder
-const apiPath = path.join(__dirname, 'api');
+// Serve API routes from the handlers folder
+const handlersPath = path.join(__dirname, 'handlers');
 
 // Dynamically load all API endpoints using require (CommonJS)
-const apiFiles = fs.readdirSync(apiPath);
-for (const file of apiFiles) {
+const handlerFiles = fs.readdirSync(handlersPath);
+for (const file of handlerFiles) {
   if (file.endsWith('.js') && !file.startsWith('_')) {
     const route = `/${file.replace('.js', '')}`;
-    const handlerPath = path.join(apiPath, file);
+    const handlerPath = path.join(handlersPath, file);
     try {
       const handler = require(handlerPath);
       app.use(`/api${route}`, handler);

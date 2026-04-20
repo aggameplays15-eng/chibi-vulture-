@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Activity, Palette, Truck, Bell, Settings2 } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Activity, Palette, Truck, Bell, Settings2, Brush } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import ShopManagement from '@/components/admin/ShopManagement';
@@ -13,6 +13,7 @@ import PendingApprovals from '@/components/admin/PendingApprovals';
 import LogoManagement from '@/components/admin/LogoManagement';
 import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
+import ArtistDashboard from '@/components/admin/ArtistDashboard';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
@@ -74,6 +75,9 @@ const Admin = () => {
             <TabsTrigger value="users" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
               <Users size={18} />
             </TabsTrigger>
+            <TabsTrigger value="artist" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
+              <Brush size={18} />
+            </TabsTrigger>
             <TabsTrigger value="notifications" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
               <Bell size={18} />
             </TabsTrigger>
@@ -104,6 +108,10 @@ const Admin = () => {
 
           <TabsContent value="users" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="artist" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ArtistDashboard />
           </TabsContent>
 
           <TabsContent value="notifications" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

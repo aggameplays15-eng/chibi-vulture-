@@ -147,7 +147,7 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
     await page.goto('/admin');
     
     // Attendre le chargement du dashboard
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
     
     // Vérifier les éléments clés du dashboard - AdminStats utilise des Cards
@@ -177,8 +177,8 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
     await setupAdminAuth(page);
 
     await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(800);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     // Les tabs utilisent des data-value - on les cible par value
     // Tab "users"
@@ -232,8 +232,8 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
     await setupAdminAuth(page);
     
     await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
     
     // Aller dans la section modération (qui contient PendingApprovals)
     const modTab = page.locator('[role="tablist"] button').nth(3);
@@ -313,8 +313,8 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
     await setupAdminAuth(page);
     
     await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
     
     // Navigation vers gestion utilisateurs (5ème tab)
     const usersTab = page.locator('[role="tablist"] button').nth(4);
