@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
     }
 
     // Whitelist des champs autorisés pour prévenir l'injection SQL
-    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'role', 'is_approved', 'status'];
+    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'role', 'is_approved', 'status'];
     const dataKeys = Object.keys(data).filter(key => ALLOWED_FIELDS.includes(key));
     
     if (dataKeys.length === 0) {

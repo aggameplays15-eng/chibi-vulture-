@@ -40,7 +40,7 @@ const EditProfile = () => {
     updateUser({ 
       name, 
       bio, 
-      avatarImage: avatar 
+      avatar_image: avatar 
     });
     showSuccess("Profil mis à jour avec succès ! ✨");
     navigate('/profile');

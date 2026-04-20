@@ -11,6 +11,7 @@ interface UserProfile {
   bio: string;
   avatarColor: string;
   avatarImage?: string;
+  avatar_image?: string;
   role: 'Guest' | 'Member' | 'Artiste' | 'Admin';
   isApproved: boolean;
   isAuthenticated: boolean;
