@@ -5,8 +5,8 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-// Load all API handlers from the handlers subfolder
-const handlersPath = path.join(__dirname, 'handlers');
+// Load all API handlers from the handlers folder at root
+const handlersPath = path.join(__dirname, '..', 'handlers');
 const handlerFiles = fs.readdirSync(handlersPath);
 
 for (const file of handlerFiles) {
