@@ -1,6 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { notifyLike } = require('./_lib/notifications');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -34,6 +35,14 @@ module.exports = async (req, res) => {
           'INSERT INTO likes (user_handle, post_id) VALUES ($1, $2)',
           [user_handle, post_id]
         );
+        // Get post author and notify
+        const { rows: [post] } = await db.query(
+          'SELECT user_handle FROM posts WHERE id = $1',
+          [post_id]
+        );
+        if (post) {
+          notifyLike(user_handle, post_id, post.user_handle);
+        }
         res.status(201).json({ liked: true });
       }
     } catch (error) {

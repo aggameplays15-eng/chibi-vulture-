@@ -212,7 +212,7 @@ test.describe('Admin — Vérification de toutes les options', () => {
   // ── APPEARANCE ────────────────────────────
   test('Appearance : changer couleur, changer logo, réinitialiser', async ({ page }) => {
     await loginAdmin(page);
-    await goTab(page, 5); // Appearance
+    await goTab(page, 6); // Appearance (index 6)
 
     console.log('\n🎨  APPEARANCE');
 

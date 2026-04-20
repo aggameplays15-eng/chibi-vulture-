@@ -1,6 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { notifyComment } = require('./_lib/notifications');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -43,6 +44,14 @@ module.exports = async (req, res) => {
         'INSERT INTO comments (post_id, user_handle, text) VALUES ($1, $2, $3) RETURNING *',
         [post_id, user.handle, text.trim()]
       );
+      // Get post author and notify
+      const { rows: [post] } = await db.query(
+        'SELECT user_handle FROM posts WHERE id = $1',
+        [post_id]
+      );
+      if (post) {
+        notifyComment(user.handle, post_id, post.user_handle, text.trim());
+      }
       res.status(201).json(rows[0]);
     } catch (error) {
       console.error(error);

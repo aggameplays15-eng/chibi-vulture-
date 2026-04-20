@@ -175,43 +175,43 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
   test('Admin navigue dans les différentes sections', async ({ page }) => {
     // Configurer l'authentification admin
     await setupAdminAuth(page);
-    
+
     await page.goto('/admin');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
-    
-    // Les tabs utilisent des icônes Lucide - on les cible par les triggers
-    // Tab "users" (5ème icône - Users)
-    const usersTab = page.locator('[role="tablist"] button').nth(4);
+
+    // Les tabs utilisent des data-value - on les cible par value
+    // Tab "users"
+    const usersTab = page.locator('button[data-value="users"]');
     if (await usersTab.isVisible().catch(() => false)) {
       await usersTab.click();
       await page.waitForTimeout(600);
-      
+
       // Vérifier UserManagement - cherche "Utilisateurs"
       await expect(page.getByText(/Utilisateurs/i).first()).toBeVisible();
     }
-    
-    // Tab "mod" contient PendingApprovals et PostModeration (4ème icône)
-    const modTab = page.locator('[role="tablist"] button').nth(3);
+
+    // Tab "mod" contient PendingApprovals et PostModeration
+    const modTab = page.locator('button[data-value="mod"]');
     if (await modTab.isVisible().catch(() => false)) {
       await modTab.click();
       await page.waitForTimeout(600);
-      
+
       // Vérifier Approbations
       await expect(page.getByText(/Approbations|attente/i).first()).toBeVisible();
     }
-    
-    // Tab "shop" (2ème icône - ShoppingBag)
-    const shopTab = page.locator('[role="tablist"] button').nth(1);
+
+    // Tab "shop"
+    const shopTab = page.locator('button[data-value="shop"]');
     if (await shopTab.isVisible().catch(() => false)) {
       await shopTab.click();
       await page.waitForTimeout(600);
-      
+
       await expect(page.getByText(/Boutique|Produits|Shop/i).first()).toBeVisible();
     }
-    
-    // Tab "delivery" (3ème icône - Truck)
-    const deliveryTab = page.locator('[role="tablist"] button').nth(2);
+
+    // Tab "delivery"
+    const deliveryTab = page.locator('button[data-value="delivery"]');
     if (await deliveryTab.isVisible().catch(() => false)) {
       await deliveryTab.click();
       await page.waitForTimeout(600);
@@ -219,8 +219,8 @@ test.describe('Parcours Admin Complet - Comportement Humain', () => {
       await expect(page.getByText(/Livraisons|Commandes|Delivery/i).first()).toBeVisible();
     }
     
-    // Retour au dashboard (1ère icône)
-    const dashboardTab = page.locator('[role="tablist"] button').first();
+    // Retour au dashboard
+    const dashboardTab = page.locator('button[data-value="dashboard"]');
     if (await dashboardTab.isVisible().catch(() => false)) {
       await dashboardTab.click();
       await page.waitForTimeout(400);

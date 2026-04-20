@@ -14,6 +14,7 @@ import { apiService } from '@/services/api';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { login } = useApp();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
@@ -25,7 +26,7 @@ const Signup = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await apiService.createUser({
+      const createdUser = await apiService.createUser({
         name,
         handle: handle.startsWith('@') ? handle : `@${handle}`,
         email,
@@ -33,8 +34,12 @@ const Signup = () => {
         avatarColor: "#3b82f6",
         password
       });
+      
+      // Log in the user after successful account creation
+      await login({ email, password });
+      
       setStep(2);
-      showSuccess("Demande d'inscription envoyée ! 📩");
+      showSuccess("Compte créé avec succès ! 🎉");
     } catch (err) {
       showError("Erreur lors de la création du compte. Cet identifiant est peut-être déjà pris.");
     } finally {
@@ -54,16 +59,13 @@ const Signup = () => {
             <Sparkles className="text-pink-500" size={40} />
           </div>
           <div className="space-y-2">
-            <h1 data-testid="patience-message" className="text-3xl font-black text-gray-900">PATIENCE... ✨</h1>
+            <h1 data-testid="patience-message" className="text-3xl font-black text-gray-900">BIENVENUE ! 🎉</h1>
             <p className="text-gray-500 font-medium leading-relaxed">
-              Ton compte a été créé avec succès ! Pour garantir la sécurité de la communauté, un administrateur doit approuver ton profil avant que tu puisses accéder au feed.
+              Ton compte a été créé avec succès ! Tu es maintenant connecté et prêt à explorer Chibi Vulture.
             </p>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-pink-100 text-xs text-pink-600 font-bold uppercase tracking-wider">
-            Délai moyen : moins de 24h
-          </div>
-          <Button onClick={() => navigate('/login')} variant="ghost" className="text-gray-400 font-bold">
-            Retour à la connexion
+          <Button onClick={() => navigate('/feed')} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg shadow-xl shadow-blue-100">
+            Accéder au feed
           </Button>
         </motion.div>
       </div>

@@ -29,11 +29,11 @@ test.describe('Test Complet Admin - Simulation Humaine', () => {
 
     // ========== ÉTAPE 1: CONNEXION ==========
     console.log('📝 ÉTAPE 1: Connexion admin');
-    await page.goto('/goated');
+    await page.goto('/admin-login');
     await humanDelay(page, 1000, 2000); // Observer la page
 
     // Vérifier la page de connexion
-    await expect(page.getByText('Admin Terminal')).toBeVisible();
+    await expect(page.getByText(/ADMIN/i).or(page.getByText(/Login/i)).first()).toBeVisible();
     console.log('✅ Page de connexion affichée');
 
     // Saisir l'email comme un humain

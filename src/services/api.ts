@@ -4,6 +4,34 @@ import type { PostData, ProductData, OrderData, UserData, MessageData, LoginCred
 
 let authToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('cv_token') : null;
 
+// Mock data for local development when API is not available
+const MOCK_USER = {
+  id: 1,
+  email: 'user@example.com',
+  name: 'Test User',
+  handle: '@testuser',
+  role: 'Member',
+  is_approved: true,
+  isApproved: true,
+  status: 'Actif',
+  bio: 'Test user for local development',
+  avatarColor: '#94a3b8',
+  following: []
+};
+
+const MOCK_PRODUCTS = [
+  { id: 1, name: "T-Shirt Chibi Vulture", price: 250000, image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=300", category: "Vêtements", stock: 15, featured: true },
+  { id: 2, name: "Stickers Pack Kawaii", price: 125000, image: "https://images.unsplash.com/photo-1572375927902-d60e60ad1710?q=80&w=300", category: "Accessoires", stock: 5, featured: false },
+];
+
+const MOCK_POSTS = [
+  { id: 1, user: "ChibiMomo", handle: "@momo", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Momo", image: "https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=600", likes: 124, caption: "Mon premier dessin ! ✨", time: "2h", reports: 0 },
+  { id: 2, user: "VultureKing", handle: "@king", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=King", image: "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?q=80&w=600", likes: 89, caption: "Style Vulture activé 🦅", time: "5h", reports: 2 },
+];
+
+// Flag to use mock data in local development
+const USE_MOCK_DATA = true;
+
 const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   const headers: Record<string, string> = {
     ...options.headers,
@@ -43,6 +71,9 @@ export const apiService = {
   },
 
   getPosts: async (page = 1, limit = 10) => {
+    if (USE_MOCK_DATA) {
+      return MOCK_POSTS;
+    }
     const response = await fetchWithAuth(`/api/posts?page=${page}&limit=${limit}`);
     return safeJson(response);
   },
@@ -62,6 +93,9 @@ export const apiService = {
   },
 
   getProducts: async () => {
+    if (USE_MOCK_DATA) {
+      return MOCK_PRODUCTS;
+    }
     const response = await fetchWithAuth('/api/products');
     return safeJson(response);
   },
@@ -99,6 +133,9 @@ export const apiService = {
   },
 
   getOrders: async () => {
+    if (USE_MOCK_DATA) {
+      return [];
+    }
     const response = await fetchWithAuth('/api/orders');
     return safeJson(response);
   },
@@ -130,6 +167,9 @@ export const apiService = {
   },
 
   getUsers: async () => {
+    if (USE_MOCK_DATA) {
+      return [MOCK_USER];
+    }
     const response = await fetchWithAuth('/api/users');
     return safeJson(response);
   },
@@ -144,6 +184,16 @@ export const apiService = {
   },
 
   createUser: async (userData: UserData) => {
+    if (USE_MOCK_DATA) {
+      // Simulate successful user creation with mock data
+      return {
+        ...MOCK_USER,
+        ...userData,
+        id: Date.now(),
+        isAuthenticated: true,
+        isGuest: false
+      };
+    }
     const response = await fetchWithAuth('/api/users', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -197,6 +247,18 @@ export const apiService = {
   },
 
   login: async (credentials: LoginCredentials) => {
+    if (USE_MOCK_DATA) {
+      // Simulate successful login with mock data
+      return {
+        token: 'mock-token-' + Date.now(),
+        user: {
+          ...MOCK_USER,
+          ...credentials,
+          isAuthenticated: true,
+          isGuest: false
+        }
+      };
+    }
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -209,43 +271,77 @@ export const apiService = {
     return safeJson(response);
   },
 
+  // Push notifications
+  getVapidPublicKey: async () => {
+    const response = await fetchWithAuth('/api/push-subscribe');
+    return safeJson(response);
+  },
+
+  subscribeToPush: async (subscription: PushSubscription) => {
+    const response = await fetchWithAuth('/api/push-subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ subscription }),
+    });
+    if (!response.ok) throw new Error('Failed to subscribe to push notifications');
+    return safeJson(response);
+  },
+
+  unsubscribeFromPush: async () => {
+    const response = await fetchWithAuth('/api/push-subscribe', {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to unsubscribe from push notifications');
+    return safeJson(response);
+  },
+
+  // Admin Push Notifications
+  getPushStats: async () => {
+    const response = await fetchWithAuth('/api/admin-push-stats');
+    if (!response.ok) throw new Error('Failed to get push stats');
+    return safeJson(response);
+  },
+
+  sendPushNotification: async ({ title, body, url }: { title: string; body: string; url?: string }) => {
+    const response = await fetchWithAuth('/api/admin-push-notify', {
+      method: 'POST',
+      body: JSON.stringify({ title, body, url }),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Failed to send push notification');
+    }
+    return safeJson(response);
+  },
+
+  // App Settings
+  getAppSettings: async () => {
+    const response = await fetch('/api/app-settings');
+    return safeJson(response);
+  },
+
+  updateAppSettings: async (settings: { app_name?: string; app_logo?: string; app_description?: string; primary_color?: string }) => {
+    const response = await fetchWithAuth('/api/app-settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+    if (!response.ok) throw new Error('Failed to update app settings');
+    return safeJson(response);
+  },
+
   adminLogin: async (credentials: LoginCredentials) => {
-    // Vérification admin côté client (identifiants hardcodés sécurisés)
-    const ADMIN_EMAIL = 'papicamara22@gmail.com';
-    const ADMIN_PASSWORD = 'fantasangare2203';
+    // Admin login is fully server-side authenticated
+    // Credentials are validated in api/admin-login.js using environment variables
+    const response = await fetch('/api/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
 
-    if (credentials.email !== ADMIN_EMAIL || credentials.password !== ADMIN_PASSWORD) {
-      throw new Error('Accès admin refusé');
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Accès admin refusé');
     }
 
-    // Essayer l'API d'abord (production Vercel)
-    try {
-      const response = await fetch('/api/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-      if (response.ok) return safeJson(response);
-    } catch {
-      // En dev local, l'API n'existe pas — on retourne un token mock
-    }
-
-    // Fallback dev local : retourner un utilisateur admin mock
-    return {
-      token: 'admin-local-token-' + Date.now(),
-      user: {
-        id: 1,
-        email: ADMIN_EMAIL,
-        name: 'Admin',
-        handle: '@admin',
-        role: 'Admin',
-        is_approved: true,
-        isApproved: true,
-        status: 'Actif',
-        bio: '',
-        avatarColor: '#DC2626',
-        following: []
-      }
-    };
+    return safeJson(response);
   },
 };

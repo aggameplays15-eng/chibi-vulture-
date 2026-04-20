@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Activity, Palette, Truck } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Activity, Palette, Truck, Bell, Settings2 } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import ShopManagement from '@/components/admin/ShopManagement';
@@ -11,6 +11,7 @@ import PostModeration from '@/components/admin/PostModeration';
 import UserManagement from '@/components/admin/UserManagement';
 import PendingApprovals from '@/components/admin/PendingApprovals';
 import LogoManagement from '@/components/admin/LogoManagement';
+import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
@@ -73,8 +74,11 @@ const Admin = () => {
             <TabsTrigger value="users" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
               <Users size={18} />
             </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
+              <Bell size={18} />
+            </TabsTrigger>
             <TabsTrigger value="appearance" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Palette size={18} />
+              <Settings2 size={18} />
             </TabsTrigger>
           </TabsList>
 
@@ -100,6 +104,10 @@ const Admin = () => {
 
           <TabsContent value="users" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PushNotificationManager />
           </TabsContent>
 
           <TabsContent value="appearance" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -2,8 +2,12 @@ const { handleCors } = require('./_lib/cors');
 const { rateLimit } = require('./_lib/rateLimit');
 const auth = require('./_lib/auth');
 
-const ADMIN_EMAIL    = 'papicamara22@gmail.com';
-const ADMIN_PASSWORD = 'fantasangare2203';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.warn('WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not set in environment variables');
+}
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -18,6 +22,11 @@ module.exports = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
+  
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return res.status(500).json({ error: 'Admin credentials not configured' });
+  }
+  
   if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Access denied' });
   }

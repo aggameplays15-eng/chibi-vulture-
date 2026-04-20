@@ -1,6 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { notifyFollow } = require('./_lib/notifications');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -58,6 +59,8 @@ module.exports = async (req, res) => {
           'INSERT INTO follows (follower_handle, following_handle) VALUES ($1, $2)',
           [follower_handle, following_handle]
         );
+        // Notify the user being followed
+        notifyFollow(follower_handle, following_handle);
         res.status(201).json({ following: true });
       }
     } catch (error) {

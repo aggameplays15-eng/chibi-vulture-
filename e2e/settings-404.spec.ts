@@ -104,11 +104,11 @@ test.describe('Settings', () => {
     console.log('✅ Compte → /edit-profile OK');
   });
 
-  test('bouton déconnexion redirige vers /', async ({ page }) => {
+  test('bouton déconnexion redirige vers /login', async ({ page }) => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: /DÉCONNEXION/i }).click();
-    await expect(page).toHaveURL('/', { timeout: 8000 });
-    console.log('✅ Déconnexion → / OK');
+    await expect(page).toHaveURL('/login', { timeout: 8000 });
+    console.log('✅ Déconnexion → /login OK');
   });
 });
