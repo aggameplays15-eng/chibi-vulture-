@@ -52,7 +52,7 @@ const Admin = () => {
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">ADMINISTRATION</h1>
           </div>
           <div className="bg-gray-50 p-2 rounded-2xl text-gray-400">
-            <Activity size={20} className="text-emerald-500" />
+            <Zap size={20} className="text-emerald-500" />
           </div>
         </div>
       </header>
