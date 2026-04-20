@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "destination": "/api/index.js"
     },
     {
       "source": "/((?!api|src|node_modules|public|@|.*\\.(?:js|css|tsx|ts|png|svg|jpg|jpeg|gif|ico|json)$).*)",
