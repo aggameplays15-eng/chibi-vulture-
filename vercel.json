@@ -2,14 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": null,
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "/api/index.js"
     },
     {
-      "source": "/((?!api|src|node_modules|public|@|.*\\.(?:js|css|json|png|svg|jpg|jpeg|gif|ico|woff|woff2|ttf|eot)$).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
