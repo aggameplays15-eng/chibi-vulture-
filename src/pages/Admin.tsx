@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Activity, Palette, Truck, Bell, Settings2, Brush } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap, Palette, Truck, Bell, Settings2, Brush } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import ShopManagement from '@/components/admin/ShopManagement';
