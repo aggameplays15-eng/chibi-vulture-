@@ -1,0 +1,27 @@
+{
+  "short_name": "Chibi Vulture",
+  "name": "Chibi Vulture - Art Community",
+  "description": "Premium Art Community - Partagez votre art, découvrez des artistes, achetez des produits uniques",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#EC4899",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["social", "shopping", "lifestyle"],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

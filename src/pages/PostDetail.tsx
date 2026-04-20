@@ -1,0 +1,217 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import MainLayout from '@/components/layout/MainLayout';
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Lock, ChevronLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { useApp } from '@/context/AppContext';
+import { showError } from '@/utils/toast';
+
+interface Comment {
+  id: number;
+  user_handle: string;
+  user_name: string;
+  user_avatar?: string;
+  text: string;
+  created_at: string;
+}
+
+const PostDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, likedPosts, toggleLike, posts, primaryColor } = useApp();
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const postId = Number(id);
+  const post = posts.find(p => p.id === postId);
+  const isGuest = user.isGuest;
+  const isLiked = likedPosts.includes(postId);
+
+  useEffect(() => {
+    if (!postId) return;
+    fetch(`/api/comments?post_id=${postId}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setComments(data); })
+      .catch(() => {});
+  }, [postId]);
+
+  const handleSendComment = async () => {
+    if (!comment.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem('cv_token');
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ post_id: postId, text: comment.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      const newComment = await res.json();
+      setComments(prev => [...prev, { ...newComment, user_name: user.name, user_avatar: user.avatarImage }]);
+      setComment("");
+    } catch {
+      showError("Impossible d'envoyer le commentaire.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}j`;
+  };
+
+  if (!post) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-gray-400 font-bold">Publication introuvable.</p>
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ChevronLeft size={18} className="mr-1" /> Retour
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <header className="p-4 flex items-center gap-3 border-b border-pink-50 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+          <ChevronLeft size={24} />
+        </Button>
+        <h1 className="font-black text-gray-800 uppercase tracking-widest text-sm">Publication</h1>
+      </header>
+
+      <div className="pb-24">
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="border-2 border-pink-200">
+              <AvatarImage src={post.avatar} />
+              <AvatarFallback>{post.user[0]}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-bold text-sm">{post.user}</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold">{post.time}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" aria-label="Plus d'options">
+            <MoreHorizontal size={20} />
+          </Button>
+        </div>
+
+        <div className="aspect-square bg-gray-100">
+          <img
+            src={post.image}
+            alt={`Post de ${post.user}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => toggleLike(postId)}
+              className={`flex items-center gap-1 transition-all ${isLiked ? 'scale-110' : ''}`}
+              style={{ color: isLiked ? primaryColor : '#9ca3af' }}
+              disabled={isGuest}
+              aria-label={isLiked ? "Retirer le like" : "Aimer ce post"}
+              aria-pressed={isLiked}
+            >
+              <Heart size={28} fill={isLiked ? "currentColor" : "none"} aria-hidden="true" />
+              <span className="font-black">{post.likes + (isLiked ? 1 : 0)}</span>
+            </button>
+            <button className="flex items-center gap-1 text-gray-600" aria-label="Commentaires">
+              <MessageCircle size={28} aria-hidden="true" />
+              <span className="font-black">{comments.length}</span>
+            </button>
+            <button className="ml-auto text-gray-600" aria-label="Partager">
+              <Share2 size={28} aria-hidden="true" />
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-700">
+            <span className="font-bold mr-2">{post.user}</span>
+            {post.caption}
+          </p>
+
+          <div className="pt-4 border-t border-pink-50 space-y-4">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">
+              Commentaires ({comments.length})
+            </h3>
+            {comments.length === 0 && (
+              <p className="text-xs text-gray-400 font-bold text-center py-4">
+                Aucun commentaire. Sois le premier ! 💬
+              </p>
+            )}
+            {comments.map((c) => (
+              <div key={c.id} className="flex gap-3">
+                <Avatar className="w-8 h-8 flex-shrink-0">
+                  <AvatarImage src={c.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_handle}`} />
+                  <AvatarFallback>{(c.user_name || c.user_handle)[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 bg-gray-50 p-3 rounded-2xl rounded-tl-none">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-xs">{c.user_name || c.user_handle}</span>
+                    <span className="text-[10px] text-gray-400">{formatTime(c.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-pink-50 z-30 md:max-w-2xl md:mx-auto">
+        {isGuest ? (
+          <div
+            onClick={() => navigate('/login')}
+            className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 p-4 rounded-2xl cursor-pointer hover:bg-gray-200 transition-colors"
+            role="button"
+            aria-label="Se connecter pour commenter"
+          >
+            <Lock size={16} aria-hidden="true" />
+            <span className="text-xs font-bold uppercase">Connecte-toi pour commenter</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-gray-50 rounded-2xl p-2">
+            <Input
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSendComment(); }}
+              placeholder="Ajouter un commentaire..."
+              className="border-none bg-transparent focus-visible:ring-0 shadow-none"
+              maxLength={500}
+              aria-label="Écrire un commentaire"
+            />
+            <Button
+              className={`rounded-xl transition-all ${comment.trim() ? 'text-white' : 'bg-gray-200 text-gray-400'}`}
+              style={{ backgroundColor: comment.trim() ? primaryColor : undefined }}
+              size="icon"
+              disabled={!comment.trim() || isSubmitting}
+              onClick={handleSendComment}
+              aria-label="Envoyer le commentaire"
+            >
+              <Send size={18} aria-hidden="true" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </MainLayout>
+  );
+};
+
+export default PostDetail;
