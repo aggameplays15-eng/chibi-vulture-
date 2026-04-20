@@ -5,14 +5,14 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-// Load all API handlers from the api folder
-const apiPath = path.join(__dirname);
-const apiFiles = fs.readdirSync(apiPath);
+// Load all API handlers from the handlers subfolder
+const handlersPath = path.join(__dirname, 'handlers');
+const handlerFiles = fs.readdirSync(handlersPath);
 
-for (const file of apiFiles) {
-  if (file.endsWith('.js') && !file.startsWith('_') && file !== 'index.js') {
+for (const file of handlerFiles) {
+  if (file.endsWith('.js') && !file.startsWith('_')) {
     const route = `/${file.replace('.js', '')}`;
-    const handlerPath = path.join(apiPath, file);
+    const handlerPath = path.join(handlersPath, file);
     try {
       const handler = require(handlerPath);
       app.use(`/api${route}`, handler);
