@@ -29,27 +29,34 @@ test.describe('Test Complet Admin - Simulation Humaine', () => {
 
     // ========== ÉTAPE 1: CONNEXION ==========
     console.log('📝 ÉTAPE 1: Connexion admin');
-    await page.goto('/admin-login');
+    await page.goto('/goated');
     await humanDelay(page, 1000, 2000); // Observer la page
 
-    // Vérifier la page de connexion
-    await expect(page.getByText(/ADMIN/i).or(page.getByText(/Login/i)).first()).toBeVisible();
+    // Attendre que le formulaire soit visible - utiliser placeholder pour shadcn/ui
+    await page.waitForSelector('input[placeholder*="admin@"]', { timeout: 10000 });
+    await page.waitForSelector('input[placeholder*="•••"]', { timeout: 10000 });
     console.log('✅ Page de connexion affichée');
 
     // Saisir l'email comme un humain
-    await humanType(page, 'input[type="email"]', adminCredentials.email);
+    await humanType(page, 'input[placeholder*="admin@"]', adminCredentials.email);
     console.log('✅ Email saisi');
 
     // Saisir le mot de passe
-    await humanType(page, 'input[type="password"]', adminCredentials.password);
+    await humanType(page, 'input[placeholder*="•••"]', adminCredentials.password);
     console.log('✅ Mot de passe saisi');
 
     // Cliquer sur le bouton de connexion
-    await page.locator('button[type="submit"]').click();
+    await page.getByText('DÉVERROUILLER').click();
     console.log('✅ Bouton connexion cliqué');
 
-    // Attendre la redirection
+    // Attendre la réponse API puis la redirection
+    await page.waitForResponse(response => 
+      response.url().includes('/api/admin-login') && response.status() === 200
+    );
     await page.waitForURL(/.*\/admin/, { timeout: 10000 });
+    
+    // Attendre que React Context hydrate et que le dashboard se charge
+    await page.waitForSelector('text=ADMINISTRATION', { timeout: 5000 });
     await humanDelay(page, 1000, 2000);
     console.log('✅ Redirection vers dashboard réussie\n');
 
@@ -242,10 +249,16 @@ test.describe('Test Complet Admin - Simulation Humaine', () => {
 
     // Connexion rapide
     await page.goto('/goated');
-    await page.locator('input[type="email"]').fill(adminCredentials.email);
-    await page.locator('input[type="password"]').fill(adminCredentials.password);
-    await page.locator('button[type="submit"]').click();
+    await page.waitForSelector('input[placeholder*="admin@"]', { timeout: 10000 });
+    await page.waitForSelector('input[placeholder*="•••"]', { timeout: 10000 });
+    await page.locator('input[placeholder*="admin@"]').fill(adminCredentials.email);
+    await page.locator('input[placeholder*="•••"]').fill(adminCredentials.password);
+    await page.getByText('DÉVERROUILLER').click();
+    await page.waitForResponse(response => 
+      response.url().includes('/api/admin-login') && response.status() === 200
+    );
     await page.waitForURL(/.*\/admin/);
+    await page.waitForSelector('text=ADMINISTRATION', { timeout: 5000 });
     await humanDelay(page, 1000, 1500);
 
     // Test hover sur les cartes
@@ -275,10 +288,16 @@ test.describe('Test Complet Admin - Simulation Humaine', () => {
 
     // Connexion
     await page.goto('/goated');
-    await page.locator('input[type="email"]').fill(adminCredentials.email);
-    await page.locator('input[type="password"]').fill(adminCredentials.password);
-    await page.locator('button[type="submit"]').click();
+    await page.waitForSelector('input[placeholder*="admin@"]', { timeout: 10000 });
+    await page.waitForSelector('input[placeholder*="•••"]', { timeout: 10000 });
+    await page.locator('input[placeholder*="admin@"]').fill(adminCredentials.email);
+    await page.locator('input[placeholder*="•••"]').fill(adminCredentials.password);
+    await page.getByText('DÉVERROUILLER').click();
+    await page.waitForResponse(response => 
+      response.url().includes('/api/admin-login') && response.status() === 200
+    );
     await page.waitForURL(/.*\/admin/);
+    await page.waitForSelector('text=ADMINISTRATION', { timeout: 5000 });
 
     const loadTime = Date.now() - startTime;
     console.log(`⏱️ Temps de chargement: ${loadTime}ms`);

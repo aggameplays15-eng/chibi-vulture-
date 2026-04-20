@@ -34,11 +34,17 @@ module.exports = async (req, res) => {
   try {
     const adminUser = {
       id: 1, email: ADMIN_EMAIL, name: 'Admin', handle: '@admin',
-      role: 'Admin', is_approved: true, isApproved: true,
+      role: 'Admin', is_approved: true,
       status: 'Actif', bio: 'Administrator', avatar_color: '#DC2626'
     };
     const token = auth.signToken(adminUser);
-    res.status(200).json({ user: adminUser, token });
+    // Map snake_case to camelCase for frontend compatibility
+    const mappedUser = {
+      ...adminUser,
+      avatarColor: adminUser.avatar_color,
+      isApproved: adminUser.is_approved
+    };
+    res.status(200).json({ user: mappedUser, token });
   } catch (error) {
     console.error('Admin login error:', error);
     res.status(500).json({ error: 'Login failed' });

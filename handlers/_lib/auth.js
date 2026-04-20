@@ -1,12 +1,13 @@
 // Authentication middleware for handlers
-// Verifies admin token for protected routes
+// Verifies JWT tokens for protected routes
 
+const jwt = require('jsonwebtoken');
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 module.exports = {
   verify: (req, requireAdmin = false) => {
-    // Check for admin credentials in headers or body
     const authHeader = req.headers['authorization'];
     
     if (requireAdmin) {
@@ -25,14 +26,25 @@ module.exports = {
       return true;
     }
     
-    // For regular user routes, check for valid token
+    // For regular user routes, verify JWT token
     if (!authHeader) {
       return false;
     }
     
     const token = authHeader.replace('Bearer ', '');
-    // In production, verify JWT token here
-    // For now, just check if token exists
-    return !!token;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      return decoded;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  signToken: (user) => {
+    return jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
   }
 };

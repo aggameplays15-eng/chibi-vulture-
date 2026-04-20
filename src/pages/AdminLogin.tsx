@@ -66,6 +66,7 @@ const AdminLogin = () => {
               className="h-14 rounded-2xl bg-white/5 border-white/10 text-white focus-visible:ring-red-500 placeholder:text-slate-700" 
               placeholder="admin@vulture.tech"
               required 
+              data-testid="admin-email-input"
             />
           </div>
 
@@ -78,6 +79,7 @@ const AdminLogin = () => {
               className="h-14 rounded-2xl bg-white/5 border-white/10 text-white focus-visible:ring-red-500 placeholder:text-slate-700" 
               placeholder="••••••••"
               required 
+              data-testid="admin-password-input"
             />
           </div>
 
@@ -85,6 +87,7 @@ const AdminLogin = () => {
             type="submit"
             disabled={isLoading}
             className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-lg shadow-2xl shadow-red-900/20 flex gap-2"
+            data-testid="admin-submit-button"
           >
             {isLoading ? "VÉRIFICATION..." : "DÉVERROUILLER"}
             <ArrowRight size={20} />

@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
     const { id, ...data } = req.body;
 
     // Check permissions: Admin can update anyone, Member can only update themselves
-    if (requester.role !== 'Admin' && requester.id !== id) {
+    if (requester.role !== 'Admin' && (!requester.id || requester.id !== id)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
