@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
 import { showSuccess, showError } from '@/utils/toast';
-import { apiService } from '@/services/api';
 import ImageUploader, { type UploadedImage } from './ImageUploader';
 
 interface ProductForm {
@@ -30,7 +29,7 @@ const EMPTY_FORM: ProductForm = {
 };
 
 const ShopManagement = () => {
-  const { products, deleteProduct, addProduct, primaryColor } = useApp();
+  const { products, deleteProduct, addProduct, updateProduct, primaryColor } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
@@ -104,20 +103,20 @@ const ShopManagement = () => {
 
     try {
       if (editId) {
-        await apiService.updateUser({ id: editId, ...productData } as Parameters<typeof apiService.updateUser>[0]);
+        await updateProduct(editId, productData);
+        showSuccess(`${form.name} mis à jour ✅`);
       } else {
-        await apiService.addProduct(productData);
+        await addProduct(productData);
+        showSuccess(`${form.name} ajouté à la boutique ✅`);
       }
-      addProduct(productData);
-      showSuccess(editId ? `${form.name} mis à jour ✅` : `${form.name} ajouté à la boutique ✅`);
-    } catch {
-      addProduct(productData);
-      showSuccess(editId ? `${form.name} mis à jour (local) ✅` : `${form.name} ajouté (local) ✅`);
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      setUploadedImages([]);
+      setEditId(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      showError(`Échec: ${msg}`);
     }
-    setShowForm(false);
-    setForm(EMPTY_FORM);
-    setUploadedImages([]);
-    setEditId(null);
   };
 
   const handleDelete = (id: number, name: string) => {

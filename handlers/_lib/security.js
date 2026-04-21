@@ -1,10 +1,8 @@
 // ============================================================
-// SECURITY MIDDLEWARE — Protection contre les outils de pentest
-// curl, Burp Suite, sqlmap, nikto, dirbuster, etc.
+// SECURITY MIDDLEWARE — Protection anti-pentest + DoS/DDoS
 // ============================================================
 
 const db = require('./db');
-const crypto = require('crypto');
 
 // ─── 1. USER-AGENT BLACKLIST ────────────────────────────────
 const BLOCKED_UA_PATTERNS = [
@@ -41,15 +39,24 @@ const BLOCKED_UA_PATTERNS = [
   /arachni/i,
   /havij/i,
   /httperf/i,
-  /ab\//i,           // Apache Bench
+  /ab\//i,
   /siege\//i,
   /wrk\//i,
   /hey\//i,
   /vegeta/i,
-  /^-$/,             // UA vide ou tiret
+  /^-$/,
+  /^$/,           // UA complètement vide
+  /flood/i,
+  /stress/i,
+  /ddos/i,
+  /loic/i,        // Low Orbit Ion Cannon
+  /hoic/i,        // High Orbit Ion Cannon
+  /slowloris/i,
+  /r-u-dead-yet/i,
+  /torshammer/i,
 ];
 
-// ─── 2. PAYLOAD MALVEILLANT — SQLi / XSS / Path Traversal ──
+// ─── 2. PAYLOAD MALVEILLANT ─────────────────────────────────
 const MALICIOUS_PATTERNS = [
   // SQL Injection
   /(\bUNION\b.*\bSELECT\b|\bSELECT\b.*\bFROM\b|\bDROP\b.*\bTABLE\b|\bINSERT\b.*\bINTO\b|\bDELETE\b.*\bFROM\b)/i,
@@ -67,43 +74,49 @@ const MALICIOUS_PATTERNS = [
   /(file:\/\/|dict:\/\/|gopher:\/\/|ldap:\/\/|ftp:\/\/)/i,
 ];
 
-// ─── 3. HONEYPOT ROUTES — pièges pour scanners ─────────────
+// ─── 3. HONEYPOT ROUTES ─────────────────────────────────────
 const HONEYPOT_PATHS = [
-  '/api/admin/config',
-  '/api/admin/env',
-  '/api/admin/debug',
-  '/api/admin/backup',
-  '/api/admin/shell',
-  '/api/admin/cmd',
-  '/api/admin/exec',
-  '/api/admin/eval',
-  '/api/config',
-  '/api/env',
-  '/api/debug',
-  '/api/test',
-  '/api/backup',
-  '/api/phpinfo',
-  '/api/.env',
-  '/api/wp-admin',
-  '/api/wp-login',
-  '/api/phpmyadmin',
-  '/api/adminer',
-  '/api/console',
-  '/api/shell',
-  '/api/cmd',
-  '/api/exec',
-  '/api/eval',
-  '/api/v0',
-  '/api/v99',
-  '/api/swagger',
-  '/api/graphql',
-  '/api/introspect',
-  '/.git/config',
-  '/etc/passwd',
-  '/proc/self/environ',
+  '/api/admin/config', '/api/admin/env', '/api/admin/debug',
+  '/api/admin/backup', '/api/admin/shell', '/api/admin/cmd',
+  '/api/admin/exec', '/api/admin/eval',
+  '/api/config', '/api/env', '/api/debug', '/api/test',
+  '/api/backup', '/api/phpinfo', '/api/.env',
+  '/api/wp-admin', '/api/wp-login', '/api/phpmyadmin',
+  '/api/adminer', '/api/console', '/api/shell',
+  '/api/cmd', '/api/exec', '/api/eval',
+  '/api/v0', '/api/v99', '/api/swagger',
+  '/api/graphql', '/api/introspect',
+  '/.git/config', '/etc/passwd', '/proc/self/environ',
 ];
 
-// ─── 4. HELPERS ─────────────────────────────────────────────
+// ─── 4. SEUILS DoS/DDoS ─────────────────────────────────────
+const DOS_THRESHOLDS = {
+  // Requêtes totales par IP sur 10 secondes → flood
+  floodRequestsPerWindow: 50,
+  floodWindowMs: 10 * 1000,
+
+  // Requêtes totales par IP sur 1 minute → DDoS soutenu
+  sustainedRequestsPerWindow: 200,
+  sustainedWindowMs: 60 * 1000,
+
+  // Paths distincts en 1 minute → scan d'endpoints
+  scanDistinctPaths: 15,
+  scanWindowMs: 60 * 1000,
+
+  // Erreurs 4xx consécutives → fuzzing/brute-force
+  errorThreshold: 20,
+  errorWindowMs: 5 * 60 * 1000,
+};
+
+// Durées de ban DoS (progressives)
+const DOS_BAN_DURATIONS = {
+  flood:     2  * 60 * 60 * 1000,  // flood → 2h
+  sustained: 6  * 60 * 60 * 1000,  // DDoS soutenu → 6h
+  scan:      1  * 60 * 60 * 1000,  // scan → 1h
+  error:     30 * 60 * 1000,        // fuzzing → 30min
+};
+
+// ─── 5. HELPERS ─────────────────────────────────────────────
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
   if (forwarded) return forwarded.split(',')[0].trim();
@@ -114,7 +127,6 @@ function getUA(req) {
   return req.headers['user-agent'] || '';
 }
 
-// Log une tentative suspecte en DB (non-bloquant)
 async function logThreat(ip, type, detail, req) {
   try {
     await db.query(
@@ -124,18 +136,19 @@ async function logThreat(ip, type, detail, req) {
       [ip, type, detail.substring(0, 500), req.url || '', req.method || '', getUA(req).substring(0, 300)]
     );
   } catch {
-    // Fail silently — ne pas bloquer la réponse pour un log raté
+    // Fail silently
   }
 }
 
-// Bannir une IP temporairement (1 heure par défaut)
 async function banIp(ip, reason, durationMs = 60 * 60 * 1000) {
   try {
     const expiresAt = new Date(Date.now() + durationMs);
     await db.query(
       `INSERT INTO ip_bans (ip, reason, expires_at)
        VALUES ($1, $2, $3)
-       ON CONFLICT (ip) DO UPDATE SET reason = $2, expires_at = $3`,
+       ON CONFLICT (ip) DO UPDATE
+         SET reason = EXCLUDED.reason,
+             expires_at = GREATEST(ip_bans.expires_at, EXCLUDED.expires_at)`,
       [ip, reason.substring(0, 200), expiresAt]
     );
   } catch {
@@ -143,69 +156,115 @@ async function banIp(ip, reason, durationMs = 60 * 60 * 1000) {
   }
 }
 
-// Vérifier si une IP est bannie
 async function isIpBanned(ip) {
   try {
     const { rows } = await db.query(
-      `SELECT 1 FROM ip_bans WHERE ip = $1 AND expires_at > NOW()`,
+      `SELECT expires_at FROM ip_bans WHERE ip = $1 AND expires_at > NOW()`,
       [ip]
     );
-    return rows.length > 0;
+    return rows.length > 0 ? rows[0].expires_at : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── 6. DÉTECTEURS DoS/DDoS ─────────────────────────────────
+
+// Flood : trop de requêtes en très peu de temps (burst)
+async function detectFlood(ip) {
+  try {
+    const windowStart = new Date(Date.now() - DOS_THRESHOLDS.floodWindowMs);
+    const { rows } = await db.query(
+      `SELECT COUNT(*) as cnt FROM rate_limit_log
+       WHERE ip = $1 AND created_at > $2`,
+      [ip, windowStart]
+    );
+    return parseInt(rows[0]?.cnt || 0, 10) >= DOS_THRESHOLDS.floodRequestsPerWindow;
   } catch {
     return false;
   }
 }
 
-// ─── 5. SCAN DETECTOR — détecte les scans d'endpoints ──────
+// DDoS soutenu : volume élevé sur une fenêtre plus longue
+async function detectSustainedDDoS(ip) {
+  try {
+    const windowStart = new Date(Date.now() - DOS_THRESHOLDS.sustainedWindowMs);
+    const { rows } = await db.query(
+      `SELECT COUNT(*) as cnt FROM rate_limit_log
+       WHERE ip = $1 AND created_at > $2`,
+      [ip, windowStart]
+    );
+    return parseInt(rows[0]?.cnt || 0, 10) >= DOS_THRESHOLDS.sustainedRequestsPerWindow;
+  } catch {
+    return false;
+  }
+}
+
+// Scan d'endpoints : trop de paths distincts
 async function detectScan(ip) {
   try {
-    const windowStart = new Date(Date.now() - 60 * 1000); // 1 minute
+    const windowStart = new Date(Date.now() - DOS_THRESHOLDS.scanWindowMs);
     const { rows } = await db.query(
       `SELECT COUNT(DISTINCT path) as cnt FROM security_log
        WHERE ip = $1 AND created_at > $2`,
       [ip, windowStart]
     );
-    const distinctPaths = parseInt(rows[0]?.cnt || 0, 10);
-    // Plus de 15 paths différents en 1 minute = scan
-    return distinctPaths >= 15;
+    return parseInt(rows[0]?.cnt || 0, 10) >= DOS_THRESHOLDS.scanDistinctPaths;
   } catch {
     return false;
   }
 }
 
-// ─── 6. MIDDLEWARE PRINCIPAL ────────────────────────────────
+// Fuzzing : trop d'erreurs 4xx
+async function detectFuzzing(ip) {
+  try {
+    const windowStart = new Date(Date.now() - DOS_THRESHOLDS.errorWindowMs);
+    const { rows } = await db.query(
+      `SELECT COUNT(*) as cnt FROM security_log
+       WHERE ip = $1 AND threat_type IN ('NOT_FOUND', 'AUTH_FAILURE', 'MALICIOUS_PAYLOAD')
+         AND created_at > $2`,
+      [ip, windowStart]
+    );
+    return parseInt(rows[0]?.cnt || 0, 10) >= DOS_THRESHOLDS.errorThreshold;
+  } catch {
+    return false;
+  }
+}
+
+// ─── 7. MIDDLEWARE PRINCIPAL ─────────────────────────────────
 async function securityMiddleware(req, res) {
   const ip = getClientIp(req);
   const ua = getUA(req);
   const path = req.url || '';
   const method = req.method || 'GET';
 
-  // 6a. Vérifier ban IP
-  const banned = await isIpBanned(ip);
-  if (banned) {
+  // 7a. Vérifier ban IP
+  const bannedUntil = await isIpBanned(ip);
+  if (bannedUntil) {
+    const retryAfter = Math.ceil((new Date(bannedUntil) - Date.now()) / 1000);
+    res.setHeader('Retry-After', String(Math.max(0, retryAfter)));
     res.status(403).json({ error: 'Access denied' });
-    return true; // bloqué
+    return true;
   }
 
-  // 6b. Honeypot — toute requête sur ces paths = ban immédiat
+  // 7b. Honeypot — ban immédiat 24h
   const isHoneypot = HONEYPOT_PATHS.some(p => path.toLowerCase().startsWith(p.toLowerCase()));
   if (isHoneypot) {
     await logThreat(ip, 'HONEYPOT', `Hit honeypot: ${path}`, req);
-    await banIp(ip, `Honeypot hit: ${path}`, 24 * 60 * 60 * 1000); // 24h
+    await banIp(ip, `Honeypot hit: ${path}`, 24 * 60 * 60 * 1000);
     res.status(404).json({ error: 'Not found' });
     return true;
   }
 
-  // 6c. User-Agent bloqué
+  // 7c. User-Agent bloqué
   const isBlockedUA = BLOCKED_UA_PATTERNS.some(p => p.test(ua));
   if (isBlockedUA && process.env.NODE_ENV === 'production') {
     await logThreat(ip, 'BLOCKED_UA', `Blocked UA: ${ua}`, req);
-    // Pas de ban immédiat — juste bloquer la requête
     res.status(403).json({ error: 'Access denied' });
     return true;
   }
 
-  // 6d. Payload malveillant — scanner le body, query, et URL
+  // 7d. Payload malveillant
   const toScan = [
     path,
     JSON.stringify(req.body || {}),
@@ -215,21 +274,12 @@ async function securityMiddleware(req, res) {
   const isMalicious = MALICIOUS_PATTERNS.some(p => p.test(toScan));
   if (isMalicious) {
     await logThreat(ip, 'MALICIOUS_PAYLOAD', `Suspicious payload on ${path}`, req);
-    await banIp(ip, 'Malicious payload detected', 2 * 60 * 60 * 1000); // 2h
+    await banIp(ip, 'Malicious payload detected', 2 * 60 * 60 * 1000);
     res.status(400).json({ error: 'Invalid request' });
     return true;
   }
 
-  // 6e. Détection de scan (trop de paths différents)
-  const isScanning = await detectScan(ip);
-  if (isScanning) {
-    await logThreat(ip, 'SCAN_DETECTED', 'Endpoint scanning detected', req);
-    await banIp(ip, 'Endpoint scanning', 60 * 60 * 1000); // 1h
-    res.status(429).json({ error: 'Too many requests' });
-    return true;
-  }
-
-  // 6f. Méthodes HTTP non standard
+  // 7e. Méthodes HTTP non standard
   const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
   if (!ALLOWED_METHODS.includes(method.toUpperCase())) {
     await logThreat(ip, 'INVALID_METHOD', `Method: ${method}`, req);
@@ -237,22 +287,62 @@ async function securityMiddleware(req, res) {
     return true;
   }
 
-  // 6g. Taille de body excessive (protection DoS)
+  // 7f. Taille de body excessive
   const contentLength = parseInt(req.headers['content-length'] || '0', 10);
-  if (contentLength > 1 * 1024 * 1024) { // 1MB max
+  if (contentLength > 1 * 1024 * 1024) {
     await logThreat(ip, 'LARGE_PAYLOAD', `Content-Length: ${contentLength}`, req);
     res.status(413).json({ error: 'Payload too large' });
+    return true;
+  }
+
+  // 7g. Détection flood (DoS burst)
+  const isFlooding = await detectFlood(ip);
+  if (isFlooding) {
+    await logThreat(ip, 'DOS_FLOOD', `Flood detected: ${path}`, req);
+    await banIp(ip, 'DoS flood detected', DOS_BAN_DURATIONS.flood);
+    res.setHeader('Retry-After', String(DOS_BAN_DURATIONS.flood / 1000));
+    res.status(429).json({ error: 'Too many requests' });
+    return true;
+  }
+
+  // 7h. Détection DDoS soutenu
+  const isSustained = await detectSustainedDDoS(ip);
+  if (isSustained) {
+    await logThreat(ip, 'DDOS_SUSTAINED', `Sustained DDoS from ${ip}`, req);
+    await banIp(ip, 'Sustained DDoS detected', DOS_BAN_DURATIONS.sustained);
+    res.setHeader('Retry-After', String(DOS_BAN_DURATIONS.sustained / 1000));
+    res.status(429).json({ error: 'Too many requests' });
+    return true;
+  }
+
+  // 7i. Détection scan d'endpoints
+  const isScanning = await detectScan(ip);
+  if (isScanning) {
+    await logThreat(ip, 'SCAN_DETECTED', 'Endpoint scanning detected', req);
+    await banIp(ip, 'Endpoint scanning', DOS_BAN_DURATIONS.scan);
+    res.setHeader('Retry-After', String(DOS_BAN_DURATIONS.scan / 1000));
+    res.status(429).json({ error: 'Too many requests' });
+    return true;
+  }
+
+  // 7j. Détection fuzzing (trop d'erreurs)
+  const isFuzzing = await detectFuzzing(ip);
+  if (isFuzzing) {
+    await logThreat(ip, 'FUZZING_DETECTED', 'Fuzzing/brute-force detected', req);
+    await banIp(ip, 'Fuzzing detected', DOS_BAN_DURATIONS.error);
+    res.setHeader('Retry-After', String(DOS_BAN_DURATIONS.error / 1000));
+    res.status(429).json({ error: 'Too many requests' });
     return true;
   }
 
   return false; // pas bloqué
 }
 
-// ─── 7. MIDDLEWARE ERREURS 401/403 — auto-ban après abus ───
+// ─── 8. SUIVI DES ÉCHECS D'AUTH ──────────────────────────────
 async function trackAuthFailure(req) {
   const ip = getClientIp(req);
   try {
-    const windowStart = new Date(Date.now() - 10 * 60 * 1000); // 10 min
+    const windowStart = new Date(Date.now() - 10 * 60 * 1000);
     const { rows } = await db.query(
       `SELECT COUNT(*) as cnt FROM security_log
        WHERE ip = $1 AND threat_type = 'AUTH_FAILURE' AND created_at > $2`,
@@ -273,9 +363,16 @@ async function logAuthFailure(req) {
   await trackAuthFailure(req);
 }
 
+// Log une erreur 404 (pour la détection de fuzzing)
+async function logNotFound(req) {
+  const ip = getClientIp(req);
+  await logThreat(ip, 'NOT_FOUND', `404 on ${req.url}`, req);
+}
+
 module.exports = {
   securityMiddleware,
   logAuthFailure,
+  logNotFound,
   banIp,
   isIpBanned,
   getClientIp,

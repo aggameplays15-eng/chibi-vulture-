@@ -73,7 +73,7 @@ const AdminLogin = () => {
       const ok = await adminVerifyOtp(code);
       if (ok) {
         showSuccess("Identité Admin confirmée. Bienvenue.");
-        navigate('/admin');
+        navigate('/goated-panel');
       } else {
         showError("Code invalide ou expiré.");
         setOtp(['', '', '', '', '', '']);

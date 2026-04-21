@@ -1,6 +1,6 @@
 // API handler for delivery tracking
 // GET /api/orders/:orderId/tracking - Get delivery tracking for an order
-// POST /api/delivery-tracking - Create tracking event
+// POST /api/delivery-tracking - Create tracking event (admin only)
 
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
@@ -11,57 +11,49 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method === 'GET') {
+    // Auth required — user can only see their own order, admin can see all
+    const user = await auth.verify(req);
+    if (!user) return res.status(401).json({ error: 'Auth required' });
+
+    const orderId = req.query.orderId;
+    if (!orderId || isNaN(Number(orderId))) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
     try {
-      const orderId = req.query.orderId;
-
-      if (!orderId) {
-        return res.status(400).json({ error: 'orderId is required' });
-      }
-
-      // Real database query for order
-      const orderQuery = `
-        SELECT 
-          id,
-          tracking_number,
-          carrier,
-          estimated_delivery,
-          actual_delivery,
-          status
-        FROM orders
-        WHERE id = $1
-      `;
-
-      // Real database query for tracking events
-      const eventsQuery = `
-        SELECT 
-          status,
-          description,
-          location,
-          carrier,
-          tracking_number,
-          created_at
-        FROM delivery_tracking_events
-        WHERE order_id = $1
-        ORDER BY created_at ASC
-      `;
-
-      const orderResult = await db.query(orderQuery, [orderId]);
-      const eventsResult = await db.query(eventsQuery, [orderId]);
+      const orderResult = await db.query(
+        `SELECT id, user_handle, tracking_number, carrier, estimated_delivery, actual_delivery, status
+         FROM orders WHERE id = $1`,
+        [Number(orderId)]
+      );
 
       if (!orderResult.rows[0]) {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      const tracking = {
-        orderId: orderResult.rows[0].id,
-        trackingNumber: orderResult.rows[0].tracking_number,
-        carrier: orderResult.rows[0].carrier,
-        currentStatus: orderResult.rows[0].status,
-        estimatedDelivery: orderResult.rows[0].estimated_delivery,
-        events: eventsResult.rows || [],
-      };
+      const order = orderResult.rows[0];
 
-      res.status(200).json(tracking);
+      // Non-admin users can only see their own orders
+      if (user.role !== 'Admin' && order.user_handle !== user.handle) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      const eventsResult = await db.query(
+        `SELECT status, description, location, carrier, tracking_number, created_at
+         FROM delivery_tracking_events
+         WHERE order_id = $1
+         ORDER BY created_at ASC`,
+        [Number(orderId)]
+      );
+
+      res.status(200).json({
+        orderId: order.id,
+        trackingNumber: order.tracking_number,
+        carrier: order.carrier,
+        currentStatus: order.status,
+        estimatedDelivery: order.estimated_delivery,
+        events: eventsResult.rows || [],
+      });
 
     } catch (error) {
       console.error('Delivery tracking error:', error);
@@ -69,30 +61,32 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'POST') {
+    // Admin only — create tracking event
+    const user = await auth.verify(req);
+    if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { order_id, status, description, location, carrier, tracking_number } = req.body;
+
+    if (!order_id || !status || !description) {
+      return res.status(400).json({ error: 'Missing required fields: order_id, status, description' });
+    }
+
     try {
-      const { order_id, status, description, location, carrier, tracking_number } = req.body;
+      await db.query(
+        `INSERT INTO delivery_tracking_events (order_id, status, description, location, carrier, tracking_number)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order_id, status, description, location || null, carrier || null, tracking_number || null]
+      );
 
-      if (!order_id || !status || !description) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      // Insert real tracking event into database
-      const insertEventQuery = `
-        INSERT INTO delivery_tracking_events (order_id, status, description, location, carrier, tracking_number)
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `;
-
-      await db.query(insertEventQuery, [order_id, status, description, location, carrier, tracking_number]);
-
-      // Update order status if needed
-      if (tracking_number) {
-        const updateOrderQuery = `
-          UPDATE orders
-          SET tracking_number = $1, carrier = $2, status = $3
-          WHERE id = $4
-        `;
-        await db.query(updateOrderQuery, [tracking_number, carrier, status, order_id]);
-      }
+      // Update order status and tracking info
+      await db.query(
+        `UPDATE orders SET status = $1
+         ${tracking_number ? ', tracking_number = $3, carrier = $4' : ''}
+         WHERE id = $2`,
+        tracking_number
+          ? [status, order_id, tracking_number, carrier || null]
+          : [status, order_id]
+      );
 
       // Email de mise à jour au client (fire & forget)
       try {
@@ -121,6 +115,7 @@ module.exports = async (req, res) => {
       console.error('Create tracking event error:', error);
       res.status(500).json({ error: 'Failed to create tracking event' });
     }
+
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }

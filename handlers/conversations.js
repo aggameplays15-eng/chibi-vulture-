@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method !== 'GET') return res.status(405).end();
 
-  const user = auth.verify(req);
+  const user = await auth.verify(req);
   if (!user) return res.status(401).json({ error: 'Auth required' });
 
   try {

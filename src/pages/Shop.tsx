@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { ShoppingCart, Search, Filter, ArrowRight } from 'lucide-react';
@@ -11,14 +11,29 @@ import { useApp } from '@/context/AppContext';
 import { showSuccess } from '@/utils/toast';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-const CATEGORIES = ["Tous", "Vêtements", "Accessoires", "Art"];
+import { apiService } from '@/services/api';
 
 const Shop = () => {
   const navigate = useNavigate();
   const { cart, addToCart, primaryColor, products } = useApp();
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dbCategories, setDbCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiService.getProductCategories()
+      .then((cats: { name: string }[]) => {
+        if (cats?.length) setDbCategories(cats.map((c: { name: string }) => c.name));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Catégories dynamiques : celles de la DB + celles utilisées dans les produits existants
+  const categories = useMemo(() => {
+    const fromProducts = products.map(p => p.category).filter(Boolean);
+    const all = [...new Set([...dbCategories, ...fromProducts])].sort();
+    return ["Tous", ...all];
+  }, [products, dbCategories]);
 
   const filteredProducts = products.filter(p => 
     (activeCategory === "Tous" || p.category === activeCategory) &&
@@ -65,7 +80,7 @@ const Shop = () => {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <button 
               key={cat} 
               onClick={() => setActiveCategory(cat)}

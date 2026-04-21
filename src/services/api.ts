@@ -79,7 +79,22 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(productData),
     });
-    if (!response.ok) throw new Error('Failed to add product');
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error((err as { error?: string })?.error || 'Failed to add product');
+    }
+    return safeJson(response);
+  },
+
+  updateProduct: async (id: number, productData: ProductData) => {
+    const response = await fetchWithAuth(`/api/products?id=${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(productData),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error((err as { error?: string })?.error || 'Failed to update product');
+    }
     return safeJson(response);
   },
 
@@ -304,6 +319,19 @@ export const apiService = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Code invalide');
+    }
+    return safeJson(response); // { user, token }
+  },
+
+  loginVerifyOtp: async (email: string, code: string) => {
+    const response = await fetch('/api/login-verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
     });
     if (!response.ok) {
       const err = await safeJson(response);

@@ -1,9 +1,29 @@
 // Main API router for Vercel Serverless Functions
 // Routes requests to appropriate handlers based on path
 
-const { securityMiddleware } = require('../handlers/_lib/security');
+const { securityMiddleware, logNotFound } = require('../handlers/_lib/security');
+const { cleanupRateLimitLogs } = require('../handlers/_lib/rateLimit');
+
+// Nettoyage périodique (1 chance sur 50 par requête pour ne pas surcharger)
+if (Math.random() < 0.02) cleanupRateLimitLogs().catch(() => {});
+
+// Timeout sur les handlers pour éviter les attaques Slowloris / connexions pendantes
+const HANDLER_TIMEOUT_MS = 15000;
+function withTimeout(fn, req, res) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (!res.headersSent) res.status(503).json({ error: 'Service unavailable' });
+      resolve();
+    }, HANDLER_TIMEOUT_MS);
+    Promise.resolve(fn(req, res))
+      .then(resolve)
+      .catch(reject)
+      .finally(() => clearTimeout(timer));
+  });
+}
 
 const loginHandler = require('../handlers/login');
+const loginVerifyOtpHandler = require('../handlers/login-verify-otp');
 const adminLoginHandler = require('../handlers/admin-login');
 const adminVerifyOtpHandler = require('../handlers/admin-verify-otp');
 const usersHandler = require('../handlers/users');
@@ -31,6 +51,7 @@ const manifestHandler = require('../handlers/manifest');
 // Route mapping
 const routes = {
   '/api/login': loginHandler,
+  '/api/login-verify-otp': loginVerifyOtpHandler,
   '/api/admin-login': adminLoginHandler,
   '/api/admin-verify-otp': adminVerifyOtpHandler,
   '/api/users': usersHandler,
@@ -98,7 +119,7 @@ module.exports = async (req, res) => {
   
   if (handler) {
     try {
-      await handler(req, res);
+      await withTimeout(handler, req, res);
     } catch (error) {
       console.error(`Error in handler for ${pathname}:`, error);
       if (!res.headersSent) {
@@ -106,7 +127,8 @@ module.exports = async (req, res) => {
       }
     }
   } else {
-    // Ne pas exposer la liste des routes disponibles
+    // Log 404 pour la détection de fuzzing, sans exposer les routes
+    await logNotFound(req);
     res.status(404).json({ error: 'Not found' });
   }
 };

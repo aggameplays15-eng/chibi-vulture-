@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'POST') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { post_id, text } = req.body;
@@ -68,7 +68,7 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'DELETE') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { id } = req.query;

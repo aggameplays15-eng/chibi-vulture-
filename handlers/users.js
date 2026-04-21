@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
 
   // GET — liste des utilisateurs (admin only)
   if (req.method === 'GET') {
-    const admin = auth.verify(req);
+    const admin = await auth.verify(req);
     if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 
     try {
@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
   // PATCH — mise à jour d'un utilisateur
   } else if (req.method === 'PATCH') {
-    const requester = auth.verify(req);
+    const requester = await auth.verify(req);
     if (!requester) return res.status(401).json({ error: 'Auth required' });
 
     const { id, ...data } = req.body;
@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
 
   // DELETE — suppression (admin only, ne peut pas supprimer l'admin .env)
   } else if (req.method === 'DELETE') {
-    const requester = auth.verify(req);
+    const requester = await auth.verify(req);
     if (!requester || requester.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { id } = req.query;

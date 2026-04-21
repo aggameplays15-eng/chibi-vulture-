@@ -133,7 +133,7 @@ const Index = () => {
         </div>
 
         <div className="pt-4">
-          <Link to="/admin" className="text-[9px] text-gray-300 hover:text-gray-500 font-black uppercase tracking-[0.4em] transition-colors">
+          <Link to="/goated" className="text-[9px] text-gray-300 hover:text-gray-500 font-black uppercase tracking-[0.4em] transition-colors">
             Admin Panel
           </Link>
         </div>

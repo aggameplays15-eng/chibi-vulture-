@@ -47,7 +47,8 @@ interface DataContextType {
   favoritePosts: number[];
   favoriteProducts: number[];
   isLoading: boolean;
-  addProduct: (product: Omit<Product, 'id'>) => void;
+  updateProduct: (id: number, product: Omit<Product, 'id'>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: number) => void;
   deletePost: (id: number) => void;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Promise<string>;
@@ -146,8 +147,26 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setFavoriteProducts(prev => prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]);
   }, []);
 
-  const addProduct = useCallback((p: Omit<Product, 'id'>) => {
-    setProducts(prev => [...prev, { ...p, id: Date.now() }]);
+  const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
+    try {
+      const result = await apiService.addProduct(p);
+      const newProduct = result ?? { ...p, id: Date.now() };
+      setProducts(prev => [...prev, newProduct]);
+    } catch (err) {
+      console.error('Failed to add product:', err);
+      throw err;
+    }
+  }, []);
+
+  const updateProduct = useCallback(async (id: number, p: Omit<Product, 'id'>) => {
+    try {
+      const result = await apiService.updateProduct(id, p);
+      const updated = result ?? { ...p, id };
+      setProducts(prev => prev.map(prod => prod.id === id ? updated : prod));
+    } catch (err) {
+      console.error('Failed to update product:', err);
+      throw err;
+    }
   }, []);
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date' | 'status'>) => {
@@ -181,12 +200,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const contextValue = useMemo(() => ({
     products, posts, orders,
     likedPosts, favoritePosts, favoriteProducts, isLoading,
-    addProduct, deleteProduct, deletePost, addOrder,
+    addProduct, updateProduct, deleteProduct, deletePost, addOrder,
     toggleLike, toggleFavoritePost, toggleFavoriteProduct
   }), [
     products, posts, orders,
     likedPosts, favoritePosts, favoriteProducts, isLoading,
-    addProduct, deleteProduct, deletePost, addOrder,
+    addProduct, updateProduct, deleteProduct, deletePost, addOrder,
     toggleLike, toggleFavoritePost, toggleFavoriteProduct
   ]);
 

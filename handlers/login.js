@@ -1,13 +1,35 @@
+const crypto = require('crypto');
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('./_lib/rateLimit');
 const { handleCors } = require('./_lib/cors');
 const { logAuthFailure } = require('./_lib/security');
+const { sendEmail } = require('./_lib/email');
+
+// Generate a 6-digit OTP, store its hash, return the plain code
+async function issueUserOtp(userId) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Invalidate any previous unused OTPs for this user
+  await db.query(
+    `UPDATE user_otp SET used = TRUE WHERE user_id = $1 AND used = FALSE`,
+    [userId]
+  );
+
+  await db.query(
+    `INSERT INTO user_otp (user_id, code_hash, expires_at) VALUES ($1, $2, $3)`,
+    [userId, codeHash, expiresAt]
+  );
+
+  return code;
+}
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
-  
+
   if (req.method !== 'POST') return res.status(405).end();
 
   // Rate limiting
@@ -16,7 +38,7 @@ module.exports = async (req, res) => {
     res.setHeader(key, value);
   });
   if (!limit.allowed) {
-    return res.status(429).json({ 
+    return res.status(429).json({
       error: 'Too many login attempts. Please try again later.',
       retryAfter: limit.resetInSeconds
     });
@@ -41,30 +63,28 @@ module.exports = async (req, res) => {
 
     const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password || '');
-    
+
     if (!isMatch) {
       await logAuthFailure(req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Sign JWT token
-    const token = auth.signToken(user);
+    // Credentials OK — issue OTP
+    const code = await issueUserOtp(user.id);
 
-    // Filter sensitive data and map snake_case to camelCase
-    const { password: _, ...safeUser } = user;
-    const mappedUser = {
-      ...safeUser,
-      avatarColor: safeUser.avatar_color,
-      avatarImage: safeUser.avatar_image,
-      isApproved: safeUser.is_approved
-    };
+    // Respond immediately, send email async
+    res.status(200).json({ otpRequired: true });
 
-    res.status(200).json({
-      user: mappedUser,
-      token
+    sendEmail(user.email, 'userOtp', { name: user.name, code }).then(sent => {
+      if (!sent) {
+        console.warn(`[Login OTP] Email non envoyé à ${user.email} — code: ${code}`);
+      }
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('Login error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };

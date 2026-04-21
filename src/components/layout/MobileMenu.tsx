@@ -99,7 +99,7 @@ const MobileMenu = () => {
             {user.role === "Admin" && (
               <DrawerClose asChild>
                 <button
-                  onClick={() => navigate('/admin')}
+                  onClick={() => navigate('/goated-panel')}
                   className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 transition-colors group mt-2"
                 >
                   <div className="p-2 rounded-xl bg-white text-purple-600">

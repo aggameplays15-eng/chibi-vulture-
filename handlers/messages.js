@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   
   if (req.method === 'POST') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { receiver_handle, text } = req.body;
@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
     }
   } else if (req.method === 'GET') {
     // SECURITY FIX: Require authentication — anyone could read any conversation without this check.
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { user1, user2 } = req.query;

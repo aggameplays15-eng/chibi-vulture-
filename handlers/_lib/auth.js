@@ -9,7 +9,8 @@ if (!SECRET || SECRET.length < 32) {
 }
 
 module.exports = {
-  verify: (req) => {
+  // Async — vérifie la signature ET la révocation DB
+  verify: async (req) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
 
@@ -17,6 +18,13 @@ module.exports = {
 
     try {
       const decoded = jwt.verify(token, SECRET);
+      // Vérifier si le token a été révoqué (logout)
+      const hash = require('crypto').createHash('sha256').update(token).digest('hex');
+      const { rows } = await db.query(
+        `SELECT 1 FROM revoked_tokens WHERE token_hash = $1 AND expires_at > NOW()`,
+        [hash]
+      );
+      if (rows.length > 0) return false; // token révoqué
       return decoded;
     } catch {
       return false;

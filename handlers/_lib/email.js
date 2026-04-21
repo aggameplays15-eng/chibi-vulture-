@@ -172,7 +172,7 @@ const templates = {
             <td style="padding:10px 0;font-weight:700;color:${PRIMARY};text-align:right;">${Number(total).toLocaleString('fr-FR')} GNF</td>
           </tr>
         </table>
-        ${btn('Gérer la commande', `${APP_URL}/admin`)}
+        ${btn('Gérer la commande', `${APP_URL}/goated-panel`)}
       `),
     };
   },
@@ -305,7 +305,7 @@ const templates = {
         <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
       </div>
       <p style="color:#555;font-size:15px;margin:0 0 24px;">Ce membre attend ton approbation pour accéder à la plateforme.</p>
-      ${btn('Gérer les membres', `${APP_URL}/admin`)}
+      ${btn('Gérer les membres', `${APP_URL}/goated-panel`)}
     `),
   }),
 
@@ -319,11 +319,31 @@ const templates = {
         <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
       </div>
       <p style="color:#555;font-size:14px;margin:0;">Ce log est généré automatiquement à chaque bannissement.</p>
-      ${btn('Gérer les membres', `${APP_URL}/admin`)}
+      ${btn('Gérer les membres', `${APP_URL}/goated-panel`)}
     `),
   }),
 
-  // 12. Admin 2FA OTP
+  // 12. User 2FA OTP (connexion)
+  userOtp: ({ name, code }) => ({
+    subject: `🔐 Ton code de connexion — ${APP_NAME}`,
+    html: baseTemplate('Code de connexion', `
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Vérification en deux étapes 🔐</h2>
+      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Bonjour <strong>${name}</strong>, une tentative de connexion à ton compte a été détectée.
+        Utilise le code ci-dessous pour finaliser ta connexion.
+      </p>
+      <div style="text-align:center;padding:32px;background:#f9f9fb;border-radius:12px;margin-bottom:24px;">
+        <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Ton code</p>
+        <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:${DARK};">${code}</p>
+        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>10 minutes</strong></p>
+      </div>
+      <p style="color:#aaa;font-size:13px;margin:0;">
+        Si tu n'es pas à l'origine de cette tentative, ignore cet email et change ton mot de passe immédiatement.
+      </p>
+    `),
+  }),
+
+  // 13. Admin 2FA OTP
   adminOtp: ({ code }) => ({
     subject: `🔐 Code de vérification Admin — ${APP_NAME}`,
     html: baseTemplate('Code de vérification Admin', `

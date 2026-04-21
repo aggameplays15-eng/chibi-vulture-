@@ -291,3 +291,154 @@ test.describe('Pages statiques', () => {
     expect(res.ok()).toBeTruthy();
   });
 });
+
+// ─── 10. Admin — Ajout de produit ────────────────────────────────────────────
+
+test.describe('Admin — Ajout de produit', () => {
+  // Helper : se connecter en tant qu'admin et aller sur l'onglet shop
+  async function goToAdminShop(page: Page) {
+    await loginAsUser(page);
+    await page.goto('/admin');
+    await page.waitForTimeout(1500);
+    // Cliquer sur l'onglet "shop" (icône ShoppingBag)
+    await page.locator('[data-value="shop"], [data-radix-collection-item][value="shop"]').first().click();
+    // Fallback : cliquer le 2ème trigger de la TabsList
+    const triggers = page.locator('[role="tab"]');
+    if (await triggers.count() > 1) {
+      await triggers.nth(1).click();
+    }
+    await page.waitForTimeout(800);
+  }
+
+  test('le bouton "Nouveau Produit" est visible dans l\'onglet shop', async ({ page }) => {
+    await loginAsUser(page);
+    await page.goto('/admin');
+    await page.waitForTimeout(1500);
+    // Naviguer vers l'onglet shop (2ème tab)
+    const tabs = page.locator('[role="tab"]');
+    await tabs.nth(1).click();
+    await page.waitForTimeout(800);
+    await expect(page.getByRole('button', { name: /nouveau produit/i })).toBeVisible();
+  });
+
+  test('le formulaire d\'ajout s\'ouvre au clic sur "Nouveau Produit"', async ({ page }) => {
+    await loginAsUser(page);
+    await page.goto('/admin');
+    await page.waitForTimeout(1500);
+    const tabs = page.locator('[role="tab"]');
+    await tabs.nth(1).click();
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: /nouveau produit/i }).click();
+    // Le formulaire doit apparaître avec les champs requis
+    await expect(page.getByRole('button', { name: /ajouter le produit/i })).toBeVisible();
+  });
+
+  test('validation : soumettre un formulaire vide affiche des erreurs', async ({ page }) => {
+    await loginAsUser(page);
+    await page.goto('/admin');
+    await page.waitForTimeout(1500);
+    const tabs = page.locator('[role="tab"]');
+    await tabs.nth(1).click();
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: /nouveau produit/i }).click();
+    await page.getByRole('button', { name: /ajouter le produit/i }).click();
+    // Des messages d'erreur doivent apparaître
+    const errors = page.locator('p.text-rose-500, p[class*="rose"]');
+    await expect(errors.first()).toBeVisible();
+  });
+
+  test('ajout d\'un produit via l\'API admin réussit (POST /api/products)', async ({ request, page }) => {
+    // 1. Se connecter pour obtenir le token
+    const loginRes = await request.post('/api/login', {
+      data: { email: 'papicamara22@gmail.com', password: 'fantasangare2203' }
+    });
+    expect(loginRes.ok()).toBeTruthy();
+    const { token } = await loginRes.json();
+    expect(token).toBeTruthy();
+
+    // 2. Créer un produit via l'API
+    const productName = `Test Produit ${Date.now()}`;
+    const res = await request.post('/api/products', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        name: productName,
+        price: 15000,
+        image: 'https://api.dicebear.com/7.x/shapes/svg?seed=test',
+        category: 'Vêtements',
+        stock: 5,
+        featured: false,
+      }
+    });
+    expect(res.status()).toBe(201);
+    const product = await res.json();
+    expect(product.name).toBe(productName);
+    expect(product.price).toBe(15000);
+    expect(product.id).toBeTruthy();
+
+    // 3. Vérifier que le produit apparaît dans la liste
+    const listRes = await request.get('/api/products');
+    expect(listRes.ok()).toBeTruthy();
+    const products = await listRes.json();
+    const found = products.find((p: { id: number; name: string }) => p.id === product.id);
+    expect(found).toBeTruthy();
+    expect(found.name).toBe(productName);
+
+    // 4. Nettoyage — supprimer le produit de test
+    const delRes = await request.delete(`/api/products?id=${product.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    expect(delRes.ok()).toBeTruthy();
+  });
+
+  test('POST /api/products sans token retourne 403', async ({ request }) => {
+    const res = await request.post('/api/products', {
+      data: {
+        name: 'Produit non autorisé',
+        price: 1000,
+        image: 'https://example.com/img.jpg',
+        category: 'Test',
+        stock: 1,
+      }
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test('POST /api/products avec données invalides retourne 400', async ({ request }) => {
+    const loginRes = await request.post('/api/login', {
+      data: { email: 'papicamara22@gmail.com', password: 'fantasangare2203' }
+    });
+    const { token } = await loginRes.json();
+
+    // Prix négatif
+    const res = await request.post('/api/products', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        name: 'Produit invalide',
+        price: -50,
+        image: 'https://example.com/img.jpg',
+        category: 'Test',
+        stock: 1,
+      }
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('POST /api/products avec image SVG retourne 400', async ({ request }) => {
+    const loginRes = await request.post('/api/login', {
+      data: { email: 'papicamara22@gmail.com', password: 'fantasangare2203' }
+    });
+    const { token } = await loginRes.json();
+
+    const res = await request.post('/api/products', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        name: 'Produit SVG',
+        price: 1000,
+        image: 'data:image/svg+xml;base64,PHN2Zy8+',
+        category: 'Test',
+        stock: 1,
+      }
+    });
+    expect(res.status()).toBe(400);
+  });
+});

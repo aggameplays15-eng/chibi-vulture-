@@ -91,7 +91,11 @@ const App = () => (
                   <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                   <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                   
-                  <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+                  <Route path="/goated-panel" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
+                  
+                  {/* Anciennes routes admin — redirigées vers 404 pour ne pas révéler l'URL réelle */}
+                  <Route path="/admin" element={<NotFound />} />
+                  <Route path="/admin-login" element={<NotFound />} />
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>

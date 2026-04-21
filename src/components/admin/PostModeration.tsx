@@ -21,7 +21,7 @@ const PostModeration = () => {
   const [confirmId, setConfirmId] = useState<number | null>(null);
 
   const handleDelete = async (id: number) => {
-    const token = localStorage.getItem('cv_token');
+    const token = sessionStorage.getItem('cv_token');
     try {
       const res = await fetch(`/api/posts?id=${id}`, {
         method: 'DELETE',

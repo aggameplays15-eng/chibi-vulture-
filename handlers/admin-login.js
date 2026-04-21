@@ -73,17 +73,17 @@ module.exports = async (req, res) => {
   try {
     const code = await issueOtp();
 
-    // Send OTP by email
-    const sent = await sendEmail(ADMIN_EMAIL, 'adminOtp', { code });
+    // Send OTP async — don't block the response
+    res.status(200).json({ otpRequired: true });
 
-    // In dev without SMTP, return code directly (never in production)
-    if (!sent && process.env.NODE_ENV !== 'production') {
-      console.warn(`[2FA] SMTP not configured — OTP code: ${code}`);
-    }
+    sendEmail(ADMIN_EMAIL, 'adminOtp', { code }).then(sent => {
+      if (!sent && process.env.NODE_ENV !== 'production') {
+        console.warn(`[2FA] SMTP not configured — OTP code: ${code}`);
+      }
+    }).catch(err => console.error('[2FA] Email send error:', err));
 
-    return res.status(200).json({ otpRequired: true });
   } catch (error) {
     console.error('Admin login error:', error);
-    return res.status(500).json({ error: 'Login failed' });
+    if (!res.headersSent) return res.status(500).json({ error: 'Login failed' });
   }
 };

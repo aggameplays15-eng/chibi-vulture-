@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method === 'POST') {
     // Authenticated user only
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { image, caption } = req.body;
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to create post' });
     }
   } else if (req.method === 'DELETE') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { id } = req.query;

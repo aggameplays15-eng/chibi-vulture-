@@ -19,7 +19,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ otpRequired: boolean }>;
+  verifyLoginOtp: (email: string, code: string) => Promise<void>;
   signup: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
@@ -52,10 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<{ otpRequired: boolean }> => {
+    const data = await apiService.login({ email, password });
+    return data; // { otpRequired: true }
+  };
+
+  const verifyLoginOtp = async (email: string, code: string) => {
     setIsLoading(true);
     try {
-      const data = await apiService.login({ email, password });
+      const data = await apiService.verifyLoginOtp({ email, code });
       setUser(data.user);
     } finally {
       setIsLoading(false);
@@ -97,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        verifyLoginOtp,
         signup,
         logout,
         updateUser,

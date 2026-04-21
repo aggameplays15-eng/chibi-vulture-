@@ -33,7 +33,7 @@ const MusicManager = () => {
 
   const loadTracks = async () => {
     try {
-      const token = localStorage.getItem('cv_token');
+      const token = sessionStorage.getItem('cv_token');
       // Admin gets all tracks (active + inactive) — use same endpoint, filter client-side
       const res = await fetch('/api/music', {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -53,7 +53,7 @@ const MusicManager = () => {
     }
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('cv_token');
+      const token = sessionStorage.getItem('cv_token');
       const res = await fetch('/api/music', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -74,7 +74,7 @@ const MusicManager = () => {
   };
 
   const toggleActive = async (track: Track) => {
-    const token = localStorage.getItem('cv_token');
+    const token = sessionStorage.getItem('cv_token');
     try {
       const res = await fetch('/api/music', {
         method: 'PATCH',
@@ -89,7 +89,7 @@ const MusicManager = () => {
   };
 
   const handleDelete = async (id: number) => {
-    const token = localStorage.getItem('cv_token');
+    const token = sessionStorage.getItem('cv_token');
     try {
       const res = await fetch(`/api/music?id=${id}`, {
         method: 'DELETE',

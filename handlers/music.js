@@ -21,9 +21,12 @@ module.exports = async (req, res) => {
   // GET — public, returns active tracks
   if (req.method === 'GET') {
     try {
-      const { rows } = await db.query(
-        'SELECT * FROM music_playlist WHERE is_active = true ORDER BY sort_order ASC, created_at ASC'
-      );
+      const user = await auth.verify(req);
+      const isAdmin = user && user.role === 'Admin';
+      const query = isAdmin
+        ? 'SELECT * FROM music_playlist ORDER BY sort_order ASC, created_at ASC'
+        : 'SELECT * FROM music_playlist WHERE is_active = true ORDER BY sort_order ASC, created_at ASC';
+      const { rows } = await db.query(query);
       return res.status(200).json(rows);
     } catch (e) {
       console.error(e);
@@ -33,7 +36,7 @@ module.exports = async (req, res) => {
 
   // POST — admin only, add track
   if (req.method === 'POST') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { title, artist, youtube_url } = req.body;
@@ -59,7 +62,7 @@ module.exports = async (req, res) => {
 
   // PATCH — admin only, toggle active / update order
   if (req.method === 'PATCH') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { id, is_active, sort_order } = req.body;
@@ -86,7 +89,7 @@ module.exports = async (req, res) => {
 
   // DELETE — admin only
   if (req.method === 'DELETE') {
-    const user = auth.verify(req);
+    const user = await auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { id } = req.query;

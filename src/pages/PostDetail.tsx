@@ -53,7 +53,7 @@ const PostDetail = () => {
 
   const handleDeleteComment = async (commentId: number, commentHandle: string) => {
     if (user.handle !== commentHandle) return;
-    const token = localStorage.getItem('cv_token');
+    const token = sessionStorage.getItem('cv_token');
     try {
       const res = await fetch(`/api/comments?id=${commentId}`, {
         method: 'DELETE',
@@ -70,7 +70,7 @@ const PostDetail = () => {
     if (!comment.trim() || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('cv_token');
+      const token = sessionStorage.getItem('cv_token');
       const res = await fetch('/api/comments', {
         method: 'POST',
         headers: {

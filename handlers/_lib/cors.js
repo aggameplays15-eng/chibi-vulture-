@@ -21,12 +21,9 @@ module.exports = {
     // En production : bloquer les requêtes sans origin valide (curl, Postman, etc.)
     // sauf pour les routes publiques explicitement autorisées
     if (isProd && !isAllowed && !isPublic) {
-      res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS[0] || 'null');
-      // Retourner 403 pour les requêtes non-OPTIONS sans origin valide
-      if (req.method !== 'OPTIONS') {
-        res.status(403).json({ error: 'Forbidden' });
-        return true; // bloqué
-      }
+      // Ne pas exposer les origines autorisées dans la réponse de rejet
+      res.status(403).json({ error: 'Forbidden' });
+      return true; // bloqué — pas de headers CORS sur les requêtes rejetées
     } else if (isAllowed) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {

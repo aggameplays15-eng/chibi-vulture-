@@ -29,7 +29,7 @@ const SmartHeader = () => {
     if (path.startsWith('/cart')) return "Mon Panier";
     if (path.startsWith('/profile')) return "Profil";
     if (path.startsWith('/messages')) return "Messages";
-    if (path.startsWith('/admin')) return "Admin";
+    if (path.startsWith('/goated-panel')) return "Admin";
     if (path.startsWith('/settings')) return "Réglages";
     return "Chibi Vulture";
   };
