@@ -7,6 +7,41 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method === 'GET') {
+    // Client: détail d'une commande par id
+    if (req.query.id) {
+      const user = await auth.verify(req);
+      if (!user) return res.status(401).json({ error: 'Auth required' });
+      try {
+        const orderId = Number(req.query.id);
+        if (isNaN(orderId)) return res.status(400).json({ error: 'Invalid id' });
+
+        const { rows: orderRows } = await db.query(
+          'SELECT id, total, status, created_at, shipping_address, phone, user_handle FROM orders WHERE id = $1',
+          [orderId]
+        );
+        if (orderRows.length === 0) return res.status(404).json({ error: 'Order not found' });
+        const order = orderRows[0];
+
+        // Seul le propriétaire ou l'admin peut voir la commande
+        if (order.user_handle !== user.handle && user.role !== 'Admin') {
+          return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        const { rows: itemRows } = await db.query(
+          `SELECT oi.product_id, oi.quantity, oi.price_at_purchase, p.name, p.image
+           FROM order_items oi
+           LEFT JOIN products p ON p.id = oi.product_id
+           WHERE oi.order_id = $1`,
+          [orderId]
+        );
+
+        return res.status(200).json({ ...order, items: itemRows });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to fetch order' });
+      }
+    }
+
     // Client: ses propres commandes
     if (req.query.mine) {
       const user = await auth.verify(req);

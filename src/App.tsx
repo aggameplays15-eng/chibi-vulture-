@@ -10,6 +10,7 @@ import { DataProvider } from "./context/DataContext";
 import { AppSettingsProvider } from "./context/AppSettingsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MusicPlayer from "@/components/MusicPlayer";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { lazy, Suspense } from "react";
 
 // Eager — pages critiques
@@ -37,6 +38,7 @@ const Cart            = lazy(() => import("./pages/Cart"));
 const Checkout        = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 const MyOrders        = lazy(() => import("./pages/MyOrders"));
+const OrderDetail     = lazy(() => import("./pages/OrderDetail"));
 const Notifications   = lazy(() => import("./pages/Notifications"));
 const Messages        = lazy(() => import("./pages/Messages"));
 const Chat            = lazy(() => import("./pages/Chat"));
@@ -94,6 +96,7 @@ const App = () => (
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/checkout-success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
                   <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+                  <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/profile/:handle" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
@@ -116,6 +119,7 @@ const App = () => (
                 </Routes>
                 </Suspense>
                 <MusicPlayer />
+                <PwaInstallPrompt />
               </BrowserRouter>
             </TooltipProvider>
           </AppSettingsProvider>

@@ -157,8 +157,22 @@ export const apiService = {
   },
 
   getOrders: async () => {
-    const response = await fetchWithAuth('/api/orders');
+    const response = await fetchWithAuth('/api/orders?mine=1');
     return safeJson(response);
+  },
+
+  getOrderDetail: async (id: number) => {
+    const response = await fetchWithAuth(`/api/orders?id=${id}`);
+    return safeJson(response);
+  },
+
+  // Password reset
+  forgotPassword: async (email: string) => {
+    await fetch(`${API_BASE_URL}/api/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
   },
 
   // Users

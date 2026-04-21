@@ -93,6 +93,16 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               Pas encore de compte ? S'inscrire
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => navigation.navigate('ForgotPassword')}
+            disabled={isLoading}
+          >
+            <Text style={[styles.linkText, { color: '#9ca3af', fontSize: 13 }]}>
+              Mot de passe oublié ?
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

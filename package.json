@@ -9,7 +9,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "migrate:security": "node scripts/migrate-security-tables.cjs"
+    "migrate:security": "node scripts/migrate-security-tables.cjs",
+    "migrate:017": "node scripts/migrate-017.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

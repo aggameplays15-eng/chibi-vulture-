@@ -8,18 +8,33 @@ import MobileMenu from './MobileMenu';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiService } from '@/services/api';
 
 const SmartHeader = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, headerLogoUrl, primaryColor } = useApp();
+  const { cart, headerLogoUrl, primaryColor, user } = useApp();
   const [scrolled, setScrolled] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user.isAuthenticated || user.isGuest) return;
+    const fetchCount = () => {
+      apiService.getNotifications()
+        .then((data: { id: number }[] | null) => { if (Array.isArray(data)) setUnreadCount(Math.min(data.length, 99)); })
+        .catch(() => {});
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, [user.isAuthenticated, user.isGuest]);
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -77,6 +92,28 @@ const SmartHeader = () => {
         </div>
 
         <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-10 h-10 rounded-full text-gray-400 hover:text-gray-900 relative"
+            onClick={() => { navigate('/notifications'); setUnreadCount(0); }}
+          >
+            <Bell size={18} strokeWidth={2} />
+            <AnimatePresence>
+              {unreadCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute top-1 right-1 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 
