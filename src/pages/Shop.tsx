@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { ShoppingCart, Search, Filter, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Search, Filter, ArrowRight, ArrowUpDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,9 @@ import { showSuccess } from '@/utils/toast';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/services/api';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Shop = () => {
   const navigate = useNavigate();
@@ -21,6 +24,7 @@ const Shop = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
 
   useEffect(() => {
     apiService.getProductCategories()
@@ -38,10 +42,16 @@ const Shop = () => {
     return ["Tous", ...all];
   }, [products, dbCategories]);
 
-  const filteredProducts = products.filter(p => 
-    (activeCategory === "Tous" || p.category === activeCategory) &&
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products
+    .filter(p =>
+      (activeCategory === "Tous" || p.category === activeCategory) &&
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      return 0;
+    });
 
   return (
     <MainLayout>
@@ -77,9 +87,18 @@ const Shop = () => {
               placeholder="Rechercher un produit..." 
             />
           </div>
-          <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-white shadow-sm text-gray-400">
-            <Filter size={20} />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-white shadow-sm text-gray-400">
+                <ArrowUpDown size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="rounded-2xl p-2">
+              <DropdownMenuItem onClick={() => setSortBy('default')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'default' && 'text-pink-500')}>Par défaut</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('price-asc')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'price-asc' && 'text-pink-500')}>Prix croissant ↑</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy('price-desc')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'price-desc' && 'text-pink-500')}>Prix décroissant ↓</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">

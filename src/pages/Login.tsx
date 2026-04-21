@@ -175,6 +175,11 @@ const Login = () => {
                   S'inscrire
                 </Link>
               </p>
+              <p className="text-center text-sm">
+                <Link to="/forgot-password" className="text-gray-400 hover:text-gray-600 font-bold text-xs">
+                  Mot de passe oublié ?
+                </Link>
+              </p>
             </motion.form>
           ) : (            <motion.form
               key="otp"

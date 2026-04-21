@@ -127,6 +127,11 @@ export const apiService = {
     return safeJson(response);
   },
 
+  getMyOrders: async () => {
+    const response = await fetchWithAuth('/api/orders?mine=1');
+    return safeJson(response);
+  },
+
   toggleLike: async (post_id: number, user_handle: string) => {
     const response = await fetchWithAuth('/api/likes', {
       method: 'POST',
@@ -338,6 +343,27 @@ export const apiService = {
       throw new Error(err?.error || 'Code invalide');
     }
     return safeJson(response); // { user, token }
+  },
+
+  forgotPassword: async (email: string) => {
+    await fetch('/api/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    const response = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Lien invalide ou expiré');
+    }
+    return safeJson(response);
   },
 
 getOrderTracking: async (orderId: string) => {

@@ -28,7 +28,7 @@ const Settings = () => {
     { icon: Bell,        label: "Notifications",  color: "text-pink-500",   bg: "bg-pink-50",   toggle: notifEnabled,  onToggle: setNotifEnabled },
     { icon: darkMode ? Sun : Moon, label: "Mode sombre", color: "text-indigo-500", bg: "bg-indigo-50", toggle: darkMode, onToggle: toggleDarkMode },
     { icon: Shield,      label: "Confidentialité",color: "text-purple-500", bg: "bg-purple-50", path: "/terms" },
-    { icon: CreditCard,  label: "Paiements",      color: "text-green-500",  bg: "bg-green-50" },
+    { icon: CreditCard,  label: "Mes commandes",  color: "text-green-500",  bg: "bg-green-50",  path: "/orders" },
     { icon: HelpCircle,  label: "Aide & Support", color: "text-orange-500", bg: "bg-orange-50", path: "/support" },
   ];
 

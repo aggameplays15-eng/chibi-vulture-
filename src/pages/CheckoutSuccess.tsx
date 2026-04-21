@@ -3,7 +3,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Package, ArrowRight, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, Package, ArrowRight, ShoppingBag, ClipboardList } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const CheckoutSuccess = () => {
@@ -54,16 +54,24 @@ const CheckoutSuccess = () => {
 
         <div className="space-y-3">
           <Button 
-            onClick={() => navigate('/feed')}
+            onClick={() => navigate('/orders')}
             className="w-full h-14 rounded-2xl bg-pink-500 hover:bg-pink-600 text-lg font-black shadow-lg shadow-pink-100 flex gap-2"
           >
-            RETOUR AU FIL D'ACTU
+            <ClipboardList size={20} />
+            VOIR MES COMMANDES
+          </Button>
+          <Button 
+            variant="ghost"
+            onClick={() => navigate('/feed')}
+            className="w-full h-14 rounded-2xl text-gray-500 font-black flex gap-2"
+          >
             <ArrowRight size={20} />
+            RETOUR AU FIL D'ACTU
           </Button>
           <Button 
             variant="ghost"
             onClick={() => navigate('/shop')}
-            className="w-full h-14 rounded-2xl text-pink-500 font-black flex gap-2"
+            className="w-full h-12 rounded-2xl text-pink-500 font-black flex gap-2"
           >
             <ShoppingBag size={20} />
             CONTINUER MES ACHATS

@@ -10,32 +10,40 @@ import { DataProvider } from "./context/DataContext";
 import { AppSettingsProvider } from "./context/AppSettingsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MusicPlayer from "@/components/MusicPlayer";
+import { lazy, Suspense } from "react";
+
+// Eager — pages critiques
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Feed from "./pages/Feed";
-import Explore from "./pages/Explore";
-import Shop from "./pages/Shop";
-import Profile from "./pages/Profile";
-import PublicProfile from "./pages/PublicProfile";
-import EditProfile from "./pages/EditProfile";
-import Admin from "./pages/Admin";
-import AdminLogin from "./pages/AdminLogin";
-import CharacterCreation from "./pages/CharacterCreation";
-import CreatePost from "./pages/CreatePost";
-import PostDetail from "./pages/PostDetail";
-import ProductDetail from "./pages/ProductDetail";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import CheckoutSuccess from "./pages/CheckoutSuccess";
-import Notifications from "./pages/Notifications";
-import Messages from "./pages/Messages";
-import Chat from "./pages/Chat";
-import Settings from "./pages/Settings";
-import Followers from "./pages/Followers";
-import Support from "./pages/Support";
-import Terms from "./pages/Terms";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+
+// Lazy — pages secondaires (réduit le bundle initial)
+const Feed            = lazy(() => import("./pages/Feed"));
+const Explore         = lazy(() => import("./pages/Explore"));
+const Shop            = lazy(() => import("./pages/Shop"));
+const Profile         = lazy(() => import("./pages/Profile"));
+const PublicProfile   = lazy(() => import("./pages/PublicProfile"));
+const EditProfile     = lazy(() => import("./pages/EditProfile"));
+const Admin           = lazy(() => import("./pages/Admin"));
+const AdminLogin      = lazy(() => import("./pages/AdminLogin"));
+const CharacterCreation = lazy(() => import("./pages/CharacterCreation"));
+const CreatePost      = lazy(() => import("./pages/CreatePost"));
+const PostDetail      = lazy(() => import("./pages/PostDetail"));
+const ProductDetail   = lazy(() => import("./pages/ProductDetail"));
+const Cart            = lazy(() => import("./pages/Cart"));
+const Checkout        = lazy(() => import("./pages/Checkout"));
+const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
+const MyOrders        = lazy(() => import("./pages/MyOrders"));
+const Notifications   = lazy(() => import("./pages/Notifications"));
+const Messages        = lazy(() => import("./pages/Messages"));
+const Chat            = lazy(() => import("./pages/Chat"));
+const Settings        = lazy(() => import("./pages/Settings"));
+const Followers       = lazy(() => import("./pages/Followers"));
+const Support         = lazy(() => import("./pages/Support"));
+const Terms           = lazy(() => import("./pages/Terms"));
 
 const queryClient = new QueryClient();
 
@@ -67,10 +75,13 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-pink-200 border-t-pink-500 animate-spin" /></div>}>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/goated" element={<AdminLogin />} />
                   
                   <Route path="/onboarding" element={<ProtectedRoute><CharacterCreation /></ProtectedRoute>} />
@@ -82,6 +93,7 @@ const App = () => (
                   <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/checkout-success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
+                  <Route path="/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/profile/:handle" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
@@ -102,6 +114,7 @@ const App = () => (
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
                 <MusicPlayer />
               </BrowserRouter>
             </TooltipProvider>

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Heart, MessageCircle, UserPlus, Bell, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
@@ -45,10 +46,15 @@ const Notifications = () => {
       setIsLoading(false);
       return;
     }
-    apiService.getNotifications()
-      .then(data => { if (data) setNotifs(data); })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    const fetchNotifs = () => {
+      apiService.getNotifications()
+        .then(data => { if (data) setNotifs(data); })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(interval);
   }, [user.isAuthenticated]);
 
   return (
@@ -62,8 +68,16 @@ const Notifications = () => {
 
       <div className="px-4 space-y-2 pb-24">
         {isLoading && (
-          <div className="flex justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-gray-300" />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4 bg-white rounded-3xl">
+                <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-3/4 rounded-full" />
+                  <Skeleton className="h-2 w-1/4 rounded-full" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

@@ -7,6 +7,23 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method === 'GET') {
+    // Client: ses propres commandes
+    if (req.query.mine) {
+      const user = await auth.verify(req);
+      if (!user) return res.status(401).json({ error: 'Auth required' });
+      try {
+        const { rows } = await db.query(
+          'SELECT id, total, status, created_at, shipping_address FROM orders WHERE user_handle = $1 ORDER BY created_at DESC',
+          [user.handle]
+        );
+        return res.status(200).json(rows);
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to fetch orders' });
+      }
+    }
+
+    // Admin: toutes les commandes
     const admin = await auth.verify(req);
     if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
