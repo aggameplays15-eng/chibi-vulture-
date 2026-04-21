@@ -7,6 +7,7 @@ import { ShoppingCart, Search, Filter, ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { showSuccess } from '@/utils/toast';
 import { motion } from 'framer-motion';
@@ -19,13 +20,15 @@ const Shop = () => {
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
   const [dbCategories, setDbCategories] = useState<string[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   useEffect(() => {
     apiService.getProductCategories()
       .then((cats: { name: string }[]) => {
         if (cats?.length) setDbCategories(cats.map((c: { name: string }) => c.name));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoadingProducts(false));
   }, []);
 
   // Catégories dynamiques : celles de la DB + celles utilisées dans les produits existants
@@ -99,7 +102,18 @@ const Shop = () => {
       </header>
 
       <div className="px-4 grid grid-cols-2 gap-4 pb-32">
-        {filteredProducts.map((product, index) => (
+        {isLoadingProducts && products.length === 0
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-[32px] overflow-hidden border border-gray-50">
+                <Skeleton className="aspect-square w-full" />
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-2 w-16 rounded-full" />
+                  <Skeleton className="h-4 w-full rounded-full" />
+                  <Skeleton className="h-4 w-20 rounded-full" />
+                </div>
+              </div>
+            ))
+          : filteredProducts.map((product, index) => (
           <motion.div 
             key={product.id} 
             initial={{ opacity: 0, scale: 0.9 }}

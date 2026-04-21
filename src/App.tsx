@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -16,6 +17,7 @@ import Feed from "./pages/Feed";
 import Explore from "./pages/Explore";
 import Shop from "./pages/Shop";
 import Profile from "./pages/Profile";
+import PublicProfile from "./pages/PublicProfile";
 import EditProfile from "./pages/EditProfile";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -55,6 +57,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
 };
 
 const App = () => (
+  <ThemeProvider attribute="class" defaultTheme="light" storageKey="cv_theme">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
@@ -80,6 +83,7 @@ const App = () => (
                   <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                   <Route path="/checkout-success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/profile/:handle" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                   <Route path="/followers" element={<ProtectedRoute><Followers /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
@@ -106,6 +110,7 @@ const App = () => (
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

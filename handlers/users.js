@@ -11,8 +11,23 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
-  // GET — liste des utilisateurs (admin only)
+  // GET — liste des utilisateurs (admin only) ou profil public par handle
   if (req.method === 'GET') {
+    // Profil public par handle : /api/users?handle=@xxx
+    if (req.query.handle) {
+      const handle = req.query.handle;
+      try {
+        const { rows } = await db.query(
+          'SELECT id, name, handle, bio, avatar_color, avatar_image, role FROM users WHERE handle = $1 AND is_approved = true',
+          [handle]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        return res.status(200).json(rows[0]);
+      } catch {
+        return res.status(500).json({ error: 'Failed to fetch user' });
+      }
+    }
+
     const admin = await auth.verify(req);
     if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 

@@ -37,7 +37,7 @@ const Login = () => {
         setTimeout(() => inputRefs.current[0]?.focus(), 100);
       } else {
         showSuccess("Connexion réussie ! ✨");
-        navigate('/feed');
+        navigate(result?.needsOnboarding ? '/onboarding' : '/feed');
       }
     } catch {
       showError("Identifiants incorrects.");

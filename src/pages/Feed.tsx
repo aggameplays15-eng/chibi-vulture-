@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bell, Bookmark, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { useInfinitePosts } from '@/hooks/use-infinite-posts';
 import { apiService } from '@/services/api';
@@ -79,6 +80,27 @@ const Feed = () => {
       </header>
 
       <div className="px-4 space-y-10 pb-24">
+        {/* Skeleton pendant le chargement initial */}
+        {isLoading && posts.length === 0 && (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-[40px] p-4 shadow-sm border border-gray-50 space-y-4">
+              <div className="flex items-center gap-3 px-2">
+                <Skeleton className="h-11 w-11 rounded-2xl" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-3 w-28 rounded-full" />
+                  <Skeleton className="h-2 w-16 rounded-full" />
+                </div>
+              </div>
+              <Skeleton className="aspect-[4/5] rounded-[32px] w-full" />
+              <div className="flex gap-4 px-2">
+                <Skeleton className="h-6 w-12 rounded-full" />
+                <Skeleton className="h-6 w-12 rounded-full" />
+                <Skeleton className="h-6 w-12 rounded-full" />
+              </div>
+            </div>
+          ))
+        )}
+
         {posts.map((post, index) => {
           const isFollowing = user.following?.includes(post.handle);
           const isLiked = likedPosts.includes(post.id);

@@ -7,23 +7,16 @@ import { ChevronLeft, User, Bell, Shield, CreditCard, HelpCircle, LogOut, Chevro
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
+import { useTheme } from 'next-themes';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { logout, primaryColor } = useApp();
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+  const { theme, setTheme } = useTheme();
   const [notifEnabled, setNotifEnabled] = useState(true);
 
-  const toggleDarkMode = (val: boolean) => {
-    setDarkMode(val);
-    if (val) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('cv_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('cv_theme', 'light');
-    }
-  };
+  const darkMode = theme === 'dark';
+  const toggleDarkMode = (val: boolean) => setTheme(val ? 'dark' : 'light');
 
   const handleLogout = () => {
     logout();

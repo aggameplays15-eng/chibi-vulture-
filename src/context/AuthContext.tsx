@@ -24,7 +24,7 @@ interface AuthContextType {
   user: UserProfile;
   users: UserProfile[];
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<{ otpRequired?: boolean }>;
+  login: (credentials: { email: string; password: string }) => Promise<{ otpRequired?: boolean; needsOnboarding?: boolean }>;
   loginVerifyOtp: (email: string, code: string) => Promise<boolean>;
   adminLogin: (credentials: { email: string; password: string }) => Promise<{ otpRequired: boolean }>;
   adminVerifyOtp: (code: string) => Promise<boolean>;
@@ -95,12 +95,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
       const data = await apiService.login(credentials);
-      // If OTP required, return that info to the caller
       if (data?.otpRequired) return { otpRequired: true };
       setToken(data.token);
       apiService.setToken(data.token);
-      setUser({ ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] });
-      return {};
+      const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] };
+      setUser(loggedUser);
+      // Déclencher l'onboarding si le profil est vide (pas de bio)
+      return { needsOnboarding: !data.user.bio };
     } catch (err) {
       console.error("Login failed:", err);
       throw err;

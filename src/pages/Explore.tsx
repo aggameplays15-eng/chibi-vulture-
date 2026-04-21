@@ -116,7 +116,7 @@ const Explore = () => {
                         <div
                           key={u.id}
                           className="flex items-center gap-3 p-3 bg-white rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors"
-                          onClick={() => navigate(`/profile`)}
+                          onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
                         >
                           <Avatar className="w-12 h-12 rounded-2xl">
                             <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} />
@@ -236,7 +236,7 @@ const Explore = () => {
 
               <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar">
                 {contextUsers.filter(u => u.handle !== user.handle && u.isApproved).slice(0, 8).map((u) => (
-                  <div key={u.id} className="flex flex-col items-center gap-3 min-w-[90px] group cursor-pointer">
+                  <div key={u.id} className="flex flex-col items-center gap-3 min-w-[90px] group cursor-pointer" onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}>
                     <div className="relative">
                       <div
                         className="w-20 h-20 rounded-[28px] p-1 transition-transform group-hover:rotate-6"
