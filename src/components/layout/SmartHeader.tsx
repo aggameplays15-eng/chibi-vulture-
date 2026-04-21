@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const SmartHeader = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, logoUrl, primaryColor } = useApp();
+  const { cart, headerLogoUrl, primaryColor } = useApp();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ const SmartHeader = () => {
               className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm cursor-pointer active:scale-90 transition-transform overflow-hidden bg-white"
               onClick={() => navigate('/feed')}
             >
-              <img src={logoUrl} alt="Logo" className="w-7 h-7 object-contain" />
+              <img src={headerLogoUrl} alt="Logo" className="w-7 h-7 object-contain" />
             </div>
           )}
         </div>

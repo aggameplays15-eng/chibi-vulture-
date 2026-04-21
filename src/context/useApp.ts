@@ -49,9 +49,13 @@ export const useApp = () => {
     
     // From AppSettingsContext
     logoUrl: settings.logoUrl,
+    headerLogoUrl: settings.headerLogoUrl,
+    homeLogoUrl: settings.homeLogoUrl,
     primaryColor: settings.primaryColor,
     deliveryZones: settings.deliveryZones,
     updateLogo: settings.updateLogo,
+    updateHeaderLogo: settings.updateHeaderLogo,
+    updateHomeLogo: settings.updateHomeLogo,
     updatePrimaryColor: settings.updatePrimaryColor,
     updateDeliveryZones: settings.updateDeliveryZones,
   };

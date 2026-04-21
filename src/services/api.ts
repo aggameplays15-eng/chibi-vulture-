@@ -2,7 +2,7 @@
 
 import type { PostData, ProductData, OrderData, UserData, MessageData, LoginCredentials, FetchOptions } from '@/types/api';
 
-let authToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('cv_token') : null;
+let authToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem('cv_token') : null;
 
 const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   const headers: Record<string, string> = {
@@ -17,9 +17,11 @@ const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401) {
-    // Token expired or invalid — clear it
     authToken = null;
-    if (typeof window !== 'undefined') localStorage.removeItem('cv_token');
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('cv_token');
+      sessionStorage.removeItem('cv_user');
+    }
   }
 
   return response;
@@ -37,8 +39,11 @@ export const apiService = {
   setToken: (token: string | null) => {
     authToken = token;
     if (typeof window !== 'undefined') {
-      if (token) localStorage.setItem('cv_token', token);
-      else localStorage.removeItem('cv_token');
+      if (token) sessionStorage.setItem('cv_token', token);
+      else {
+        sessionStorage.removeItem('cv_token');
+        sessionStorage.removeItem('cv_user');
+      }
     }
   },
 
@@ -80,15 +85,16 @@ export const apiService = {
     if (!response.ok) throw new Error('Failed to delete product');
   },
 
-  createOrder: async (orderData: OrderData & { id: string }) => {
+  createOrder: async (orderData: OrderData & { id: string; phone?: string; shipping_address?: string }) => {
     const response = await fetchWithAuth('/api/orders', {
       method: 'POST',
       body: JSON.stringify({
         id: orderData.id,
         customer_name: orderData.customer,
-        // total is sent for delivery fee calculation — server recomputes from DB prices
         total: orderData.total,
         items: orderData.items,
+        phone: orderData.phone,
+        shipping_address: orderData.shipping_address,
       }),
     });
     if (!response.ok) {
@@ -207,6 +213,17 @@ export const apiService = {
       throw new Error(err?.error || 'Identifiants incorrects');
     }
     return safeJson(response);
+  },
+
+  logout: async () => {
+    try {
+      await fetchWithAuth('/api/logout', { method: 'POST' });
+    } catch { /* silent — on déconnecte quand même */ }
+    authToken = null;
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('cv_token');
+      sessionStorage.removeItem('cv_user');
+    }
   },
 
   // Push notifications

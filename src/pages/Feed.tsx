@@ -3,21 +3,32 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Bell, Bookmark, Sparkles, Loader2 } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Bell, Bookmark, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useApp } from '@/context/AppContext';
 import { useInfinitePosts } from '@/hooks/use-infinite-posts';
+import { apiService } from '@/services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const Feed = () => {
   const navigate = useNavigate();
   const { likedPosts, favoritePosts, toggleLike, toggleFavoritePost, toggleFollow, user, primaryColor } = useApp();
   const [showHeart, setShowHeart] = useState<number | null>(null);
-  const { posts, loadMore, hasMore, isLoading } = useInfinitePosts();
+  const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await apiService.deletePost(postId);
+      removePost(postId);
+      showSuccess("Post supprimé. 🗑️");
+    } catch {
+      showError("Impossible de supprimer ce post.");
+    }
+  };
 
   // Charger la première page
   useEffect(() => {
@@ -112,10 +123,21 @@ const Feed = () => {
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{post.time}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-xl text-gray-300 hover:text-gray-900" aria-label="Plus d'options">
-                  <MoreHorizontal size={20} aria-hidden="true" />
-                </Button>
-              </div>
+                {post.handle === user.handle ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl text-gray-300 hover:text-red-400 transition-colors"
+                    aria-label="Supprimer ce post"
+                    onClick={() => handleDeletePost(post.id)}
+                  >
+                    <Trash2 size={18} aria-hidden="true" />
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="icon" className="rounded-xl text-gray-300 hover:text-gray-900" aria-label="Plus d'options">
+                    <MoreHorizontal size={20} aria-hidden="true" />
+                  </Button>
+                )}              </div>
 
               <div
                 className="aspect-[4/5] overflow-hidden rounded-[32px] relative group"

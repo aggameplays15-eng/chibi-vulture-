@@ -1,7 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
-const { notifyFollow } = require('./_lib/notifications');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -59,8 +59,17 @@ module.exports = async (req, res) => {
           'INSERT INTO follows (follower_handle, following_handle) VALUES ($1, $2)',
           [follower_handle, following_handle]
         );
-        // Notify the user being followed
-        notifyFollow(follower_handle, following_handle);
+        // Email au user suivi (fire & forget)
+        db.query('SELECT email, name FROM users WHERE handle = $1', [following_handle])
+          .then(({ rows }) => {
+            if (rows.length > 0) {
+              sendEmail(rows[0].email, 'newFollower', {
+                recipientName: rows[0].name,
+                followerName: user.name || follower_handle,
+                followerHandle: follower_handle,
+              }).catch(() => {});
+            }
+          }).catch(() => {});
         res.status(201).json({ following: true });
       }
     } catch (error) {

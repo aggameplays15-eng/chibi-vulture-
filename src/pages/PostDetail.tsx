@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Lock, ChevronLeft } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Lock, ChevronLeft, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useApp } from '@/context/AppContext';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
+import { apiService } from '@/services/api';
 
 interface Comment {
   id: number;
@@ -39,6 +40,31 @@ const PostDetail = () => {
       .then(data => { if (Array.isArray(data)) setComments(data); })
       .catch(() => {});
   }, [postId]);
+
+  const handleDeletePost = async () => {
+    try {
+      await apiService.deletePost(postId);
+      showSuccess("Post supprimé. 🗑️");
+      navigate('/feed');
+    } catch {
+      showError("Impossible de supprimer ce post.");
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number, commentHandle: string) => {
+    if (user.handle !== commentHandle) return;
+    const token = localStorage.getItem('cv_token');
+    try {
+      const res = await fetch(`/api/comments?id=${commentId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error();
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch {
+      showError("Impossible de supprimer le commentaire.");
+    }
+  };
 
   const handleSendComment = async () => {
     if (!comment.trim() || isSubmitting) return;
@@ -100,17 +126,28 @@ const PostDetail = () => {
           <div className="flex items-center gap-3">
             <Avatar className="border-2 border-pink-200">
               <AvatarImage src={post.avatar} />
-              <AvatarFallback>{post.user[0]}</AvatarFallback>
+              <AvatarFallback>{post.user?.[0] ?? '?'}</AvatarFallback>
             </Avatar>
             <div>
               <p className="font-bold text-sm">{post.user}</p>
               <p className="text-[10px] text-gray-400 uppercase font-bold">{post.time}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Plus d'options">
-            <MoreHorizontal size={20} />
-          </Button>
-        </div>
+          {post.handle === user.handle ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-300 hover:text-red-400 transition-colors"
+              aria-label="Supprimer ce post"
+              onClick={handleDeletePost}
+            >
+              <Trash2 size={20} />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" aria-label="Plus d'options">
+              <MoreHorizontal size={20} />
+            </Button>
+          )}        </div>
 
         <div className="aspect-square bg-gray-100">
           <img
@@ -165,7 +202,18 @@ const PostDetail = () => {
                 <div className="flex-1 bg-gray-50 p-3 rounded-2xl rounded-tl-none">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-bold text-xs">{c.user_name || c.user_handle}</span>
-                    <span className="text-[10px] text-gray-400">{formatTime(c.created_at)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400">{formatTime(c.created_at)}</span>
+                      {user.handle === c.user_handle && (
+                        <button
+                          onClick={() => handleDeleteComment(c.id, c.user_handle)}
+                          className="text-gray-300 hover:text-red-400 transition-colors"
+                          aria-label="Supprimer le commentaire"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-gray-600">{c.text}</p>
                 </div>

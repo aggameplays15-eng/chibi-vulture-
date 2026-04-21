@@ -46,19 +46,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const load = async () => {
-      const savedUser = localStorage.getItem('cv_user');
+      const savedUser = sessionStorage.getItem('cv_user');
       if (savedUser) setUser(JSON.parse(savedUser) as UserProfile);
 
-      const savedUsers = localStorage.getItem('cv_users_list');
+      const savedUsers = sessionStorage.getItem('cv_users_list');
       if (savedUsers) setUsers(JSON.parse(savedUsers) as UserProfile[]);
 
-      const savedToken = localStorage.getItem('cv_token');
+      const savedToken = sessionStorage.getItem('cv_token');
       if (savedToken) {
         setToken(savedToken);
         apiService.setToken(savedToken);
       }
 
-      // Fetch users if admin
       const currentUser = savedUser ? JSON.parse(savedUser) : null;
       const isAdmin = currentUser?.role === 'Admin';
 
@@ -73,22 +72,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setIsLoading(false);
     };
-    
     load();
   }, []);
 
   useEffect(() => {
-    if (!isLoading) localStorage.setItem('cv_user', JSON.stringify(user));
+    if (!isLoading) sessionStorage.setItem('cv_user', JSON.stringify(user));
   }, [user, isLoading]);
 
   useEffect(() => {
-    if (!isLoading) localStorage.setItem('cv_users_list', JSON.stringify(users));
+    if (!isLoading) sessionStorage.setItem('cv_users_list', JSON.stringify(users));
   }, [users, isLoading]);
 
   useEffect(() => {
     if (!isLoading) {
-      if (token) localStorage.setItem('cv_token', token);
-      else localStorage.removeItem('cv_token');
+      if (token) sessionStorage.setItem('cv_token', token);
+      else sessionStorage.removeItem('cv_token');
     }
   }, [token, isLoading]);
 
@@ -122,7 +120,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser({ id: -1, name: "Visiteur", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Guest', isApproved: true, isAuthenticated: false, isGuest: true, status: 'Actif', following: [] });
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await apiService.logout();
     setToken(null);
     setUser({ id: 0, name: "Invité", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Guest', isApproved: false, isAuthenticated: false, isGuest: true, status: 'Actif', following: [] });
   }, []);

@@ -1,12 +1,13 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method === 'GET') {
-    // Admin only
-    if (!auth.verify(req, true)) return res.status(403).json({ error: 'Admin only' });
+    const admin = auth.verify(req);
+    if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     try {
       const { rows } = await db.query('SELECT * FROM orders ORDER BY created_at DESC');
@@ -44,13 +45,14 @@ module.exports = async (req, res) => {
 
     // Recompute total from DB prices to prevent price manipulation
     let computedTotal = 0;
+    let priceMap = {};
     try {
       const itemIds = items.map(i => i.id);
       const { rows: dbProducts } = await db.query(
         `SELECT id, price FROM products WHERE id = ANY($1::int[])`,
         [itemIds]
       );
-      const priceMap = Object.fromEntries(dbProducts.map(p => [p.id, p.price]));
+      priceMap = Object.fromEntries(dbProducts.map(p => [p.id, p.price]));
       for (const item of items) {
         const price = priceMap[item.id];
         if (price === undefined) {
@@ -68,11 +70,71 @@ module.exports = async (req, res) => {
     const finalTotal = computedTotal + deliveryFee;
     
     try {
+      // Insert order
       const { rows } = await db.query(
-        'INSERT INTO orders (id, customer_id, customer_name, total, items, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [id, user ? user.id : null, customer_name, finalTotal, JSON.stringify(items), 'En attente']
+        `INSERT INTO orders (id, user_handle, total, status, shipping_address, phone)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [
+          id,
+          user ? user.handle : 'guest',
+          finalTotal,
+          'En attente',
+          req.body.shipping_address || null,
+          req.body.phone || null
+        ]
       );
-      res.status(201).json(rows[0]);
+      const order = rows[0];
+
+      // Insert order items
+      for (const item of items) {
+        const price = priceMap[item.id];
+        await db.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
+           VALUES ($1, $2, $3, $4)`,
+          [order.id, item.id, item.quantity, price]
+        );
+      }
+
+      // Récupérer les noms des produits pour les emails
+      const { rows: productRows } = await db.query(
+        `SELECT id, name, price FROM products WHERE id = ANY($1::int[])`,
+        [items.map(i => i.id)]
+      );
+      const productMap = Object.fromEntries(productRows.map(p => [p.id, p]));
+      const emailItems = items.map(i => ({
+        name: productMap[i.id]?.name || `Produit #${i.id}`,
+        quantity: i.quantity,
+        price: priceMap[i.id],
+      }));
+
+      // Email confirmation au client (fire & forget)
+      if (user) {
+        const { rows: userRows } = await db.query('SELECT email, name FROM users WHERE handle = $1', [user.handle]);
+        if (userRows.length > 0) {
+          sendEmail(userRows[0].email, 'orderConfirmation', {
+            name: userRows[0].name,
+            orderId: order.id,
+            items: emailItems,
+            total: finalTotal,
+            shippingAddress: req.body.shipping_address || null,
+            phone: req.body.phone || null,
+          }).catch(() => {});
+        }
+      }
+
+      // Email notification à l'admin (fire & forget)
+      if (process.env.ADMIN_EMAIL) {
+        sendEmail(process.env.ADMIN_EMAIL, 'newOrderAdmin', {
+          orderId: order.id,
+          customerName: customer_name,
+          total: finalTotal,
+          items: emailItems,
+          shippingAddress: req.body.shipping_address || null,
+          phone: req.body.phone || null,
+        }).catch(() => {});
+      }
+
+      res.status(201).json(order);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to create order' });

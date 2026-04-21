@@ -35,8 +35,8 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'POST') {
-    // Admin only
-    if (!auth.verify(req, true)) return res.status(403).json({ error: 'Admin only' });
+    const user = auth.verify(req);
+    if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     try {
       const { name, description, icon, color, sort_order } = req.body;

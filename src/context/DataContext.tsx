@@ -35,6 +35,8 @@ interface Order {
   status: 'En attente' | 'Préparation' | 'Livré';
   date: string;
   items: OrderItem[];
+  phone?: string;
+  shipping_address?: string;
 }
 
 interface DataContextType {
@@ -48,7 +50,7 @@ interface DataContextType {
   addProduct: (product: Omit<Product, 'id'>) => void;
   deleteProduct: (id: number) => void;
   deletePost: (id: number) => void;
-  addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => void;
+  addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Promise<string>;
   toggleLike: (postId: number) => void;
   toggleFavoritePost: (postId: number) => void;
   toggleFavoriteProduct: (productId: number) => void;
@@ -149,19 +151,30 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const addOrder = useCallback(async (orderData: Omit<Order, 'id' | 'date' | 'status'>) => {
+    const localId = `ORD-${Date.now()}`;
     const newOrder: Order = {
       ...orderData,
-      id: `ORD-${Date.now()}`,
+      id: localId,
       date: new Date().toLocaleDateString(),
       status: 'En attente'
     };
     
     try {
-      await apiService.createOrder(newOrder);
-      setOrders(prev => [newOrder, ...prev]);
+      const result = await apiService.createOrder({
+        id: localId,
+        customer_name: orderData.customer,
+        total: orderData.total,
+        items: orderData.items,
+        phone: orderData.phone,
+        shipping_address: orderData.shipping_address,
+      });
+      const finalId = result?.id ? String(result.id) : localId;
+      setOrders(prev => [{ ...newOrder, id: finalId }, ...prev]);
+      return finalId;
     } catch (err) {
       console.error("Failed to persist order:", err);
       setOrders(prev => [newOrder, ...prev]);
+      return localId;
     }
   }, []);
 

@@ -1,6 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -24,6 +25,18 @@ module.exports = async (req, res) => {
         'INSERT INTO messages (sender_handle, receiver_handle, text) VALUES ($1, $2, $3) RETURNING *',
         [user.handle, receiver_handle, text]
       );
+      // Email au destinataire (fire & forget)
+      db.query('SELECT email, name FROM users WHERE handle = $1', [receiver_handle])
+        .then(({ rows: recRows }) => {
+          if (recRows.length > 0) {
+            sendEmail(recRows[0].email, 'newMessage', {
+              recipientName: recRows[0].name,
+              senderName: user.name || user.handle,
+              senderHandle: user.handle,
+              preview: text,
+            }).catch(() => {});
+          }
+        }).catch(() => {});
       res.status(201).json(rows[0]);
     } catch (error) {
       console.error(error);

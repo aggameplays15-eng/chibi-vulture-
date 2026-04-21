@@ -1,13 +1,15 @@
 "use client";
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Package, ArrowRight, ShoppingBag } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const orderId = (location.state as { orderId?: string })?.orderId || 'CV-XXXX';
 
   return (
     <div className="min-h-screen bg-[#FFF5F7] flex flex-col items-center justify-center p-6 text-center">
@@ -31,7 +33,7 @@ const CheckoutSuccess = () => {
         <div className="space-y-2">
           <h1 className="text-3xl font-black text-gray-800">MERCI ! ✨</h1>
           <p className="text-gray-500 font-medium">
-            Ta commande <span className="text-pink-500 font-bold">#CV-8942</span> a été validée avec succès.
+            Ta commande <span className="text-pink-500 font-bold">#{orderId}</span> a été validée avec succès.
           </p>
         </div>
 

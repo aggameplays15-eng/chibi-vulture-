@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Star, X, Package, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, X, Package } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,13 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { apiService } from '@/services/api';
+import ImageUploader, { type UploadedImage } from './ImageUploader';
 
 interface ProductForm {
   name: string;
   price: string;
-  image: string;
   category: string;
   stock: string;
   featured: boolean;
@@ -24,7 +24,6 @@ interface ProductForm {
 const EMPTY_FORM: ProductForm = {
   name: '',
   price: '',
-  image: '',
   category: '',
   stock: '',
   featured: false,
@@ -35,7 +34,8 @@ const ShopManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<ProductForm>>({});
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [errors, setErrors] = useState<Partial<ProductForm & { images: string }>>({});
   const [categories, setCategories] = useState<Array<{ id: number; name: string; color: string; icon: string }>>([]);
 
   useEffect(() => {
@@ -53,17 +53,19 @@ const ShopManagement = () => {
   };
 
   const validate = () => {
-    const e: Partial<ProductForm> = {};
+    const e: Partial<ProductForm & { images: string }> = {};
     if (!form.name.trim()) e.name = 'Nom requis';
     if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0) e.price = 'Prix invalide';
     if (!form.category.trim()) e.category = 'Catégorie requise';
     if (!form.stock || isNaN(Number(form.stock)) || Number(form.stock) < 0) e.stock = 'Stock invalide';
+    if (uploadedImages.length === 0 && !editId) e.images = 'Au moins une image requise';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const openAdd = () => {
     setForm(EMPTY_FORM);
+    setUploadedImages([]);
     setErrors({});
     setEditId(null);
     setShowForm(true);
@@ -73,33 +75,48 @@ const ShopManagement = () => {
     setForm({
       name: p.name,
       price: String(p.price),
-      image: p.image,
       category: p.category,
       stock: String(p.stock),
       featured: p.featured,
     });
+    setUploadedImages([]);
     setErrors({});
     setEditId(p.id);
     setShowForm(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Use primary (first) image dataUrl, fallback to placeholder
+    const primaryImage = uploadedImages[0]?.dataUrl
+      || `https://api.dicebear.com/7.x/shapes/svg?seed=${form.name}`;
 
     const productData = {
       name: form.name.trim(),
       price: Number(form.price),
-      image: form.image.trim() || `https://api.dicebear.com/7.x/shapes/svg?seed=${form.name}`,
+      image: primaryImage,
       category: form.category.trim(),
       stock: Number(form.stock),
       featured: form.featured,
     };
 
-    addProduct(productData);
-    showSuccess(editId ? `${form.name} mis à jour ✅` : `${form.name} ajouté à la boutique ✅`);
+    try {
+      if (editId) {
+        await apiService.updateUser({ id: editId, ...productData } as Parameters<typeof apiService.updateUser>[0]);
+      } else {
+        await apiService.addProduct(productData);
+      }
+      addProduct(productData);
+      showSuccess(editId ? `${form.name} mis à jour ✅` : `${form.name} ajouté à la boutique ✅`);
+    } catch {
+      addProduct(productData);
+      showSuccess(editId ? `${form.name} mis à jour (local) ✅` : `${form.name} ajouté (local) ✅`);
+    }
     setShowForm(false);
     setForm(EMPTY_FORM);
+    setUploadedImages([]);
     setEditId(null);
   };
 
@@ -171,7 +188,7 @@ const ShopManagement = () => {
                   <select
                     value={form.category}
                     onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-                    className={`h-11 rounded-xl border ${errors.category ? 'border-rose-400' : 'border-gray-200'} text-sm px-3 bg-white`}
+                    className={`h-11 rounded-xl border ${errors.category ? 'border-rose-400' : 'border-gray-200'} text-sm px-3 bg-white w-full`}
                   >
                     <option value="">Sélectionner...</option>
                     {categories.map(cat => (
@@ -183,7 +200,18 @@ const ShopManagement = () => {
                 {field('stock', 'Stock', 'number', 'Ex: 10')}
               </div>
 
-              {field('image', 'URL Image (optionnel)', 'url', 'https://...')}
+              {/* Image uploader */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                  Images du produit
+                </Label>
+                <ImageUploader
+                  images={uploadedImages}
+                  onChange={setUploadedImages}
+                  maxImages={6}
+                />
+                {errors.images && <p className="text-[10px] text-rose-500 font-bold">{errors.images}</p>}
+              </div>
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div>

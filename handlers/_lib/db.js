@@ -1,9 +1,16 @@
 const { Pool } = require('pg');
 
-// PostgreSQL connection pool
+const isLocal = process.env.DATABASE_URL?.includes('localhost');
+const isProd = process.env.NODE_ENV === 'production';
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
+  ssl: isLocal ? false : {
+    rejectUnauthorized: true  // Vérifie le certificat SSL en prod
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
 module.exports = {
@@ -12,10 +19,18 @@ module.exports = {
     try {
       const result = await pool.query(text, params);
       const duration = Date.now() - start;
-      console.log('Executed query', { text: text.substring(0, 100), duration, rows: result.rowCount });
+      // Logs uniquement en dev — pas de données sensibles en prod
+      if (!isProd) {
+        console.log('Query', { sql: text.substring(0, 80), duration, rows: result.rowCount });
+      }
       return result;
     } catch (error) {
-      console.error('Database query error:', error);
+      // En prod, log minimal sans données sensibles
+      if (isProd) {
+        console.error('DB error:', error.code, error.constraint);
+      } else {
+        console.error('Database query error:', error);
+      }
       throw error;
     }
   },

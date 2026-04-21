@@ -1,7 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
-const { notifyComment } = require('./_lib/notifications');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -44,14 +44,23 @@ module.exports = async (req, res) => {
         'INSERT INTO comments (post_id, user_handle, text) VALUES ($1, $2, $3) RETURNING *',
         [post_id, user.handle, text.trim()]
       );
-      // Get post author and notify
-      const { rows: [post] } = await db.query(
-        'SELECT user_handle FROM posts WHERE id = $1',
-        [post_id]
-      );
-      if (post) {
-        notifyComment(user.handle, post_id, post.user_handle, text.trim());
-      }
+      // Email au propriétaire du post (fire & forget)
+      db.query(
+        `SELECT p.user_handle, u.email, u.name FROM posts p
+         JOIN users u ON u.handle = p.user_handle
+         WHERE p.id = $1 AND p.user_handle != $2`,
+        [post_id, user.handle]
+      ).then(({ rows: postRows }) => {
+        if (postRows.length > 0) {
+          sendEmail(postRows[0].email, 'newComment', {
+            recipientName: postRows[0].name,
+            commenterName: user.name || user.handle,
+            commenterHandle: user.handle,
+            postId: post_id,
+            commentText: text.trim(),
+          }).catch(() => {});
+        }
+      }).catch(() => {});
       res.status(201).json(rows[0]);
     } catch (error) {
       console.error(error);

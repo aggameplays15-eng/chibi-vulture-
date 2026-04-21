@@ -34,6 +34,8 @@ export interface OrderData {
   total: number;
   items: OrderItem[];
   customer_id?: number;
+  phone?: string;
+  shipping_address?: string;
 }
 
 export interface OrderItem {

@@ -1,71 +1,66 @@
-// Simple in-memory rate limiting for API endpoints
-// Note: In production with multiple instances, use Redis or similar
-
-const rateLimits = new Map();
+// Rate limiting — DB-backed pour fonctionner sur Vercel (multi-instances)
+// Utilise PostgreSQL comme store partagé au lieu de la mémoire locale
+const db = require('./db');
 
 const RATE_LIMITS = {
-  login: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 minutes
-  signup: { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
-  default: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 per minute
+  login:        { maxRequests: 5,   windowMs: 15 * 60 * 1000 }, // 5 / 15min
+  signup:       { maxRequests: 3,   windowMs: 60 * 60 * 1000 }, // 3 / heure
+  'admin-login':{ maxRequests: 3,   windowMs: 15 * 60 * 1000 }, // 3 / 15min (plus strict)
+  default:      { maxRequests: 100, windowMs: 60 * 1000 },       // 100 / min
 };
 
-function getClientId(req) {
-  return req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
 }
 
-function rateLimit(req, type = 'default') {
+async function rateLimit(req, type = 'default') {
   const config = RATE_LIMITS[type] || RATE_LIMITS.default;
-  const clientId = getClientId(req);
-  const key = `${type}:${clientId}`;
-  
-  const now = Date.now();
-  const windowStart = now - config.windowMs;
-  
-  // Get or create client requests
-  let clientRequests = rateLimits.get(key) || [];
-  
-  // Filter out old requests outside the window
-  clientRequests = clientRequests.filter(timestamp => timestamp > windowStart);
-  
-  // Check if limit exceeded
-  const allowed = clientRequests.length < config.maxRequests;
-  
-  if (allowed) {
-    clientRequests.push(now);
-  }
-  
-  // Update storage
-  rateLimits.set(key, clientRequests);
-  
-  // Calculate reset time
-  const oldestRequest = clientRequests[0] || now;
-  const resetInSeconds = Math.ceil((oldestRequest + config.windowMs - now) / 1000);
-  
-  return {
-    allowed,
-    limit: config.maxRequests,
-    remaining: Math.max(0, config.maxRequests - clientRequests.length),
-    resetInSeconds: Math.max(0, resetInSeconds),
-    headers: {
-      'X-RateLimit-Limit': config.maxRequests.toString(),
-      'X-RateLimit-Remaining': Math.max(0, config.maxRequests - clientRequests.length).toString(),
-      'X-RateLimit-Reset': resetInSeconds.toString(),
-    }
-  };
-}
+  const ip = getClientIp(req);
+  const key = `${type}:${ip}`;
+  const windowStart = new Date(Date.now() - config.windowMs);
 
-// Cleanup old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, requests] of rateLimits.entries()) {
-    const oldestAllowed = now - (60 * 60 * 1000); // 1 hour
-    const validRequests = requests.filter(ts => ts > oldestAllowed);
-    if (validRequests.length === 0) {
-      rateLimits.delete(key);
-    } else {
-      rateLimits.set(key, validRequests);
-    }
+  try {
+    // Upsert + count dans la même transaction
+    await db.query(
+      `INSERT INTO rate_limit_log (key, created_at) VALUES ($1, NOW())`,
+      [key]
+    );
+
+    const { rows } = await db.query(
+      `SELECT COUNT(*) as cnt FROM rate_limit_log WHERE key = $1 AND created_at > $2`,
+      [key, windowStart]
+    );
+
+    const count = parseInt(rows[0].cnt, 10);
+    const allowed = count <= config.maxRequests;
+    const remaining = Math.max(0, config.maxRequests - count);
+    const resetInSeconds = Math.ceil(config.windowMs / 1000);
+
+    return {
+      allowed,
+      limit: config.maxRequests,
+      remaining,
+      resetInSeconds,
+      headers: {
+        'X-RateLimit-Limit': String(config.maxRequests),
+        'X-RateLimit-Remaining': String(remaining),
+        'X-RateLimit-Reset': String(resetInSeconds),
+      }
+    };
+  } catch {
+    // Si la table n'existe pas encore, on laisse passer (fail open)
+    return {
+      allowed: true, limit: config.maxRequests, remaining: config.maxRequests,
+      resetInSeconds: 60,
+      headers: {
+        'X-RateLimit-Limit': String(config.maxRequests),
+        'X-RateLimit-Remaining': String(config.maxRequests),
+        'X-RateLimit-Reset': '60',
+      }
+    };
   }
-}, 10 * 60 * 1000);
+}
 
 module.exports = { rateLimit };

@@ -9,7 +9,7 @@ import { useApp } from '@/context/AppContext';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { setGuestMode, logoUrl, primaryColor } = useApp();
+  const { setGuestMode, homeLogoUrl, primaryColor } = useApp();
   const [isInteracting, setIsInteracting] = useState(false);
 
   const rotateX = useMotionValue(0);
@@ -103,7 +103,7 @@ const Index = () => {
                 }}
               >
                 <img 
-                  src={logoUrl} 
+                  src={homeLogoUrl} 
                   alt="Chibi Vulture Logo"
                   width={176}
                   height={176}
@@ -121,7 +121,7 @@ const Index = () => {
                 }}
               >
                 <img 
-                  src={logoUrl} 
+                  src={homeLogoUrl} 
                   alt=""
                   width={176}
                   height={176}

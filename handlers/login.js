@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
 
   // Rate limiting
-  const limit = rateLimit(req, 'login');
+  const limit = await rateLimit(req, 'login');
   Object.entries(limit.headers).forEach(([key, value]) => {
     res.setHeader(key, value);
   });
@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
 
   try {
     const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (rows.length === 0) return res.status(401).json({ error: 'User not found' });
+    if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password || '');

@@ -12,9 +12,14 @@ module.exports = async (req, res) => {
 
     const { image, caption } = req.body;
     
-    // Validation des entrées
-    if (!image || typeof image !== 'string' || image.length > 1000) {
-      return res.status(400).json({ error: 'Invalid image URL' });
+    // Validation des entrées — limite 5MB en base64 (~6.7M chars) ou URL normale
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image required' });
+    }
+    const isBase64 = image.startsWith('data:image/');
+    const maxSize = isBase64 ? 7 * 1024 * 1024 : 2000; // 5MB base64 ou URL 2000 chars
+    if (image.length > maxSize) {
+      return res.status(400).json({ error: 'Image too large (max 5MB)' });
     }
     if (!caption || typeof caption !== 'string' || caption.length > 500) {
       return res.status(400).json({ error: 'Invalid caption' });
@@ -31,12 +36,22 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to create post' });
     }
   } else if (req.method === 'DELETE') {
-    // Admin only
-    if (!auth.verify(req, true)) return res.status(403).json({ error: 'Admin only' });
+    const user = auth.verify(req);
+    if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { id } = req.query;
+    if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
+
     try {
-      await db.query('DELETE FROM posts WHERE id = $1', [id]);
+      const { rows } = await db.query('SELECT user_handle FROM posts WHERE id = $1', [Number(id)]);
+      if (rows.length === 0) return res.status(404).json({ error: 'Post not found' });
+
+      // L'auteur ou un admin peut supprimer
+      if (rows[0].user_handle !== user.handle && user.role !== 'Admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      await db.query('DELETE FROM posts WHERE id = $1', [Number(id)]);
       res.status(200).json({ status: 'Deleted' });
     } catch (error) {
       console.error(error);

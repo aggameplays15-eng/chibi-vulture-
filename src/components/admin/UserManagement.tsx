@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { MoreVertical, Shield, UserX, Mail, ShieldCheck, UserCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { MoreVertical, UserX, Mail, ShieldCheck, UserCheck, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -13,23 +13,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const UserManagement = () => {
-  const { users, banUser, updateUser } = useApp();
+  const { users, banUser } = useApp();
   const safeUsers = Array.isArray(users) ? users : [];
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [localUsers, setLocalUsers] = useState<typeof safeUsers | null>(null);
+
+  const displayUsers = localUsers ?? safeUsers;
 
   const handleBan = (id: number, name: string) => {
     banUser(id);
     showSuccess(`${name} a été banni de la plateforme.`);
-  };
-
-  const handlePromote = (id: number, name: string, currentRole: string) => {
-    if (currentRole === 'Admin') {
-      showError(`${name} est déjà Admin.`);
-      return;
-    }
-    updateUser({ id, role: 'Admin' } as Parameters<typeof updateUser>[0]);
-    showSuccess(`${name} promu Admin ! 🛡️`);
   };
 
   const handleContact = (email: string | undefined, name: string) => {
@@ -37,6 +42,23 @@ const UserManagement = () => {
       window.open(`mailto:${email}?subject=Message de l'équipe Chibi Vulture`, '_blank');
     } else {
       showError(`Pas d'email pour ${name}.`);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    const token = sessionStorage.getItem('cv_token');
+    try {
+      const res = await fetch(`/api/users?id=${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error();
+      setLocalUsers((localUsers ?? safeUsers).filter(u => u.id !== id));
+      showSuccess("Utilisateur supprimé. 🗑️");
+    } catch {
+      showError("Impossible de supprimer cet utilisateur.");
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -50,7 +72,7 @@ const UserManagement = () => {
       </div>
       
       <div className="space-y-3">
-        {safeUsers.map((user) => (
+        {displayUsers.map((user) => (
           <div key={user.id} className="bg-white p-4 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between group hover:border-purple-100 transition-colors">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -94,12 +116,6 @@ const UserManagement = () => {
                   >
                     <Mail size={16} className="text-blue-500" /> Contacter
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handlePromote(user.id, user.name, user.role)}
-                    className="gap-3 font-bold text-xs rounded-xl p-3 cursor-pointer"
-                  >
-                    <Shield size={16} className="text-purple-500" /> Promouvoir Admin
-                  </DropdownMenuItem>
                   <div className="h-px bg-gray-50 my-1" />
                   <DropdownMenuItem 
                     onClick={() => handleBan(user.id, user.name)}
@@ -107,19 +123,43 @@ const UserManagement = () => {
                   >
                     <UserX size={16} /> Bannir
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setConfirmDeleteId(user.id)}
+                    className="gap-3 font-bold text-xs rounded-xl p-3 text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
+                  >
+                    <Trash2 size={16} /> Supprimer
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         ))}
 
-        {safeUsers.length === 0 && (
+        {displayUsers.length === 0 && (
           <div className="text-center py-8 text-gray-400">
             <UserCheck size={36} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm font-bold">Aucun utilisateur enregistré.</p>
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={() => setConfirmDeleteId(null)}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+            <AlertDialogDescription>Cette action est irréversible. Toutes les données de l'utilisateur seront supprimées.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-red-500 hover:bg-red-600"
+              onClick={() => confirmDeleteId !== null && handleDelete(confirmDeleteId)}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

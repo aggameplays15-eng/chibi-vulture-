@@ -10,71 +10,97 @@ interface DeliveryZone {
 }
 
 interface AppSettingsContextType {
-  logoUrl: string;
+  logoUrl: string;         // legacy (header logo)
+  headerLogoUrl: string;
+  homeLogoUrl: string;
   primaryColor: string;
   deliveryZones: DeliveryZone[];
   updateLogo: (url: string) => void;
+  updateHeaderLogo: (url: string) => void;
+  updateHomeLogo: (url: string) => void;
   updatePrimaryColor: (color: string) => void;
   updateDeliveryZones: (zones: DeliveryZone[]) => void;
 }
 
+const DEFAULT_LOGO = "https://api.dicebear.com/7.x/avataaars/svg?seed=Vulture";
+
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
 
 export const AppSettingsProvider = ({ children }: { children: React.ReactNode }) => {
-  const [logoUrl, setLogoUrl] = useState("https://api.dicebear.com/7.x/avataaars/svg?seed=Vulture");
+  const [headerLogoUrl, setHeaderLogoUrl] = useState(DEFAULT_LOGO);
+  const [homeLogoUrl, setHomeLogoUrl] = useState(DEFAULT_LOGO);
   const [primaryColor, setPrimaryColor] = useState("#EC4899");
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([
+    { id: 'kaloum', label: 'Kaloum',  price: 15000 },
+    { id: 'dixinn', label: 'Dixinn',  price: 20000 },
+    { id: 'ratoma', label: 'Ratoma',  price: 25000 },
+    { id: 'matam',  label: 'Matam',   price: 25000 },
+    { id: 'matoto', label: 'Matoto',  price: 30000 },
+    { id: 'coyah',  label: 'Coyah',   price: 50000 },
+    { id: 'kindia', label: 'Kindia',  price: 80000 },
+  ]);
 
   useEffect(() => {
     const load = async () => {
-      const savedLogo = localStorage.getItem('cv_logo');
-      if (savedLogo) setLogoUrl(savedLogo);
-      
+      const savedHeader = localStorage.getItem('cv_logo_header');
+      const savedHome   = localStorage.getItem('cv_logo_home');
+      // legacy fallback
+      const savedLogo   = localStorage.getItem('cv_logo');
+
+      if (savedHeader) setHeaderLogoUrl(savedHeader);
+      else if (savedLogo) setHeaderLogoUrl(savedLogo);
+
+      if (savedHome) setHomeLogoUrl(savedHome);
+      else if (savedLogo) setHomeLogoUrl(savedLogo);
+
       const savedColor = localStorage.getItem('cv_color');
       if (savedColor) setPrimaryColor(savedColor);
-      
+
       const savedZones = localStorage.getItem('cv_zones');
       if (savedZones) setDeliveryZones(JSON.parse(savedZones) as DeliveryZone[]);
 
-      // Fetch app settings from API
       try {
         const settings = await apiService.getAppSettings();
-        if (settings) {
-          if (settings.app_logo) setLogoUrl(settings.app_logo);
-          if (settings.primary_color) setPrimaryColor(settings.primary_color);
-        }
+        if (settings?.app_logo && !savedHeader) setHeaderLogoUrl(settings.app_logo);
+        if (settings?.app_logo && !savedHome)   setHomeLogoUrl(settings.app_logo);
+        if (settings?.primary_color) setPrimaryColor(settings.primary_color);
       } catch (err) {
         console.error("Failed to fetch app settings:", err);
       }
 
-      // Apply primary color to document
       if (savedColor) document.documentElement.style.setProperty('--primary-theme', savedColor);
     };
-    
     load();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('cv_logo', logoUrl);
-  }, [logoUrl]);
-
+  useEffect(() => { localStorage.setItem('cv_logo_header', headerLogoUrl); }, [headerLogoUrl]);
+  useEffect(() => { localStorage.setItem('cv_logo_home', homeLogoUrl); }, [homeLogoUrl]);
   useEffect(() => {
     localStorage.setItem('cv_color', primaryColor);
     document.documentElement.style.setProperty('--primary-theme', primaryColor);
   }, [primaryColor]);
+  useEffect(() => { localStorage.setItem('cv_zones', JSON.stringify(deliveryZones)); }, [deliveryZones]);
 
-  useEffect(() => {
-    localStorage.setItem('cv_zones', JSON.stringify(deliveryZones));
-  }, [deliveryZones]);
-
-  const updateLogo = useCallback((url: string) => setLogoUrl(url), []);
-  const updatePrimaryColor = useCallback((color: string) => setPrimaryColor(color), []);
+  const updateHeaderLogo    = useCallback((url: string) => setHeaderLogoUrl(url), []);
+  const updateHomeLogo      = useCallback((url: string) => setHomeLogoUrl(url), []);
+  // legacy — met à jour les deux
+  const updateLogo          = useCallback((url: string) => { setHeaderLogoUrl(url); setHomeLogoUrl(url); }, []);
+  const updatePrimaryColor  = useCallback((color: string) => setPrimaryColor(color), []);
   const updateDeliveryZones = useCallback((zones: DeliveryZone[]) => setDeliveryZones(zones), []);
 
   const contextValue = useMemo(() => ({
-    logoUrl, primaryColor, deliveryZones,
-    updateLogo, updatePrimaryColor, updateDeliveryZones
-  }), [logoUrl, primaryColor, deliveryZones, updateLogo, updatePrimaryColor, updateDeliveryZones]);
+    logoUrl: headerLogoUrl,   // legacy alias
+    headerLogoUrl,
+    homeLogoUrl,
+    primaryColor,
+    deliveryZones,
+    updateLogo,
+    updateHeaderLogo,
+    updateHomeLogo,
+    updatePrimaryColor,
+    updateDeliveryZones,
+  }), [headerLogoUrl, homeLogoUrl, primaryColor, deliveryZones,
+       updateLogo, updateHeaderLogo, updateHomeLogo, updatePrimaryColor, updateDeliveryZones]);
 
   return (
     <AppSettingsContext.Provider value={contextValue}>

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Image as ImageIcon, Upload, RefreshCw, Palette, Type, Save, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Palette, Type, Save, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 import { showSuccess, showError } from '@/utils/toast';
+import LogoUploader from './LogoUploader';
+
+const DEFAULT_LOGO = "https://api.dicebear.com/7.x/avataaars/svg?seed=Vulture";
 
 const PRESET_COLORS = [
   { name: "Rose Chibi", value: "#EC4899" },
@@ -21,12 +24,11 @@ const PRESET_COLORS = [
 ];
 
 const LogoManagement = () => {
-  const { logoUrl, updateLogo, primaryColor, updatePrimaryColor } = useApp();
+  const { headerLogoUrl, homeLogoUrl, updateHeaderLogo, updateHomeLogo, primaryColor, updatePrimaryColor } = useApp();
   const [appName, setAppName] = useState('Chibi Vulture');
   const [appDescription, setAppDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load settings from API on mount
   useEffect(() => {
@@ -45,28 +47,12 @@ const LogoManagement = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        showError("Le logo est trop lourd (max 2Mo)");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateLogo(reader.result as string);
-        showSuccess("Logo mis à jour ! ✨");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
       await apiService.updateAppSettings({
         app_name: appName,
-        app_logo: logoUrl,
+        app_logo: headerLogoUrl,
         app_description: appDescription,
         primary_color: primaryColor,
       });
@@ -79,7 +65,8 @@ const LogoManagement = () => {
   };
 
   const resetAppearance = () => {
-    updateLogo("https://api.dicebear.com/7.x/avataaars/svg?seed=Vulture");
+    updateHeaderLogo(DEFAULT_LOGO);
+    updateHomeLogo(DEFAULT_LOGO);
     updatePrimaryColor("#EC4899");
     setAppName('Chibi Vulture');
     setAppDescription('');
@@ -133,7 +120,7 @@ const LogoManagement = () => {
               <p className="text-[10px] font-black uppercase text-gray-400 mb-2">Aperçu</p>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
-                  <img src={logoUrl} alt="Logo" className="w-8 h-8 object-contain" />
+                  <img src={headerLogoUrl} alt="Logo" className="w-8 h-8 object-contain" />
                 </div>
                 <div>
                   <p className="font-black text-gray-900">{appName || 'Nom de l\'app'}</p>
@@ -148,33 +135,69 @@ const LogoManagement = () => {
       {/* Logo Section */}
       <section className="space-y-4">
         <div className="px-2">
-          <h3 className="font-black text-gray-900 text-lg">Logo</h3>
-          <p className="text-xs text-gray-400 font-bold uppercase">Icône de l'application</p>
+          <h3 className="font-black text-gray-900 text-lg">Logos</h3>
+          <p className="text-xs text-gray-400 font-bold uppercase">Header et page d'accueil</p>
         </div>
 
         <Card className="border-none shadow-sm rounded-[32px] overflow-hidden bg-white">
-          <CardContent className="p-8 flex flex-col items-center gap-6">
-            <div className="relative group">
-              <div className="w-32 h-32 rounded-[40px] bg-gray-50 border-4 border-dashed border-gray-100 flex items-center justify-center overflow-hidden shadow-inner">
-                <img src={logoUrl} alt="Current Logo" className="w-24 h-24 object-contain" />
+          <CardContent className="p-6 space-y-6">
+
+            {/* Header logo */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-400" />
+                <p className="text-xs font-black text-gray-700 uppercase tracking-widest">Logo Header</p>
+                <span className="text-[10px] text-gray-400 font-medium">— barre de navigation</span>
               </div>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-2 -right-2 text-white p-2.5 rounded-2xl shadow-lg hover:scale-110 transition-transform"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Upload size={18} />
-              </button>
+              <LogoUploader
+                currentLogo={headerLogoUrl}
+                onLogoChange={(dataUrl) => {
+                  updateHeaderLogo(dataUrl);
+                  showSuccess("Logo header mis à jour ! ✨");
+                }}
+              />
+              {/* Header preview */}
+              <div className="bg-gray-50 rounded-2xl p-3">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-2">Aperçu header</p>
+                <div className="bg-white rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm">
+                  <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden border border-gray-100">
+                    <img src={headerLogoUrl} alt="header" className="w-6 h-6 object-contain" />
+                  </div>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full" />
+                  <div className="w-6 h-6 rounded-lg bg-gray-100" />
+                </div>
+              </div>
             </div>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-            <Button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-12 rounded-2xl font-black gap-2"
-              style={{ backgroundColor: primaryColor }}
-              variant="outline"
-            >
-              <ImageIcon size={18} /> CHANGER LE LOGO
-            </Button>
+
+            <div className="h-px bg-gray-100" />
+
+            {/* Home logo */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-pink-400" />
+                <p className="text-xs font-black text-gray-700 uppercase tracking-widest">Logo Accueil</p>
+                <span className="text-[10px] text-gray-400 font-medium">— page principale</span>
+              </div>
+              <LogoUploader
+                currentLogo={homeLogoUrl}
+                onLogoChange={(dataUrl) => {
+                  updateHomeLogo(dataUrl);
+                  showSuccess("Logo accueil mis à jour ! ✨");
+                }}
+              />
+              {/* Home preview */}
+              <div className="bg-gray-50 rounded-2xl p-3">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-2">Aperçu accueil</p>
+                <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 shadow-sm">
+                  <div className="w-16 h-16 rounded-[20px] bg-white shadow-md flex items-center justify-center overflow-hidden border-2 border-gray-100">
+                    <img src={homeLogoUrl} alt="home" className="w-12 h-12 object-contain" />
+                  </div>
+                  <div className="w-16 h-2 bg-gray-100 rounded-full" />
+                  <div className="w-10 h-2 bg-gray-100 rounded-full" />
+                </div>
+              </div>
+            </div>
+
           </CardContent>
         </Card>
       </section>

@@ -29,21 +29,26 @@ const Checkout = () => {
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const total = subtotal + deliveryPrice;
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
     if (!firstName || !lastName || !phone || !selectedZoneId) {
       showError("Remplis les champs obligatoires !");
       return;
     }
     
-    addOrder({
-      customer: `${firstName} ${lastName}`,
-      total: total,
-      items: [...cart]
-    });
-
-    clearCart();
-    showSuccess("Commande enregistrée ! ✨");
-    navigate('/checkout-success');
+    try {
+      const orderId = await addOrder({
+        customer: `${firstName} ${lastName}`,
+        total: total,
+        items: [...cart],
+        phone,
+        shipping_address: address || selectedZone?.label || '',
+      });
+      clearCart();
+      showSuccess("Commande enregistrée ! ✨");
+      navigate('/checkout-success', { state: { orderId } });
+    } catch {
+      showError("Erreur lors de la commande. Réessaie.");
+    }
   };
 
   return (

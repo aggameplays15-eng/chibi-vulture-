@@ -6,8 +6,8 @@ const { getVapidPublicKey } = require('./_lib/push');
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
-  const user = auth.verify(req, true); // requireAdmin = true
-  if (!user) return res.status(401).json({ error: 'Admin access required' });
+  const user = auth.verify(req);
+  if (!user || user.role !== 'Admin') return res.status(401).json({ error: 'Admin access required' });
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });

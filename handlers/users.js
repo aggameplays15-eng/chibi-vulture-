@@ -3,50 +3,67 @@ const auth = require('./_lib/auth');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('./_lib/rateLimit');
 const { handleCors } = require('./_lib/cors');
+const { sendEmail } = require('./_lib/email');
+
+// L'email admin est défini uniquement via .env — aucun utilisateur DB ne peut avoir ce rôle
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
-  
+
+  // GET — liste des utilisateurs (admin only)
   if (req.method === 'GET') {
-    // Only Admin can list all users
-    const admin = auth.verify(req, true);
-    if (!admin) return res.status(403).json({ error: 'Admin access required' });
+    const admin = auth.verify(req);
+    if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 
     try {
-      const { rows } = await db.query('SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users ORDER BY created_at DESC');
+      const { rows } = await db.query(
+        'SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users ORDER BY created_at DESC'
+      );
       res.status(200).json(rows);
-    } catch (error) {
+    } catch {
       res.status(500).json({ error: 'Failed to fetch users' });
     }
+
+  // PATCH — mise à jour d'un utilisateur
   } else if (req.method === 'PATCH') {
     const requester = auth.verify(req);
     if (!requester) return res.status(401).json({ error: 'Auth required' });
 
     const { id, ...data } = req.body;
 
-    // Check permissions: Admin can update anyone, Member can only update themselves
-    if (requester.role !== 'Admin' && (!requester.id || requester.id !== id)) {
+    // Un membre ne peut modifier que son propre profil
+    if (requester.role !== 'Admin' && requester.id !== id) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    // Whitelist des champs autorisés pour prévenir l'injection SQL
-    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'role', 'is_approved', 'status'];
+    // Bloquer tout changement de rôle — le rôle Admin est défini uniquement via .env
+    if ('role' in data) {
+      return res.status(403).json({ error: 'Role changes are not allowed' });
+    }
+
+    // Whitelist — role intentionnellement absent
+    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'is_approved', 'status'];
     const dataKeys = Object.keys(data).filter(key => ALLOWED_FIELDS.includes(key));
-    
+
     if (dataKeys.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     const fields = dataKeys.map((key, i) => `${key} = $${i + 2}`).join(', ');
     const values = dataKeys.map(key => data[key]);
-    
+
     try {
       const { rows } = await db.query(
         `UPDATE users SET ${fields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status`,
         [id, ...values]
       );
+      if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
       const user = rows[0];
-      // Map snake_case to camelCase for frontend compatibility
+      // Email approbation si is_approved vient de passer à true
+      if (data.is_approved === true && !user.is_approved) {
+        sendEmail(user.email, 'accountApproved', { name: user.name, handle: user.handle }).catch(() => {});
+      }
       res.status(200).json({
         ...user,
         avatarColor: user.avatar_color,
@@ -57,36 +74,31 @@ module.exports = async (req, res) => {
       console.error(error);
       res.status(500).json({ error: 'Failed to update user' });
     }
+
+  // POST — inscription
   } else if (req.method === 'POST') {
-    // Rate limiting for signup
-    const limit = rateLimit(req, 'signup');
-    Object.entries(limit.headers).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
+    const limit = await rateLimit(req, 'signup');
+    Object.entries(limit.headers).forEach(([key, value]) => res.setHeader(key, value));
     if (!limit.allowed) {
-      return res.status(429).json({ 
-        error: 'Too many signup attempts. Please try again later.',
-        retryAfter: limit.resetInSeconds
-      });
+      return res.status(429).json({ error: 'Too many signup attempts. Please try again later.', retryAfter: limit.resetInSeconds });
     }
 
-    // Signup
     const { name, handle, email, bio, avatarColor, password } = req.body;
-    
-    // Validation
-    if (!name || typeof name !== 'string' || name.length < 2 || name.length > 50) {
+
+    if (!name || typeof name !== 'string' || name.length < 2 || name.length > 50)
       return res.status(400).json({ error: 'Invalid name (2-50 chars)' });
-    }
-    if (!handle || typeof handle !== 'string' || !/^@[a-zA-Z0-9_]{3,20}$/.test(handle)) {
+    if (!handle || typeof handle !== 'string' || !/^@[a-zA-Z0-9_]{3,20}$/.test(handle))
       return res.status(400).json({ error: 'Invalid handle format (@username, 3-20 chars)' });
-    }
-    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return res.status(400).json({ error: 'Invalid email format' });
-    }
-    if (!password || typeof password !== 'string' || password.length < 8) {
+    if (!password || typeof password !== 'string' || password.length < 8)
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
+
+    // Bloquer l'inscription avec l'email admin
+    if (ADMIN_EMAIL && email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase()) {
+      return res.status(403).json({ error: 'This email is reserved' });
     }
-    
+
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const { rows } = await db.query(
@@ -94,7 +106,8 @@ module.exports = async (req, res) => {
         [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword]
       );
       const user = rows[0];
-      // Map snake_case to camelCase for frontend compatibility
+      // Email de bienvenue (fire & forget)
+      sendEmail(user.email, 'welcome', { name: user.name, handle: user.handle }).catch(() => {});
       res.status(201).json({
         ...user,
         avatarColor: user.avatar_color,
@@ -102,13 +115,35 @@ module.exports = async (req, res) => {
         isApproved: user.is_approved
       });
     } catch (error) {
-      console.error(error);
-      if (error.code === '23505') {
-        return res.status(409).json({ error: 'Handle or email already exists' });
-      }
+      if (error.code === '23505') return res.status(409).json({ error: 'Handle or email already exists' });
       res.status(500).json({ error: 'Failed to create user' });
     }
+
+  // DELETE — suppression (admin only, ne peut pas supprimer l'admin .env)
+  } else if (req.method === 'DELETE') {
+    const requester = auth.verify(req);
+    if (!requester || requester.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { id } = req.query;
+    if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
+
+    try {
+      const { rows } = await db.query('SELECT id, email FROM users WHERE id = $1', [Number(id)]);
+      if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+      // Bloquer la suppression de l'admin .env
+      if (ADMIN_EMAIL && rows[0].email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        return res.status(403).json({ error: 'Cannot delete the admin account' });
+      }
+
+      await db.query('DELETE FROM users WHERE id = $1', [Number(id)]);
+      res.status(200).json({ status: 'Deleted' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete user' });
+    }
+
   } else {
     res.status(405).end();
   }
-}; 
+};

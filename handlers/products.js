@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch products' });
     }
   } else if (req.method === 'POST') {
-    // Admin only
-    if (!auth.verify(req, true)) return res.status(403).json({ error: 'Admin only' });
+    const user = auth.verify(req);
+    if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { name, price, image, category, stock, featured } = req.body;
     
@@ -25,8 +25,13 @@ module.exports = async (req, res) => {
     if (typeof price !== 'number' || price < 0) {
       return res.status(400).json({ error: 'Invalid price' });
     }
-    if (!image || typeof image !== 'string' || image.length > 1000) {
-      return res.status(400).json({ error: 'Invalid image URL' });
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image required' });
+    }
+    const isBase64 = image.startsWith('data:image/');
+    const maxImgSize = isBase64 ? 7 * 1024 * 1024 : 2000;
+    if (image.length > maxImgSize) {
+      return res.status(400).json({ error: 'Image too large (max 5MB)' });
     }
     if (!category || typeof category !== 'string' || category.length > 50) {
       return res.status(400).json({ error: 'Invalid category' });
@@ -43,12 +48,13 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to create product' });
     }
   } else if (req.method === 'DELETE') {
-    // Admin only
-    if (!auth.verify(req, true)) return res.status(403).json({ error: 'Admin only' });
+    const user = auth.verify(req);
+    if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
     const { id } = req.query;
+    if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
     try {
-      await db.query('DELETE FROM products WHERE id = $1', [id]);
+      await db.query('DELETE FROM products WHERE id = $1', [Number(id)]);
       res.status(200).json({ status: 'Deleted' });
     } catch (error) {
       console.error(error);

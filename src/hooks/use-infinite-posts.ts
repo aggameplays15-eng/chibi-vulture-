@@ -67,5 +67,9 @@ export const useInfinitePosts = () => {
     setHasMore(true);
   }, []);
 
-  return { posts, loadMore, hasMore, isLoading, reset };
+  const removePost = useCallback((id: number) => {
+    setPosts(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  return { posts, loadMore, hasMore, isLoading, reset, removePost };
 };

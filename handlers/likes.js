@@ -1,7 +1,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
-const { notifyLike } = require('./_lib/notifications');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -35,14 +35,22 @@ module.exports = async (req, res) => {
           'INSERT INTO likes (user_handle, post_id) VALUES ($1, $2)',
           [user_handle, post_id]
         );
-        // Get post author and notify
-        const { rows: [post] } = await db.query(
-          'SELECT user_handle FROM posts WHERE id = $1',
-          [post_id]
-        );
-        if (post) {
-          notifyLike(user_handle, post_id, post.user_handle);
-        }
+        // Email au propriétaire du post (fire & forget)
+        db.query(
+          `SELECT p.user_handle, u.email, u.name FROM posts p
+           JOIN users u ON u.handle = p.user_handle
+           WHERE p.id = $1 AND p.user_handle != $2`,
+          [post_id, user_handle]
+        ).then(({ rows }) => {
+          if (rows.length > 0) {
+            sendEmail(rows[0].email, 'newLike', {
+              recipientName: rows[0].name,
+              likerName: user.name || user_handle,
+              likerHandle: user_handle,
+              postId: post_id,
+            }).catch(() => {});
+          }
+        }).catch(() => {});
         res.status(201).json({ liked: true });
       }
     } catch (error) {

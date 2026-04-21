@@ -5,6 +5,7 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { sendEmail } = require('./_lib/email');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -92,6 +93,27 @@ module.exports = async (req, res) => {
         `;
         await db.query(updateOrderQuery, [tracking_number, carrier, status, order_id]);
       }
+
+      // Email de mise à jour au client (fire & forget)
+      try {
+        const { rows: orderRows } = await db.query(
+          `SELECT o.id, o.tracking_number, o.carrier, o.user_handle,
+                  u.email, u.name
+           FROM orders o
+           LEFT JOIN users u ON u.handle = o.user_handle
+           WHERE o.id = $1`,
+          [order_id]
+        );
+        if (orderRows.length > 0 && orderRows[0].email) {
+          sendEmail(orderRows[0].email, 'orderStatusUpdate', {
+            name: orderRows[0].name,
+            orderId: order_id,
+            status,
+            trackingNumber: tracking_number || orderRows[0].tracking_number,
+            carrier: carrier || orderRows[0].carrier,
+          }).catch(() => {});
+        }
+      } catch {}
 
       res.status(200).json({ success: true });
 

@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap, Palette, Truck, Bell, Settings2, Brush } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap, Palette, Truck, Bell, Settings2, Brush, Music } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import ShopManagement from '@/components/admin/ShopManagement';
@@ -14,14 +14,12 @@ import LogoManagement from '@/components/admin/LogoManagement';
 import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
 import ArtistDashboard from '@/components/admin/ArtistDashboard';
+import MusicManager from '@/components/admin/MusicManager';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
 const Admin = () => {
-  const { setUsers, setOrders } = useApp() as ReturnType<typeof useApp> & {
-    setUsers?: (u: unknown[]) => void;
-    setOrders?: (o: unknown[]) => void;
-  };
+  const { primaryColor } = useApp();
 
   // Charger les données admin-only au montage
   useEffect(() => {
@@ -84,6 +82,9 @@ const Admin = () => {
             <TabsTrigger value="appearance" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
               <Settings2 size={18} />
             </TabsTrigger>
+            <TabsTrigger value="music" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
+              <Music size={18} />
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-8 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -120,6 +121,10 @@ const Admin = () => {
 
           <TabsContent value="appearance" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <LogoManagement />
+          </TabsContent>
+
+          <TabsContent value="music" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <MusicManager />
           </TabsContent>
         </Tabs>
       </div>

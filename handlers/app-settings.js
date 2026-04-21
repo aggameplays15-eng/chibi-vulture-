@@ -41,8 +41,8 @@ module.exports = async (req, res) => {
 
   // PUT - Admin only - Update app settings
   if (req.method === 'PUT') {
-    const user = auth.verify(req, true); // requireAdmin = true
-    if (!user) return res.status(401).json({ error: 'Admin access required' });
+    const user = auth.verify(req);
+    if (!user || user.role !== 'Admin') return res.status(401).json({ error: 'Admin access required' });
 
     const { app_name, app_logo, app_description, primary_color } = req.body;
     

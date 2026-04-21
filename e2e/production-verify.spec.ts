@@ -25,7 +25,7 @@ test('Production site should load correctly', async ({ page }) => {
   
   await page.goto('/', { waitUntil: 'networkidle' });
   
-  // Wait for React to potentially render
+  // Wait for React to render
   await page.waitForTimeout(5000);
   
   // Log all console messages
@@ -36,30 +36,41 @@ test('Production site should load correctly', async ({ page }) => {
   // Check that the page loads
   await expect(page).toHaveTitle(/Chibi Vulture/);
   
-  // Check root element
+  // Check that there are no page errors
+  expect(pageErrors).toHaveLength(0);
+  
+  // Check root element has content
   const root = page.locator('#root');
-  const rootExists = await root.count();
-  console.log('Root element count:', rootExists);
+  await expect(root).toBeVisible();
   
-  if (rootExists > 0) {
-    const rootVisible = await root.isVisible();
-    console.log('Root visible:', rootVisible);
-    const rootContent = await root.innerHTML();
-    console.log('Root content length:', rootContent.length);
-  }
-  
-  // The test will pass if we can identify the issue, not if the site renders
-  expect(consoleMessages.length).toBeGreaterThan(0);
+  const rootContent = await root.innerHTML();
+  expect(rootContent.length).toBeGreaterThan(0);
 });
 
 test('Production assets should load correctly', async ({ page, request }) => {
-  // Check CSS loads
-  const cssResponse = await request.get('/assets/index-Bynli5bP.css');
-  expect(cssResponse.ok()).toBeTruthy();
+  await page.goto('/');
   
-  // Check main JS loads
-  const jsResponse = await request.get('/assets/index-BQKGwRV6.js');
+  // Get all loaded scripts from the page
+  const scripts = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('script[src]')).map(s => s.getAttribute('src'));
+  });
+  
+  // Check that at least one script loaded
+  expect(scripts.length).toBeGreaterThan(0);
+  
+  // Check that main JS loads (first script should be the main entry)
+  const mainJsUrl = scripts.find(s => s.includes('/assets/index-'));
+  expect(mainJsUrl).toBeDefined();
+  
+  const jsResponse = await request.get(mainJsUrl!);
   expect(jsResponse.ok()).toBeTruthy();
+  
+  // Check CSS loads
+  const stylesheets = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.getAttribute('href'));
+  });
+  
+  expect(stylesheets.length).toBeGreaterThan(0);
   
   // Check favicon loads
   const faviconResponse = await request.get('/favicon.svg');

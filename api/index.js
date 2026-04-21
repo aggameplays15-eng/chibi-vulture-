@@ -21,6 +21,8 @@ const artistStatsHandler = require('../handlers/artist-stats');
 const deliveryTrackingHandler = require('../handlers/delivery-tracking');
 const productCategoriesHandler = require('../handlers/product-categories');
 const searchHandler = require('../handlers/search');
+const musicHandler = require('../handlers/music');
+const logoutHandler = require('../handlers/logout');
 
 // Route mapping
 const routes = {
@@ -44,6 +46,8 @@ const routes = {
   '/api/delivery-tracking': deliveryTrackingHandler,
   '/api/product-categories': productCategoriesHandler,
   '/api/search': searchHandler,
+  '/api/music': musicHandler,
+  '/api/logout': logoutHandler,
 };
 
 module.exports = async (req, res) => {
@@ -53,6 +57,19 @@ module.exports = async (req, res) => {
   
   // Add query params to req.query
   req.query = Object.fromEntries(url.searchParams);
+
+  // Route spéciale : /api/orders/:id/tracking
+  const trackingMatch = pathname.match(/^\/api\/orders\/([^/]+)\/tracking$/);
+  if (trackingMatch) {
+    req.query.orderId = trackingMatch[1];
+    try {
+      await deliveryTrackingHandler(req, res);
+    } catch (error) {
+      console.error('Error in delivery tracking handler:', error);
+      if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+    }
+    return;
+  }
   
   // Find handler
   const handler = routes[pathname];

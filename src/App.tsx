@@ -8,7 +8,7 @@ import { CartProvider } from "./context/CartContext";
 import { DataProvider } from "./context/DataContext";
 import { AppSettingsProvider } from "./context/AppSettingsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import OnboardingTutorial from "@/components/OnboardingTutorial";
+import MusicPlayer from "@/components/MusicPlayer";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -95,9 +95,9 @@ const App = () => (
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                <MusicPlayer />
               </BrowserRouter>
             </TooltipProvider>
-            <OnboardingTutorial />
           </AppSettingsProvider>
         </DataProvider>
       </CartProvider>
