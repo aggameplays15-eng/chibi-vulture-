@@ -26,11 +26,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // React core
+          // React core — must be a single chunk so all libs share the same React instance
           "vendor-react": ["react", "react-dom", "react-router-dom"],
-          // UI libraries
-          "vendor-ui": ["framer-motion", "lucide-react", "@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select", "@radix-ui/react-tabs"],
-          // Charts & maps
+          // Charts & maps (no React internals issues)
           "vendor-charts": ["recharts"],
           "vendor-maps": ["leaflet", "react-leaflet"],
           // Forms & validation
