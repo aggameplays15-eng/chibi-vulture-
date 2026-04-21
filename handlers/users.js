@@ -54,15 +54,25 @@ module.exports = async (req, res) => {
     const values = dataKeys.map(key => data[key]);
 
     try {
+      // Récupérer l'état AVANT la mise à jour pour détecter le changement d'approbation
+      const { rows: before } = await db.query('SELECT is_approved FROM users WHERE id = $1', [id]);
+      const wasApproved = before[0]?.is_approved ?? false;
+
       const { rows } = await db.query(
         `UPDATE users SET ${fields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status`,
         [id, ...values]
       );
       if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
       const user = rows[0];
-      // Email approbation si is_approved vient de passer à true
-      if (data.is_approved === true && !user.is_approved) {
+
+      // Email au membre si son compte vient d'être approuvé (false → true)
+      if (data.is_approved === true && !wasApproved) {
         sendEmail(user.email, 'accountApproved', { name: user.name, handle: user.handle }).catch(() => {});
+      }
+
+      // Email à l'admin si le compte vient d'être banni
+      if (data.status === 'Banni' && ADMIN_EMAIL) {
+        sendEmail(ADMIN_EMAIL, 'accountBanned', { name: user.name, handle: user.handle, email: user.email }).catch(() => {});
       }
       res.status(200).json({
         ...user,
@@ -106,8 +116,12 @@ module.exports = async (req, res) => {
         [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword]
       );
       const user = rows[0];
-      // Email de bienvenue (fire & forget)
+      // Email de bienvenue au nouveau membre (fire & forget)
       sendEmail(user.email, 'welcome', { name: user.name, handle: user.handle }).catch(() => {});
+      // Alerte à l'admin — nouveau membre en attente d'approbation
+      if (ADMIN_EMAIL) {
+        sendEmail(ADMIN_EMAIL, 'newSignupAdmin', { name: user.name, handle: user.handle, email: user.email }).catch(() => {});
+      }
       res.status(201).json({
         ...user,
         avatarColor: user.avatar_color,

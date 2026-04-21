@@ -295,7 +295,35 @@ const templates = {
     `),
   }),
 
-  // 10. Réinitialisation de mot de passe
+  // 10. Nouveau membre inscrit (admin)
+  newSignupAdmin: ({ name, handle, email }) => ({
+    subject: `👤 Nouveau membre inscrit — ${APP_NAME}`,
+    html: baseTemplate('Nouveau membre', `
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Nouveau membre inscrit 👤</h2>
+      <div style="background:#fff3f8;border-left:4px solid ${PRIMARY};padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
+        <p style="margin:0;color:${DARK};font-size:16px;font-weight:700;">${name} <span style="color:#888;font-weight:400;font-size:14px;">${handle}</span></p>
+        <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
+      </div>
+      <p style="color:#555;font-size:15px;margin:0 0 24px;">Ce membre attend ton approbation pour accéder à la plateforme.</p>
+      ${btn('Gérer les membres', `${APP_URL}/admin`)}
+    `),
+  }),
+
+  // 11. Compte banni (admin — log interne)
+  accountBanned: ({ name, handle, email }) => ({
+    subject: `🚫 Compte banni — ${handle} — ${APP_NAME}`,
+    html: baseTemplate('Compte banni', `
+      <h2 style="margin:0 0 16px;color:#EF4444;font-size:22px;">Compte banni 🚫</h2>
+      <div style="background:#fff5f5;border-left:4px solid #EF4444;padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
+        <p style="margin:0;color:${DARK};font-size:16px;font-weight:700;">${name} <span style="color:#888;font-weight:400;font-size:14px;">${handle}</span></p>
+        <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
+      </div>
+      <p style="color:#555;font-size:14px;margin:0;">Ce log est généré automatiquement à chaque bannissement.</p>
+      ${btn('Gérer les membres', `${APP_URL}/admin`)}
+    `),
+  }),
+
+  // 12. Réinitialisation de mot de passe
   passwordReset: ({ name, resetUrl }) => ({
     subject: `🔑 Réinitialisation de mot de passe — ${APP_NAME}`,
     html: baseTemplate('Réinitialisation mot de passe', `
