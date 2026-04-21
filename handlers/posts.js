@@ -16,6 +16,10 @@ module.exports = async (req, res) => {
     if (!image || typeof image !== 'string') {
       return res.status(400).json({ error: 'Image required' });
     }
+    // Bloquer SVG — vecteur XSS (JS embarqué dans SVG)
+    if (image.startsWith('data:image/svg')) {
+      return res.status(400).json({ error: 'SVG images are not allowed' });
+    }
     const isBase64 = image.startsWith('data:image/');
     const maxSize = isBase64 ? 7 * 1024 * 1024 : 2000; // 5MB base64 ou URL 2000 chars
     if (image.length > maxSize) {

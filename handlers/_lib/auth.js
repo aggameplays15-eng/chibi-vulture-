@@ -1,21 +1,12 @@
 // Authentication middleware — JWT verification
 const jwt = require('jsonwebtoken');
+const db = require('./db');
 
-if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET not set — using insecure fallback (dev only)');
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET || SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET is not set or too short (min 32 chars). Server will not start securely.');
+  if (process.env.NODE_ENV === 'production') process.exit(1);
 }
-const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me-min-32-chars!!';
-
-// Token blacklist (in-memory — survives process lifetime)
-// In production with multiple instances, use Redis
-const tokenBlacklist = new Set();
-
-// Cleanup expired tokens every hour
-setInterval(() => {
-  // We can't easily check expiry without decoding, so we just clear periodically
-  // Tokens expire in 24h anyway, so clearing every hour is safe
-  if (tokenBlacklist.size > 10000) tokenBlacklist.clear();
-}, 60 * 60 * 1000);
 
 module.exports = {
   verify: (req) => {
@@ -23,9 +14,6 @@ module.exports = {
     if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
 
     const token = authHeader.slice(7);
-
-    // Check blacklist
-    if (tokenBlacklist.has(token)) return false;
 
     try {
       const decoded = jwt.verify(token, SECRET);
@@ -39,14 +27,39 @@ module.exports = {
     return jwt.sign(
       { id: user.id, email: user.email, role: user.role, handle: user.handle },
       SECRET,
-      { expiresIn: '24h' }  // Réduit de 7j à 24h
+      { expiresIn: '24h' }
     );
   },
 
-  revokeToken: (req) => {
+  // Révocation DB-backed — fonctionne sur toutes les instances serverless
+  revokeToken: async (req) => {
     const authHeader = req.headers['authorization'];
-    if (authHeader?.startsWith('Bearer ')) {
-      tokenBlacklist.add(authHeader.slice(7));
+    if (!authHeader?.startsWith('Bearer ')) return;
+    const token = authHeader.slice(7);
+    try {
+      // Décoder sans vérifier pour récupérer l'expiry
+      const decoded = jwt.decode(token);
+      const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 86400000);
+      await db.query(
+        `INSERT INTO revoked_tokens (token_hash, expires_at) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+        [require('crypto').createHash('sha256').update(token).digest('hex'), expiresAt]
+      );
+    } catch {
+      // Fail silently — logout still clears client-side token
+    }
+  },
+
+  // Vérifie si un token est révoqué (appelé dans verify si besoin)
+  isRevoked: async (token) => {
+    try {
+      const hash = require('crypto').createHash('sha256').update(token).digest('hex');
+      const { rows } = await db.query(
+        `SELECT 1 FROM revoked_tokens WHERE token_hash = $1 AND expires_at > NOW()`,
+        [hash]
+      );
+      return rows.length > 0;
+    } catch {
+      return false;
     }
   }
 };

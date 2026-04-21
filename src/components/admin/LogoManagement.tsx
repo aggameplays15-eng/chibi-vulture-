@@ -24,7 +24,7 @@ const PRESET_COLORS = [
 ];
 
 const LogoManagement = () => {
-  const { headerLogoUrl, homeLogoUrl, updateHeaderLogo, updateHomeLogo, primaryColor, updatePrimaryColor } = useApp();
+  const { headerLogoUrl, homeLogoUrl, updateHeaderLogo, updateHomeLogo, primaryColor, updatePrimaryColor, pwaIconUrl, updatePwaIcon, appName: ctxAppName, updateAppName } = useApp();
   const [appName, setAppName] = useState('Chibi Vulture');
   const [appDescription, setAppDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -53,9 +53,12 @@ const LogoManagement = () => {
       await apiService.updateAppSettings({
         app_name: appName,
         app_logo: headerLogoUrl,
+        pwa_icon: pwaIconUrl || headerLogoUrl,
         app_description: appDescription,
         primary_color: primaryColor,
       });
+      // Mettre à jour le contexte global
+      updateAppName(appName);
       showSuccess('Paramètres sauvegardés ! ✨');
     } catch (error) {
       showError('Erreur lors de la sauvegarde');
@@ -242,6 +245,52 @@ const LogoManagement = () => {
                 <p className="text-xs font-black text-gray-900 uppercase">Couleur personnalisée</p>
                 <p className="text-[10px] text-gray-400 font-bold">{primaryColor.toUpperCase()}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Section PWA */}
+      <section className="space-y-4">
+        <div className="px-2">
+          <h3 className="font-black text-gray-900 text-lg">Icône PWA</h3>
+          <p className="text-xs text-gray-400 font-bold uppercase">Logo affiché lors de l'installation sur mobile</p>
+        </div>
+
+        <Card className="border-none shadow-sm rounded-[32px] overflow-hidden bg-white">
+          <CardContent className="p-6 space-y-4">
+            <LogoUploader
+              currentLogo={pwaIconUrl || headerLogoUrl}
+              onLogoChange={(dataUrl) => {
+                updatePwaIcon(dataUrl);
+                showSuccess("Icône PWA mise à jour ! 📱");
+              }}
+            />
+
+            {/* Aperçu installation mobile */}
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-3">Aperçu installation mobile</p>
+              <div className="flex flex-col items-center gap-2">
+                <div
+                  className="w-20 h-20 rounded-[22px] flex items-center justify-center shadow-lg overflow-hidden"
+                  style={{ backgroundColor: primaryColor + '20', border: `2px solid ${primaryColor}30` }}
+                >
+                  <img
+                    src={pwaIconUrl || headerLogoUrl}
+                    alt="PWA icon"
+                    className="w-16 h-16 object-contain"
+                  />
+                </div>
+                <p className="text-xs font-black text-gray-800 text-center">{appName}</p>
+                <p className="text-[10px] text-gray-400">Comme ça apparaîtra sur l'écran d'accueil</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50 rounded-2xl">
+              <p className="text-[10px] text-blue-600 font-bold">
+                💡 Utilise une image carrée PNG/JPG de 512×512px minimum pour un meilleur rendu.
+                Les utilisateurs déjà installés devront réinstaller l'app pour voir le changement.
+              </p>
             </div>
           </CardContent>
         </Card>

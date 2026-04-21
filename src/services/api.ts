@@ -277,7 +277,7 @@ export const apiService = {
     return safeJson(response);
   },
 
-  updateAppSettings: async (settings: { app_name?: string; app_logo?: string; app_description?: string; primary_color?: string }) => {
+  updateAppSettings: async (settings: { app_name?: string; app_logo?: string; pwa_icon?: string; app_description?: string; primary_color?: string }) => {
     const response = await fetchWithAuth('/api/app-settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
@@ -287,21 +287,30 @@ export const apiService = {
   },
 
   adminLogin: async (credentials: LoginCredentials) => {
-    // Admin login is fully server-side authenticated
-    // Credentials are validated in api/admin-login.js using environment variables
     const response = await fetch('/api/admin-login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(credentials),
-});
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Accès admin refusé');
+    }
+    return safeJson(response); // { otpRequired: true }
+  },
 
-if (!response.ok) {
-  const err = await safeJson(response);
-  throw new Error(err?.error || 'Accès admin refusé');
-}
-
-return safeJson(response);
-},
+  adminVerifyOtp: async (code: string) => {
+    const response = await fetch('/api/admin-verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Code invalide');
+    }
+    return safeJson(response); // { user, token }
+  },
 
 getOrderTracking: async (orderId: string) => {
   const response = await fetchWithAuth(`/api/orders/${orderId}/tracking`);

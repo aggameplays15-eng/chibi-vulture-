@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     try {
       const { rows } = await db.query(
-        "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'app_logo', 'app_description', 'primary_color')"
+        "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'app_logo', 'pwa_icon', 'app_description', 'primary_color')"
       );
       
       const settings = rows.reduce((acc, row) => {
@@ -17,10 +17,10 @@ module.exports = async (req, res) => {
         return acc;
       }, {});
 
-      // Default values
       const defaults = {
         app_name: 'Chibi Vulture',
         app_logo: '/favicon.ico',
+        pwa_icon: null,
         app_description: 'Le réseau social artistique',
         primary_color: '#EC4899',
       };
@@ -44,15 +44,15 @@ module.exports = async (req, res) => {
     const user = auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(401).json({ error: 'Admin access required' });
 
-    const { app_name, app_logo, app_description, primary_color } = req.body;
+    const { app_name, app_logo, pwa_icon, app_description, primary_color } = req.body;
     
     try {
-      // Update or insert each setting
       const settings = [
-        { key: 'app_name', value: app_name },
-        { key: 'app_logo', value: app_logo },
+        { key: 'app_name',        value: app_name },
+        { key: 'app_logo',        value: app_logo },
+        { key: 'pwa_icon',        value: pwa_icon },
         { key: 'app_description', value: app_description },
-        { key: 'primary_color', value: primary_color },
+        { key: 'primary_color',   value: primary_color },
       ].filter(s => s.value !== undefined);
 
       for (const { key, value } of settings) {

@@ -1,19 +1,42 @@
 // CORS handler — restricts origins in production
-const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
+const ALLOWED_ORIGINS = (process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL]
+  : []
+).concat([
   'http://localhost:5173',
   'http://localhost:3000',
-];
+]);
+
+// Routes publiques qui n'ont pas besoin d'un origin navigateur
+const PUBLIC_PATHS = ['/api/manifest.json'];
 
 module.exports = {
   handleCors: (req, res) => {
     const origin = req.headers['origin'];
-    const allowed = !origin || ALLOWED_ORIGINS.includes(origin);
+    const isProd = process.env.NODE_ENV === 'production';
+    const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+    const path = req.url?.split('?')[0] || '';
+    const isPublic = PUBLIC_PATHS.some(p => path.startsWith(p));
 
-    res.setHeader('Access-Control-Allow-Origin', allowed ? (origin || '*') : ALLOWED_ORIGINS[0]);
+    // En production : bloquer les requêtes sans origin valide (curl, Postman, etc.)
+    // sauf pour les routes publiques explicitement autorisées
+    if (isProd && !isAllowed && !isPublic) {
+      res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS[0] || 'null');
+      // Retourner 403 pour les requêtes non-OPTIONS sans origin valide
+      if (req.method !== 'OPTIONS') {
+        res.status(403).json({ error: 'Forbidden' });
+        return true; // bloqué
+      }
+    } else if (isAllowed) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      // Dev sans origin → autoriser localhost
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+    }
+
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    // Removed X-Admin-Email and X-Admin-Password from exposed headers
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
 
     if (req.method === 'OPTIONS') {

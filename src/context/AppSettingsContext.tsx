@@ -10,14 +10,18 @@ interface DeliveryZone {
 }
 
 interface AppSettingsContextType {
-  logoUrl: string;         // legacy (header logo)
+  logoUrl: string;
   headerLogoUrl: string;
   homeLogoUrl: string;
+  pwaIconUrl: string;
+  appName: string;
   primaryColor: string;
   deliveryZones: DeliveryZone[];
   updateLogo: (url: string) => void;
   updateHeaderLogo: (url: string) => void;
   updateHomeLogo: (url: string) => void;
+  updatePwaIcon: (url: string) => void;
+  updateAppName: (name: string) => void;
   updatePrimaryColor: (color: string) => void;
   updateDeliveryZones: (zones: DeliveryZone[]) => void;
 }
@@ -29,6 +33,8 @@ const AppSettingsContext = createContext<AppSettingsContextType | undefined>(und
 export const AppSettingsProvider = ({ children }: { children: React.ReactNode }) => {
   const [headerLogoUrl, setHeaderLogoUrl] = useState(DEFAULT_LOGO);
   const [homeLogoUrl, setHomeLogoUrl] = useState(DEFAULT_LOGO);
+  const [pwaIconUrl, setPwaIconUrl] = useState('');
+  const [appName, setAppName] = useState('Chibi Vulture');
   const [primaryColor, setPrimaryColor] = useState("#EC4899");
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([
     { id: 'kaloum', label: 'Kaloum',  price: 15000 },
@@ -56,6 +62,16 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
       const savedColor = localStorage.getItem('cv_color');
       if (savedColor) setPrimaryColor(savedColor);
 
+      const savedPwaIcon = localStorage.getItem('cv_pwa_icon');
+      if (savedPwaIcon) setPwaIconUrl(savedPwaIcon);
+
+      const savedAppName = localStorage.getItem('cv_app_name');
+      if (savedAppName) {
+        setAppName(savedAppName);
+        document.title = savedAppName;
+        document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', savedAppName);
+      }
+
       const savedZones = localStorage.getItem('cv_zones');
       if (savedZones) setDeliveryZones(JSON.parse(savedZones) as DeliveryZone[]);
 
@@ -64,6 +80,12 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
         if (settings?.app_logo && !savedHeader) setHeaderLogoUrl(settings.app_logo);
         if (settings?.app_logo && !savedHome)   setHomeLogoUrl(settings.app_logo);
         if (settings?.primary_color) setPrimaryColor(settings.primary_color);
+        if (settings?.pwa_icon && !savedPwaIcon) setPwaIconUrl(settings.pwa_icon);
+        if (settings?.app_name) {
+          setAppName(settings.app_name);
+          document.title = settings.app_name;
+          document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', settings.app_name);
+        }
       } catch (err) {
         console.error("Failed to fetch app settings:", err);
       }
@@ -75,32 +97,45 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
 
   useEffect(() => { localStorage.setItem('cv_logo_header', headerLogoUrl); }, [headerLogoUrl]);
   useEffect(() => { localStorage.setItem('cv_logo_home', homeLogoUrl); }, [homeLogoUrl]);
+  useEffect(() => { localStorage.setItem('cv_pwa_icon', pwaIconUrl); }, [pwaIconUrl]);
+  useEffect(() => {
+    localStorage.setItem('cv_app_name', appName);
+    document.title = appName;
+    document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', appName);
+  }, [appName]);
   useEffect(() => {
     localStorage.setItem('cv_color', primaryColor);
     document.documentElement.style.setProperty('--primary-theme', primaryColor);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', primaryColor);
   }, [primaryColor]);
   useEffect(() => { localStorage.setItem('cv_zones', JSON.stringify(deliveryZones)); }, [deliveryZones]);
 
   const updateHeaderLogo    = useCallback((url: string) => setHeaderLogoUrl(url), []);
   const updateHomeLogo      = useCallback((url: string) => setHomeLogoUrl(url), []);
-  // legacy — met à jour les deux
+  const updatePwaIcon       = useCallback((url: string) => setPwaIconUrl(url), []);
+  const updateAppName       = useCallback((name: string) => setAppName(name), []);
   const updateLogo          = useCallback((url: string) => { setHeaderLogoUrl(url); setHomeLogoUrl(url); }, []);
   const updatePrimaryColor  = useCallback((color: string) => setPrimaryColor(color), []);
   const updateDeliveryZones = useCallback((zones: DeliveryZone[]) => setDeliveryZones(zones), []);
 
   const contextValue = useMemo(() => ({
-    logoUrl: headerLogoUrl,   // legacy alias
+    logoUrl: headerLogoUrl,
     headerLogoUrl,
     homeLogoUrl,
+    pwaIconUrl,
+    appName,
     primaryColor,
     deliveryZones,
     updateLogo,
     updateHeaderLogo,
     updateHomeLogo,
+    updatePwaIcon,
+    updateAppName,
     updatePrimaryColor,
     updateDeliveryZones,
-  }), [headerLogoUrl, homeLogoUrl, primaryColor, deliveryZones,
-       updateLogo, updateHeaderLogo, updateHomeLogo, updatePrimaryColor, updateDeliveryZones]);
+  }), [headerLogoUrl, homeLogoUrl, pwaIconUrl, appName, primaryColor, deliveryZones,
+       updateLogo, updateHeaderLogo, updateHomeLogo, updatePwaIcon, updateAppName,
+       updatePrimaryColor, updateDeliveryZones]);
 
   return (
     <AppSettingsContext.Provider value={contextValue}>

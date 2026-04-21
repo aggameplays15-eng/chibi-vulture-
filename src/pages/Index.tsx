@@ -1,55 +1,25 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, animate } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Eye, ArrowRight, Sparkles } from 'lucide-react';
+import { Eye, ArrowRight } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { setGuestMode, homeLogoUrl, primaryColor } = useApp();
-  const [isInteracting, setIsInteracting] = useState(false);
-
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
 
-  // Ressorts ultra-réactifs pour le mouvement et le retour
+  // Ressorts ultra-réactifs pour le mouvement manuel
   const springX = useSpring(rotateX, { damping: 25, stiffness: 350 });
   const springY = useSpring(rotateY, { damping: 25, stiffness: 350 });
-
-  // Auto-rotation fluide (uniquement quand on ne touche pas au logo)
-  useEffect(() => {
-    if (isInteracting) return;
-
-    const controls = animate(rotateY, rotateY.get() + 360, {
-      duration: 15,
-      repeat: Infinity,
-      ease: "linear"
-    });
-    
-    return () => controls.stop();
-  }, [rotateY, isInteracting]);
-
-  const handlePanStart = () => {
-    setIsInteracting(true);
-  };
 
   const handlePan = (_: unknown, info: { delta: { x: number; y: number } }) => {
     rotateY.set(rotateY.get() + info.delta.x * 1.5);
     rotateX.set(rotateX.get() - info.delta.y * 1.5);
-  };
-
-  const handlePanEnd = () => {
-    // Animation de retour au centre
-    animate(rotateX, 0, { type: "spring", damping: 20, stiffness: 200 });
-    animate(rotateY, 0, { 
-      type: "spring", 
-      damping: 20, 
-      stiffness: 200,
-      onComplete: () => setIsInteracting(false) 
-    });
   };
 
   const handleGuestAccess = () => {
@@ -82,9 +52,7 @@ const Index = () => {
             
             {/* LOGO INTERACTIF */}
             <motion.div
-              onPanStart={handlePanStart}
               onPan={handlePan}
-              onPanEnd={handlePanEnd}
               style={{ 
                 rotateX: springX, 
                 rotateY: springY, 
@@ -132,10 +100,7 @@ const Index = () => {
           </div>
 
           <div className="space-y-3 pt-8">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Sparkles size={16} className="text-yellow-400 animate-pulse" />
-              <span className="text-[10px] font-black tracking-[0.3em] text-gray-400 uppercase">Premium Art Community</span>
-            </div>
+
             <h1 className="text-6xl font-black text-gray-900 tracking-tighter leading-[0.9]">
               CHIBI<br/>
               <span className="text-transparent bg-clip-text" style={{ backgroundImage: `linear-gradient(to right, ${primaryColor}, #8B5CF6)` }}>

@@ -22,7 +22,6 @@ async function rateLimit(req, type = 'default') {
   const windowStart = new Date(Date.now() - config.windowMs);
 
   try {
-    // Upsert + count dans la même transaction
     await db.query(
       `INSERT INTO rate_limit_log (key, created_at) VALUES ($1, NOW())`,
       [key]
@@ -50,13 +49,16 @@ async function rateLimit(req, type = 'default') {
       }
     };
   } catch {
-    // Si la table n'existe pas encore, on laisse passer (fail open)
+    // FAIL CLOSED en production — si la DB est down, on bloque par sécurité
+    const isProd = process.env.NODE_ENV === 'production';
     return {
-      allowed: true, limit: config.maxRequests, remaining: config.maxRequests,
+      allowed: !isProd,
+      limit: config.maxRequests,
+      remaining: isProd ? 0 : config.maxRequests,
       resetInSeconds: 60,
       headers: {
         'X-RateLimit-Limit': String(config.maxRequests),
-        'X-RateLimit-Remaining': String(config.maxRequests),
+        'X-RateLimit-Remaining': isProd ? '0' : String(config.maxRequests),
         'X-RateLimit-Reset': '60',
       }
     };

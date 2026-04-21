@@ -53,13 +53,21 @@ module.exports = async (req, res) => {
     const fields = dataKeys.map((key, i) => `${key} = $${i + 2}`).join(', ');
     const values = dataKeys.map(key => data[key]);
 
+    // Sécurité : valider que chaque clé correspond exactement à une colonne autorisée
+    const COLUMN_MAP = {
+      name: 'name', handle: 'handle', email: 'email', bio: 'bio',
+      avatar_color: 'avatar_color', avatar_image: 'avatar_image',
+      is_approved: 'is_approved', status: 'status'
+    };
+    const safeFields = dataKeys.map((key, i) => `${COLUMN_MAP[key]} = $${i + 2}`).join(', ');
+
     try {
       // Récupérer l'état AVANT la mise à jour pour détecter le changement d'approbation
       const { rows: before } = await db.query('SELECT is_approved FROM users WHERE id = $1', [id]);
       const wasApproved = before[0]?.is_approved ?? false;
 
       const { rows } = await db.query(
-        `UPDATE users SET ${fields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status`,
+        `UPDATE users SET ${safeFields} WHERE id = $1 RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status`,
         [id, ...values]
       );
       if (rows.length === 0) return res.status(404).json({ error: 'User not found' });

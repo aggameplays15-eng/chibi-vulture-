@@ -25,7 +25,8 @@ interface AuthContextType {
   users: UserProfile[];
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<boolean>;
-  adminLogin: (credentials: { email: string; password: string }) => Promise<boolean>;
+  adminLogin: (credentials: { email: string; password: string }) => Promise<{ otpRequired: boolean }>;
+  adminVerifyOtp: (code: string) => Promise<boolean>;
   setGuestMode: () => void;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
@@ -105,13 +106,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
     try {
-      const data = await apiService.adminLogin(credentials);
+      await apiService.adminLogin(credentials);
+      return { otpRequired: true };
+    } catch (err) {
+      console.error("Admin login failed:", err);
+      throw err;
+    }
+  }, []);
+
+  const adminVerifyOtp = useCallback(async (code: string) => {
+    try {
+      const data = await apiService.adminVerifyOtp(code);
       setToken(data.token);
       apiService.setToken(data.token);
       setUser({ ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] });
       return true;
     } catch (err) {
-      console.error("Admin login failed:", err);
+      console.error("Admin OTP verify failed:", err);
       return false;
     }
   }, []);
@@ -166,11 +177,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     user, users, isLoading,
-    login, adminLogin, setGuestMode, logout,
+    login, adminLogin, adminVerifyOtp, setGuestMode, logout,
     updateUser, approveUser, banUser, toggleFollow
   }), [
     user, users, isLoading,
-    login, adminLogin, setGuestMode, logout,
+    login, adminLogin, adminVerifyOtp, setGuestMode, logout,
     updateUser, approveUser, banUser, toggleFollow
   ]);
 

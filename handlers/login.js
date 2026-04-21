@@ -3,6 +3,7 @@ const auth = require('./_lib/auth');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('./_lib/rateLimit');
 const { handleCors } = require('./_lib/cors');
+const { logAuthFailure } = require('./_lib/security');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -21,7 +22,7 @@ module.exports = async (req, res) => {
     });
   }
 
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
 
   // Validation des entrées
   if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -33,12 +34,16 @@ module.exports = async (req, res) => {
 
   try {
     const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+    if (rows.length === 0) {
+      await logAuthFailure(req);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password || '');
     
     if (!isMatch) {
+      await logAuthFailure(req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

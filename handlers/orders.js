@@ -17,10 +17,8 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch orders' });
     }
   } else if (req.method === 'POST') {
-    // Authenticated or guest order? Let's say authenticated
     const user = auth.verify(req);
-    // If guest mode allowed, we'd check for guest flag, but let's stick to auth for safety
-    if (!user && !req.body.isGuest) return res.status(401).json({ error: 'Auth required' });
+    if (!user) return res.status(401).json({ error: 'Auth required' });
 
     const { id, customer_name, total, items } = req.body;
     

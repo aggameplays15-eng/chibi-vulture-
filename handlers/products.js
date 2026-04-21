@@ -28,6 +28,10 @@ module.exports = async (req, res) => {
     if (!image || typeof image !== 'string') {
       return res.status(400).json({ error: 'Image required' });
     }
+    // Bloquer SVG — vecteur XSS
+    if (image.startsWith('data:image/svg')) {
+      return res.status(400).json({ error: 'SVG images are not allowed' });
+    }
     const isBase64 = image.startsWith('data:image/');
     const maxImgSize = isBase64 ? 7 * 1024 * 1024 : 2000;
     if (image.length > maxImgSize) {

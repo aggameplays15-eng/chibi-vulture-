@@ -1,8 +1,11 @@
 // Main API router for Vercel Serverless Functions
 // Routes requests to appropriate handlers based on path
 
+const { securityMiddleware } = require('../handlers/_lib/security');
+
 const loginHandler = require('../handlers/login');
 const adminLoginHandler = require('../handlers/admin-login');
+const adminVerifyOtpHandler = require('../handlers/admin-verify-otp');
 const usersHandler = require('../handlers/users');
 const postsHandler = require('../handlers/posts');
 const productsHandler = require('../handlers/products');
@@ -23,11 +26,13 @@ const productCategoriesHandler = require('../handlers/product-categories');
 const searchHandler = require('../handlers/search');
 const musicHandler = require('../handlers/music');
 const logoutHandler = require('../handlers/logout');
+const manifestHandler = require('../handlers/manifest');
 
 // Route mapping
 const routes = {
   '/api/login': loginHandler,
   '/api/admin-login': adminLoginHandler,
+  '/api/admin-verify-otp': adminVerifyOtpHandler,
   '/api/users': usersHandler,
   '/api/posts': postsHandler,
   '/api/products': productsHandler,
@@ -48,16 +53,33 @@ const routes = {
   '/api/search': searchHandler,
   '/api/music': musicHandler,
   '/api/logout': logoutHandler,
+  '/api/manifest.json': manifestHandler,
 };
 
 module.exports = async (req, res) => {
+  // Security headers sur toutes les réponses API
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+  res.setHeader('X-Powered-By', ''); // Cacher la stack technique
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+
   // Parse URL
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = url.pathname;
+
+  // ── SECURITY MIDDLEWARE ──────────────────────────────────
+  // Injecter pathname dans req.url pour que le middleware puisse l'analyser
+  const blocked = await securityMiddleware(req, res);
+  if (blocked) return;
   
   // Add query params to req.query
   req.query = Object.fromEntries(url.searchParams);
-
   // Route spéciale : /api/orders/:id/tracking
   const trackingMatch = pathname.match(/^\/api\/orders\/([^/]+)\/tracking$/);
   if (trackingMatch) {
@@ -84,10 +106,7 @@ module.exports = async (req, res) => {
       }
     }
   } else {
-    res.status(404).json({ 
-      error: 'Not found',
-      path: pathname,
-      availableRoutes: Object.keys(routes)
-    });
+    // Ne pas exposer la liste des routes disponibles
+    res.status(404).json({ error: 'Not found' });
   }
 };

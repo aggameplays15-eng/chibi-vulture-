@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).end();
 
-  // Révoque le token JWT côté serveur
-  auth.revokeToken(req);
+  // Révoque le token JWT en DB — fonctionne sur toutes les instances serverless
+  await auth.revokeToken(req);
   res.status(200).json({ status: 'Logged out' });
 };

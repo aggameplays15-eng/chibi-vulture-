@@ -8,7 +8,8 @@
     "server": "node server.cjs",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:security": "node scripts/migrate-security-tables.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
