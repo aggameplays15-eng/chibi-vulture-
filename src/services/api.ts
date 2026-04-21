@@ -29,7 +29,10 @@ const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
 
 const safeJson = async (response: Response) => {
   try {
-    return await response.json();
+    const data = await response.json();
+    // If the server returned an error object, don't treat it as valid data
+    if (!response.ok) return null;
+    return data;
   } catch {
     return null;
   }

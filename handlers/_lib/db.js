@@ -6,7 +6,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: isLocal ? false : {
-    rejectUnauthorized: true  // Vérifie le certificat SSL en prod
+    rejectUnauthorized: false  // Required for Neon/Supabase/Vercel Postgres
   },
   max: 10,
   idleTimeoutMillis: 30000,
