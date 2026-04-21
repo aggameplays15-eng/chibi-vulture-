@@ -12,15 +12,30 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Invalid post_id' });
     }
     try {
-      const { rows } = await db.query(
+      // Fetch top-level comments
+      const { rows: topComments } = await db.query(
         `SELECT c.*, u.name as user_name, u.avatar_image as user_avatar
          FROM comments c
          LEFT JOIN users u ON c.user_handle = u.handle
-         WHERE c.post_id = $1
+         WHERE c.post_id = $1 AND (c.parent_id IS NULL)
          ORDER BY c.created_at ASC`,
         [Number(post_id)]
       );
-      res.status(200).json(rows);
+      // Fetch replies
+      const { rows: replies } = await db.query(
+        `SELECT c.*, u.name as user_name, u.avatar_image as user_avatar
+         FROM comments c
+         LEFT JOIN users u ON c.user_handle = u.handle
+         WHERE c.post_id = $1 AND c.parent_id IS NOT NULL
+         ORDER BY c.created_at ASC`,
+        [Number(post_id)]
+      );
+      // Nest replies under their parent
+      const result = topComments.map(c => ({
+        ...c,
+        replies: replies.filter(r => r.parent_id === c.id)
+      }));
+      res.status(200).json(result);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to fetch comments' });
@@ -30,7 +45,7 @@ module.exports = async (req, res) => {
     const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
-    const { post_id, text } = req.body;
+    const { post_id, text, parent_id } = req.body;
 
     if (!post_id || typeof post_id !== 'number') {
       return res.status(400).json({ error: 'Invalid post_id' });
@@ -41,8 +56,8 @@ module.exports = async (req, res) => {
 
     try {
       const { rows } = await db.query(
-        'INSERT INTO comments (post_id, user_handle, text) VALUES ($1, $2, $3) RETURNING *',
-        [post_id, user.handle, text.trim()]
+        'INSERT INTO comments (post_id, user_handle, text, parent_id) VALUES ($1, $2, $3, $4) RETURNING *',
+        [post_id, user.handle, text.trim(), parent_id || null]
       );
       // Email au propriétaire du post (fire & forget)
       db.query(

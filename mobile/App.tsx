@@ -17,6 +17,8 @@ import MessagesScreen from './src/screens/MessagesScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import LoginOtpScreen from './src/screens/LoginOtpScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import MyOrdersScreen from './src/screens/MyOrdersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,6 +47,8 @@ function RootNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="LoginOtp" component={LoginOtpScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
     </Stack.Navigator>
   );
 }

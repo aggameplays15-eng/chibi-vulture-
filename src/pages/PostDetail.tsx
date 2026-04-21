@@ -18,6 +18,7 @@ interface Comment {
   user_avatar?: string;
   text: string;
   created_at: string;
+  replies?: Comment[];
 }
 
 const PostDetail = () => {
@@ -27,6 +28,7 @@ const PostDetail = () => {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
 
   const postId = Number(id);
   const post = posts.find(p => p.id === postId);
@@ -77,12 +79,21 @@ const PostDetail = () => {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ post_id: postId, text: comment.trim() }),
+        body: JSON.stringify({ post_id: postId, text: comment.trim(), parent_id: replyingTo?.id || null }),
       });
       if (!res.ok) throw new Error();
       const newComment = await res.json();
-      setComments(prev => [...prev, { ...newComment, user_name: user.name, user_avatar: user.avatarImage }]);
+      if (replyingTo) {
+        setComments(prev => prev.map(c =>
+          c.id === replyingTo.id
+            ? { ...c, replies: [...(c.replies || []), { ...newComment, user_name: user.name, user_avatar: user.avatarImage }] }
+            : c
+        ));
+      } else {
+        setComments(prev => [...prev, { ...newComment, user_name: user.name, user_avatar: user.avatarImage, replies: [] }]);
+      }
       setComment("");
+      setReplyingTo(null);
     } catch {
       showError("Impossible d'envoyer le commentaire.");
     } finally {
@@ -199,23 +210,53 @@ const PostDetail = () => {
                   <AvatarImage src={c.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_handle}`} />
                   <AvatarFallback>{(c.user_name || c.user_handle)[0]}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1 bg-gray-50 p-3 rounded-2xl rounded-tl-none">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-xs">{c.user_name || c.user_handle}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-400">{formatTime(c.created_at)}</span>
-                      {user.handle === c.user_handle && (
-                        <button
-                          onClick={() => handleDeleteComment(c.id, c.user_handle)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"
-                          aria-label="Supprimer le commentaire"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                <div className="flex-1">
+                  <div className="bg-gray-50 p-3 rounded-2xl rounded-tl-none">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-xs">{c.user_name || c.user_handle}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-400">{formatTime(c.created_at)}</span>
+                        {user.handle === c.user_handle && (
+                          <button
+                            onClick={() => handleDeleteComment(c.id, c.user_handle)}
+                            className="text-gray-300 hover:text-red-400 transition-colors"
+                            aria-label="Supprimer le commentaire"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    <p className="text-sm text-gray-600">{c.text}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{c.text}</p>
+                  {!isGuest && (
+                    <button
+                      onClick={() => setReplyingTo(replyingTo?.id === c.id ? null : { id: c.id, name: c.user_name || c.user_handle })}
+                      className="text-[10px] font-black text-gray-400 hover:text-gray-600 mt-1 ml-2 transition-colors"
+                    >
+                      {replyingTo?.id === c.id ? 'Annuler' : 'Répondre'}
+                    </button>
+                  )}
+                  {/* Réponses imbriquées */}
+                  {c.replies && c.replies.length > 0 && (
+                    <div className="mt-2 ml-4 space-y-2">
+                      {c.replies.map(r => (
+                        <div key={r.id} className="flex gap-2">
+                          <Avatar className="w-6 h-6 flex-shrink-0">
+                            <AvatarImage src={r.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.user_handle}`} />
+                            <AvatarFallback>{(r.user_name || r.user_handle)[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 bg-gray-50 p-2 rounded-xl rounded-tl-none">
+                            <div className="flex justify-between items-center mb-0.5">
+                              <span className="font-bold text-[10px]">{r.user_name || r.user_handle}</span>
+                              <span className="text-[9px] text-gray-400">{formatTime(r.created_at)}</span>
+                            </div>
+                            <p className="text-xs text-gray-600">{r.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -236,11 +277,14 @@ const PostDetail = () => {
           </div>
         ) : (
           <div className="flex items-center gap-2 bg-gray-50 rounded-2xl p-2">
+            {replyingTo && (
+              <span className="text-[10px] font-black text-pink-400 whitespace-nowrap pl-2">@{replyingTo.name}</span>
+            )}
             <Input
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSendComment(); }}
-              placeholder="Ajouter un commentaire..."
+              placeholder={replyingTo ? `Répondre à ${replyingTo.name}...` : "Ajouter un commentaire..."}
               className="border-none bg-transparent focus-visible:ring-0 shadow-none"
               maxLength={500}
               aria-label="Écrire un commentaire"
