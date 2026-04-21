@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 const PendingApprovals = () => {
   const { users, approveUser, banUser } = useApp();
   const safeUsers   = Array.isArray(users) ? users : [];
-  const pendingUsers = safeUsers.filter(u => !u.isApproved && u.role !== 'Guest');
+  const pendingUsers = safeUsers.filter(u => !u.isApproved && u.role !== 'Admin');
 
   const handleApprove = (id: number, name: string) => {
     approveUser(id);

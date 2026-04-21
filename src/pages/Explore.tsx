@@ -126,7 +126,7 @@ const Explore = () => {
                             <p className="font-black text-sm text-gray-900 truncate">{u.name}</p>
                             <p className="text-[10px] text-gray-400 font-bold">{u.handle}</p>
                           </div>
-                          {!user.isGuest && u.handle !== user.handle && (
+                          {u.handle !== user.handle && !user.isGuest && (
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleFollow(u.handle); }}
                               className="text-[10px] font-black px-3 py-1.5 rounded-full text-white"

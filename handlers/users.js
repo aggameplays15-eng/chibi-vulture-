@@ -37,13 +37,20 @@ module.exports = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    // Bloquer tout changement de rôle — le rôle Admin est défini uniquement via .env
+    // Bloquer tout changement de rôle sauf si c'est un admin qui change le rôle d'un autre user
     if ('role' in data) {
-      return res.status(403).json({ error: 'Role changes are not allowed' });
+      if (requester.role !== 'Admin') {
+        return res.status(403).json({ error: 'Role changes are not allowed' });
+      }
+      // L'admin ne peut assigner que Member — jamais Admin
+      const ALLOWED_ROLES = ['Member'];
+      if (!ALLOWED_ROLES.includes(data.role)) {
+        return res.status(403).json({ error: 'Invalid role' });
+      }
     }
 
-    // Whitelist — role intentionnellement absent
-    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'is_approved', 'status'];
+    // Whitelist — role autorisé uniquement pour les admins (déjà validé ci-dessus)
+    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'is_approved', 'status', ...(requester.role === 'Admin' ? ['role'] : [])];
     const dataKeys = Object.keys(data).filter(key => ALLOWED_FIELDS.includes(key));
 
     if (dataKeys.length === 0) {
@@ -57,7 +64,7 @@ module.exports = async (req, res) => {
     const COLUMN_MAP = {
       name: 'name', handle: 'handle', email: 'email', bio: 'bio',
       avatar_color: 'avatar_color', avatar_image: 'avatar_image',
-      is_approved: 'is_approved', status: 'status'
+      is_approved: 'is_approved', status: 'status', role: 'role'
     };
     const safeFields = dataKeys.map((key, i) => `${COLUMN_MAP[key]} = $${i + 2}`).join(', ');
 

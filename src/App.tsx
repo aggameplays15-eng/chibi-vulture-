@@ -40,18 +40,17 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactNode, requireAdmin?: boolean }) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
-  
-  // Attendre que le contexte soit chargé avant de rediriger
+
   if (isLoading) return null;
 
+  // Pages accessibles aux invités
   const publicPages = ['/feed', '/explore', '/shop', '/post', '/product', '/support', '/terms', '/cart', '/checkout', '/checkout-success'];
   const isPublicPage = publicPages.some(path => location.pathname.startsWith(path));
 
   if (!user.isAuthenticated && !user.isGuest) return <Navigate to="/login" />;
   if (user.isGuest && !isPublicPage) return <Navigate to="/login" />;
-  if (!user.isApproved && !user.isGuest && user.role !== "Admin") return <Navigate to="/signup" />;
   if (requireAdmin && user.role !== "Admin") return <Navigate to="/goated" />;
-  
+
   return <>{children}</>;
 };
 

@@ -30,7 +30,7 @@ const PostDetail = () => {
 
   const postId = Number(id);
   const post = posts.find(p => p.id === postId);
-  const isGuest = user.isGuest;
+  const isGuest = !user.isAuthenticated;
   const isLiked = likedPosts.includes(postId);
 
   useEffect(() => {

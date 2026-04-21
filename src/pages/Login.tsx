@@ -93,7 +93,6 @@ const Login = () => {
 
   const handleGuest = () => {
     setGuestMode();
-    showSuccess("Mode invité activé ! 👀");
     navigate('/feed');
   };
 
@@ -170,9 +169,14 @@ const Login = () => {
                 {isLoading ? 'CONNEXION...' : 'SE CONNECTER'}
                 <ArrowRight size={20} />
               </Button>
+              <p className="text-center text-sm text-gray-500 pt-2">
+                Pas encore de compte ?{' '}
+                <Link to="/signup" className="text-pink-500 font-black hover:underline">
+                  S'inscrire
+                </Link>
+              </p>
             </motion.form>
-          ) : (
-            <motion.form
+          ) : (            <motion.form
               key="otp"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -221,27 +225,15 @@ const Login = () => {
         </AnimatePresence>
 
         {step === 'credentials' && (
-          <>
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-100"></span></div>
-              <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-bold">OU</span></div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleGuest}
-              data-testid="guest-button"
-              className="w-full h-14 rounded-2xl border-gray-100 text-gray-500 font-bold flex gap-2 hover:bg-gray-50"
-            >
-              <Eye size={20} />
-              CONTINUER EN INVITÉ
-            </Button>
-            <p className="text-center text-sm text-gray-500">
-              Pas encore de compte ?{' '}
-              <Link to="/signup" className="text-pink-500 font-black hover:underline">
-                S'inscrire
-              </Link>
-            </p>
-          </>
+          <Button
+            variant="ghost"
+            onClick={handleGuest}
+            data-testid="guest-button"
+            className="w-full h-12 rounded-2xl text-gray-400 font-bold hover:bg-gray-50 flex gap-2"
+          >
+            <Eye size={18} />
+            Explorer en invité
+          </Button>
         )}
       </motion.div>
     </div>

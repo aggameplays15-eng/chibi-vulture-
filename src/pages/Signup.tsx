@@ -9,12 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showSuccess, showError } from "@/utils/toast";
 
-import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { login } = useApp();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
@@ -26,7 +24,7 @@ const Signup = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const createdUser = await apiService.createUser({
+      await apiService.createUser({
         name,
         handle: handle.startsWith('@') ? handle : `@${handle}`,
         email,
@@ -35,13 +33,15 @@ const Signup = () => {
         password
       });
       
-      // Log in the user after successful account creation
-      await login({ email, password });
-      
       setStep(2);
       showSuccess("Compte créé avec succès ! 🎉");
-    } catch (err) {
-      showError("Erreur lors de la création du compte. Cet identifiant est peut-être déjà pris.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('already exists') || message.includes('409')) {
+        showError("Cet identifiant ou email est déjà utilisé.");
+      } else {
+        showError("Erreur lors de la création du compte. Réessaie.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -59,13 +59,16 @@ const Signup = () => {
             <Sparkles className="text-pink-500" size={40} />
           </div>
           <div className="space-y-2">
-            <h1 data-testid="patience-message" className="text-3xl font-black text-gray-900">BIENVENUE ! 🎉</h1>
+            <h1 data-testid="patience-message" className="text-3xl font-black text-gray-900">COMPTE CRÉÉ ! 🎉</h1>
             <p className="text-gray-500 font-medium leading-relaxed">
-              Ton compte a été créé avec succès ! Tu es maintenant connecté et prêt à explorer Chibi Vulture.
+              Ton compte est en attente d'approbation par un admin. Tu recevras un email dès que ton compte sera activé.
+            </p>
+            <p className="text-gray-400 text-sm">
+              En attendant, tu peux explorer le site en mode invité.
             </p>
           </div>
-          <Button onClick={() => navigate('/feed')} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg shadow-xl shadow-blue-100">
-            Accéder au feed
+          <Button onClick={() => navigate('/login')} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg shadow-xl shadow-blue-100">
+            Se connecter
           </Button>
         </motion.div>
       </div>

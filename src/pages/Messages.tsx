@@ -36,12 +36,12 @@ const Messages = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user.isGuest || !user.isAuthenticated) { setIsLoading(false); return; }
+    if (!user.isAuthenticated) { setIsLoading(false); return; }
     apiService.getConversations()
       .then(data => { if (data) setConversations(data); })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [user.isGuest, user.isAuthenticated]);
+  }, [user.isAuthenticated]);
 
   const filtered = conversations.filter(c =>
     c.other_name?.toLowerCase().includes(search.toLowerCase()) ||

@@ -62,7 +62,7 @@ const Followers = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user.handle || user.isGuest) { setIsLoading(false); return; }
+    if (!user.handle || !user.isAuthenticated) { setIsLoading(false); return; }
 
     apiService.getFollowCounts(user.handle)
       .then(data => {
@@ -74,7 +74,7 @@ const Followers = () => {
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [user.handle, user.isGuest]);
+  }, [user.handle, user.isAuthenticated]);
 
   const handleToggle = (handle: string) => {
     toggleFollow(handle);

@@ -105,7 +105,7 @@ const Feed = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-black text-sm text-gray-900">{post.user}</p>
-                      {!user.isGuest && post.handle !== user.handle && (
+                      {post.handle !== user.handle && !user.isGuest && (
                         <button
                           onClick={() => toggleFollow(post.handle)}
                           className={cn(

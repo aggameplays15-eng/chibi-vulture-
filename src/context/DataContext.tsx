@@ -132,12 +132,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   
   const toggleLike = useCallback(async (postId: number) => {
-    if (user.isGuest) return;
+    if (user.isGuest || !user.isAuthenticated) return;
     try {
       await apiService.toggleLike(postId, user.handle);
       setLikedPosts(prev => prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]);
     } catch (err) { console.error(err); }
-  }, [user.isGuest, user.handle]);
+  }, [user.isGuest, user.isAuthenticated, user.handle]);
 
   const toggleFavoritePost = useCallback((postId: number) => {
     setFavoritePosts(prev => prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]);

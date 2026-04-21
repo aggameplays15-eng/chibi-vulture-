@@ -12,7 +12,7 @@ interface UserProfile {
   avatarColor: string;
   avatarImage?: string;
   avatar_image?: string;
-  role: 'Guest' | 'Member' | 'Artiste' | 'Admin';
+  role: 'Member' | 'Admin';
   isApproved: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;
@@ -28,12 +28,12 @@ interface AuthContextType {
   loginVerifyOtp: (email: string, code: string) => Promise<boolean>;
   adminLogin: (credentials: { email: string; password: string }) => Promise<{ otpRequired: boolean }>;
   adminVerifyOtp: (code: string) => Promise<boolean>;
-  setGuestMode: () => void;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
   approveUser: (id: number) => void;
   banUser: (id: number) => void;
   toggleFollow: (handle: string) => void;
+  setGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile>({
-    id: 0, name: "Invité", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Guest', isApproved: false, isAuthenticated: false, isGuest: true, status: 'Actif', following: []
+    id: 0, name: "", handle: "", bio: "", avatarColor: "#94a3b8", role: 'Member', isApproved: false, isAuthenticated: false, isGuest: false, status: 'Actif', following: []
   });
   const [users, setUsers] = useState<UserProfile[]>([]);
 
@@ -144,13 +144,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const setGuestMode = useCallback(() => {
-    setUser({ id: -1, name: "Visiteur", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Guest', isApproved: true, isAuthenticated: false, isGuest: true, status: 'Actif', following: [] });
+    setToken(null);
+    setUser({ id: -1, name: "Visiteur", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Member', isApproved: true, isAuthenticated: false, isGuest: true, status: 'Actif', following: [] });
   }, []);
 
   const logout = useCallback(async () => {
     await apiService.logout();
     setToken(null);
-    setUser({ id: 0, name: "Invité", handle: "@guest", bio: "", avatarColor: "#94a3b8", role: 'Guest', isApproved: false, isAuthenticated: false, isGuest: true, status: 'Actif', following: [] });
+    setUser({ id: 0, name: "", handle: "", bio: "", avatarColor: "#94a3b8", role: 'Member', isApproved: false, isAuthenticated: false, isGuest: false, status: 'Actif', following: [] });
   }, []);
 
   const updateUser = useCallback(async (data: Partial<UserProfile>) => {
@@ -175,7 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const toggleFollow = useCallback(async (handle: string) => {
-    if (user.isGuest) return;
+    if (user.isGuest || !user.isAuthenticated) return;
     try {
       await apiService.toggleFollow(user.handle, handle);
       setUser(prev => {
@@ -189,15 +190,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
       });
     } catch (err) { console.error(err); }
-  }, [user.isGuest, user.handle]);
+  }, [user.isGuest, user.isAuthenticated, user.handle]);
 
   const contextValue = useMemo(() => ({
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, adminVerifyOtp, setGuestMode, logout,
+    login, loginVerifyOtp, adminLogin, adminVerifyOtp, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   }), [
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, adminVerifyOtp, setGuestMode, logout,
+    login, loginVerifyOtp, adminLogin, adminVerifyOtp, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   ]);
 

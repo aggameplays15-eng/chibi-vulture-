@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MoreVertical, UserX, Mail, ShieldCheck, UserCheck, Trash2 } from 'lucide-react';
+import { MoreVertical, UserX, Mail, ShieldCheck, UserCheck, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const UserManagement = () => {
-  const { users, banUser } = useApp();
+  const { users, banUser, approveUser } = useApp();
   const safeUsers = Array.isArray(users) ? users : [];
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [localUsers, setLocalUsers] = useState<typeof safeUsers | null>(null);
@@ -35,6 +35,16 @@ const UserManagement = () => {
   const handleBan = (id: number, name: string) => {
     banUser(id);
     showSuccess(`${name} a été banni de la plateforme.`);
+  };
+
+  const handleApprove = async (id: number, name: string) => {
+    try {
+      await approveUser(id);
+      setLocalUsers((localUsers ?? safeUsers).map(u => u.id === id ? { ...u, isApproved: true } : u));
+      showSuccess(`${name} a été approuvé ! ✅`);
+    } catch {
+      showError("Impossible d'approuver cet utilisateur.");
+    }
   };
 
   const handleContact = (email: string | undefined, name: string) => {
@@ -90,7 +100,6 @@ const UserManagement = () => {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-black text-gray-900">{user.name}</p>
                   <Badge className={`text-[8px] font-black uppercase px-1.5 py-0 h-4 border-none ${
-                    user.role === 'Artiste' ? 'bg-blue-50 text-blue-600' : 
                     user.role === 'Admin' ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-500'
                   }`}>
                     {user.role}
@@ -116,6 +125,14 @@ const UserManagement = () => {
                   >
                     <Mail size={16} className="text-blue-500" /> Contacter
                   </DropdownMenuItem>
+                  {!user.isApproved && (
+                    <DropdownMenuItem
+                      onClick={() => handleApprove(user.id, user.name)}
+                      className="gap-3 font-bold text-xs rounded-xl p-3 text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 cursor-pointer"
+                    >
+                      <CheckCircle size={16} /> Approuver
+                    </DropdownMenuItem>
+                  )}
                   <div className="h-px bg-gray-50 my-1" />
                   <DropdownMenuItem 
                     onClick={() => handleBan(user.id, user.name)}

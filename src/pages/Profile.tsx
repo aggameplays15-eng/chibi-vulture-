@@ -19,7 +19,7 @@ const Profile = () => {
   const [followingCount, setFollowingCount] = useState(user.following?.length || 0);
 
   useEffect(() => {
-    if (!user.handle || user.isGuest) return;
+    if (!user.handle || !user.isAuthenticated) return;
 
     const fetchCounts = async () => {
       try {
@@ -39,7 +39,7 @@ const Profile = () => {
     };
 
     fetchCounts();
-  }, [user.handle, user.isGuest, user.following?.length]);
+  }, [user.handle, user.isAuthenticated, user.following?.length]);
 
   const myFavPosts = posts.filter(p => favoritePosts.includes(p.id));
   const myFavProducts = products.filter(p => favoriteProducts.includes(p.id));

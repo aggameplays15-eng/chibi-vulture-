@@ -41,7 +41,7 @@ const Notifications = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user.isGuest || !user.isAuthenticated) {
+    if (!user.isAuthenticated) {
       setIsLoading(false);
       return;
     }
@@ -49,7 +49,7 @@ const Notifications = () => {
       .then(data => { if (data) setNotifs(data); })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [user.isGuest, user.isAuthenticated]);
+  }, [user.isAuthenticated]);
 
   return (
     <MainLayout>
