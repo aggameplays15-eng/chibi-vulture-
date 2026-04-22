@@ -24,10 +24,10 @@ module.exports = async (req, res) => {
 
   const { email, password } = req.body || {};
 
-  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
   }
-  if (!password || typeof password !== 'string' || password.length < 6) {
+  if (!password || typeof password !== 'string' || password.length < 6 || password.length > 128) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 

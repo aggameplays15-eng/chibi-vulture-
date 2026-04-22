@@ -37,15 +37,18 @@ module.exports = async (req, res) => {
     Buffer.from(String(ADMIN_EMAIL).toLowerCase().padEnd(100))
   );
 
-  // Vérification mot de passe — bcrypt hash en prod, plain en dev
+  // Vérification mot de passe — bcrypt hash obligatoire en prod, plain toléré en dev
   let passOk = false;
   if (ADMIN_PASSWORD_HASH) {
     passOk = await bcrypt.compare(String(password), ADMIN_PASSWORD_HASH);
-  } else if (ADMIN_PASSWORD_PLAIN) {
+  } else if (process.env.NODE_ENV !== 'production' && ADMIN_PASSWORD_PLAIN) {
     passOk = crypto.timingSafeEqual(
       Buffer.from(String(password).padEnd(100)),
       Buffer.from(String(ADMIN_PASSWORD_PLAIN).padEnd(100))
     );
+  } else {
+    // En production sans hash → refus total
+    return res.status(500).json({ error: 'Admin credentials not configured' });
   }
 
   if (!emailOk || !passOk) {

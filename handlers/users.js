@@ -135,9 +135,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Invalid name (2-50 chars)' });
     if (!handle || typeof handle !== 'string' || !/^@[a-zA-Z0-9_]{3,20}$/.test(handle))
       return res.status(400).json({ error: 'Invalid handle format (@username, 3-20 chars)' });
-    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))
       return res.status(400).json({ error: 'Invalid email format' });
-    if (!password || typeof password !== 'string' || password.length < 8)
+    if (!password || typeof password !== 'string' || password.length < 8 || password.length > 128)
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
     // Bloquer l'inscription avec l'email admin

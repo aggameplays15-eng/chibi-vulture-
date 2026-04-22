@@ -35,7 +35,7 @@ module.exports = {
     return jwt.sign(
       { id: user.id, email: user.email, role: user.role, handle: user.handle },
       SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: user.role === 'Admin' ? '8h' : '24h' }
     );
   },
 

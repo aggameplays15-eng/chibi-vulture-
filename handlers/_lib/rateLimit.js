@@ -139,18 +139,17 @@ async function rateLimit(req, type = 'default') {
     };
 
   } catch {
-    // FAIL CLOSED en production — si la DB est down, on bloque par sécurité
-    const isProd = process.env.NODE_ENV === 'production';
+    // FAIL CLOSED — si la DB est down, on bloque par sécurité (prod ET dev)
     return {
-      allowed: !isProd,
+      allowed: false,
       limit: config.maxRequests,
-      remaining: isProd ? 0 : config.maxRequests,
+      remaining: 0,
       resetInSeconds: 60,
       headers: {
         'X-RateLimit-Limit':     String(config.maxRequests),
-        'X-RateLimit-Remaining': isProd ? '0' : String(config.maxRequests),
+        'X-RateLimit-Remaining': '0',
         'X-RateLimit-Reset':     '60',
-        ...(isProd ? { 'Retry-After': '60' } : {}),
+        'Retry-After':           '60',
       }
     };
   }
