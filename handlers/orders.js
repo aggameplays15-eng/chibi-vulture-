@@ -76,11 +76,20 @@ module.exports = async (req, res) => {
 
     const { customer_name, total, items } = req.body;
 
-    if (!customer_name || typeof customer_name !== 'string' || customer_name.length > 100) {
+    if (!customer_name || typeof customer_name !== 'string' || customer_name.trim().length === 0 || customer_name.length > 100) {
       return res.status(400).json({ error: 'Invalid customer name' });
     }
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Items must be a non-empty array' });
+    if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+      return res.status(400).json({ error: 'Items must be a non-empty array (max 50)' });
+    }
+    // Validate shipping_address and phone
+    const shipping_address = req.body.shipping_address;
+    const phone = req.body.phone;
+    if (shipping_address && (typeof shipping_address !== 'string' || shipping_address.length > 300)) {
+      return res.status(400).json({ error: 'Invalid shipping address' });
+    }
+    if (phone && (typeof phone !== 'string' || !/^[\d\s\+\-\(\)]{6,20}$/.test(phone))) {
+      return res.status(400).json({ error: 'Invalid phone number' });
     }
     for (const item of items) {
       if (!item.id || typeof item.quantity !== 'number' || item.quantity < 1) {

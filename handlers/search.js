@@ -1,13 +1,18 @@
 const db = require('./_lib/db');
 const { handleCors } = require('./_lib/cors');
+const { rateLimit } = require('./_lib/rateLimit');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method !== 'GET') return res.status(405).end();
 
+  const limit = await rateLimit(req, 'search');
+  Object.entries(limit.headers).forEach(([k, v]) => res.setHeader(k, v));
+  if (!limit.allowed) return res.status(429).json({ error: 'Too many requests' });
+
   const { q } = req.query;
-  if (!q || typeof q !== 'string' || q.trim().length < 2) {
-    return res.status(400).json({ error: 'Query must be at least 2 characters' });
+  if (!q || typeof q !== 'string' || q.trim().length < 2 || q.length > 100) {
+    return res.status(400).json({ error: 'Query must be 2-100 characters' });
   }
 
   const term = `%${q.trim().toLowerCase()}%`;

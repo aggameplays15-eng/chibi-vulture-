@@ -16,8 +16,8 @@ module.exports = async (req, res) => {
     if (!receiver_handle || typeof receiver_handle !== 'string' || receiver_handle.length > 50) {
       return res.status(400).json({ error: 'Invalid receiver handle' });
     }
-    if (!text || typeof text !== 'string' || text.length > 1000) {
-      return res.status(400).json({ error: 'Invalid message text' });
+    if (!text || typeof text !== 'string' || text.trim().length === 0 || text.length > 1000) {
+      return res.status(400).json({ error: 'Message text required (1-1000 chars)' });
     }
     
     try {

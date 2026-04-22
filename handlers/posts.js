@@ -25,8 +25,8 @@ module.exports = async (req, res) => {
     if (image.length > maxSize) {
       return res.status(400).json({ error: 'Image too large (max 5MB)' });
     }
-    if (!caption || typeof caption !== 'string' || caption.length > 500) {
-      return res.status(400).json({ error: 'Invalid caption' });
+    if (!caption || typeof caption !== 'string' || caption.trim().length === 0 || caption.length > 500) {
+      return res.status(400).json({ error: 'Caption required (1-500 chars)' });
     }
     
     try {

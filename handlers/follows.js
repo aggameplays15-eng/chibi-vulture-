@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
 
     const { following_handle } = req.body;
 
-    if (!following_handle || typeof following_handle !== 'string' || following_handle.length > 50) {
+    if (!following_handle || typeof following_handle !== 'string' || !/^@[a-zA-Z0-9_]{3,20}$/.test(following_handle)) {
       return res.status(400).json({ error: 'Invalid following handle' });
     }
     if (following_handle === user.handle) {

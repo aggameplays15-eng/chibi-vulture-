@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
+import { apiService } from '@/services/api';
 
 interface OrderItem {
   product_id: number;
@@ -35,22 +36,32 @@ const statusConfig: Record<string, { color: string; bg: string; icon: React.Elem
   'Annulée':        { color: 'text-red-600',    bg: 'bg-red-50',    icon: XCircle,      label: 'Annulée' },
 };
 
+import { apiService } from '@/services/api';
+
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { primaryColor } = useApp();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isNaN(Number(id))) { setIsLoading(false); setError(true); return; }
+    apiService.getMyOrders()
+      .then(() => {}) // ensure token is fresh
+      .catch(() => {});
     const token = sessionStorage.getItem('cv_token');
-    fetch(`/api/orders?id=${id}`, {
+    fetch(`/api/orders?id=${Number(id)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then(r => r.json())
-      .then(data => { if (data && !data.error) setOrder(data); })
-      .catch(console.error)
+      .then(async r => {
+        if (!r.ok) { setError(true); return; }
+        const data = await r.json();
+        if (data && !data.error) setOrder(data);
+        else setError(true);
+      })
+      .catch(() => setError(true))
       .finally(() => setIsLoading(false));
   }, [id]);
 
@@ -74,7 +85,7 @@ const OrderDetail = () => {
           </div>
         )}
 
-        {!isLoading && !order && (
+        {!isLoading && (error || !order) && (
           <div className="text-center py-20">
             <p className="text-gray-400 font-bold">Commande introuvable.</p>
             <Button variant="ghost" onClick={() => navigate('/orders')} className="mt-4">Retour</Button>

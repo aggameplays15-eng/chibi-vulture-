@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
     if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 
     try {
-      // Exclure les comptes supprimés de la liste admin (optionnel - commentez pour les voir)
+      // Exclure password et champs sensibles — jamais exposés même à l'admin
       const { rows } = await db.query(
         'SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users WHERE status != $1 OR status IS NULL ORDER BY created_at DESC',
         ['Supprimé']
@@ -148,6 +148,9 @@ module.exports = async (req, res) => {
     if (ADMIN_EMAIL && email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase()) {
       return res.status(403).json({ error: 'This email is reserved' });
     }
+
+    if (!bio || typeof bio !== 'string' || bio.length > 300)
+      bio = (bio || '').toString().slice(0, 300);
 
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
