@@ -26,7 +26,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<{ otpRequired?: boolean; needsOnboarding?: boolean }>;
   loginVerifyOtp: (email: string, code: string) => Promise<boolean>;
-  adminLogin: (credentials: { email: string; password: string }) => Promise<{ otpRequired: boolean }>;
+  adminLogin: (credentials: { email: string; password: string }) => Promise<void>;
   adminVerifyOtp: (code: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
@@ -123,8 +123,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
     try {
-      await apiService.adminLogin(credentials);
-      return { otpRequired: true };
+      const data = await apiService.adminLogin(credentials);
+      setToken(data.token);
+      apiService.setToken(data.token);
+      const adminUser = { ...data.user, isAuthenticated: true, isGuest: false, following: [] };
+      setUser(adminUser);
     } catch (err) {
       console.error("Admin login failed:", err);
       throw err;
