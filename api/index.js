@@ -23,9 +23,7 @@ function withTimeout(fn, req, res) {
 }
 
 const loginHandler = require('../handlers/login');
-const loginVerifyOtpHandler = require('../handlers/login-verify-otp');
 const adminLoginHandler = require('../handlers/admin-login');
-const adminVerifyOtpHandler = require('../handlers/admin-verify-otp');
 const usersHandler = require('../handlers/users');
 const postsHandler = require('../handlers/posts');
 const productsHandler = require('../handlers/products');
@@ -51,9 +49,7 @@ const manifestHandler = require('../handlers/manifest');
 // Route mapping
 const routes = {
   '/api/login': loginHandler,
-  '/api/login-verify-otp': loginVerifyOtpHandler,
   '/api/admin-login': adminLoginHandler,
-  '/api/admin-verify-otp': adminVerifyOtpHandler,
   '/api/users': usersHandler,
   '/api/posts': postsHandler,
   '/api/products': productsHandler,

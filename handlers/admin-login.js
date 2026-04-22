@@ -7,10 +7,9 @@ const { logAuthFailure } = require('./_lib/security');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
-const ADMIN_PASSWORD_PLAIN = process.env.ADMIN_PASSWORD;
 
-if (!ADMIN_EMAIL || (!ADMIN_PASSWORD_HASH && !ADMIN_PASSWORD_PLAIN)) {
-  console.warn('WARNING: ADMIN credentials not set in environment variables');
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
+  console.warn('WARNING: ADMIN_EMAIL or ADMIN_PASSWORD_HASH not set');
 }
 
 module.exports = async (req, res) => {
@@ -27,7 +26,7 @@ module.exports = async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
 
-  if (!ADMIN_EMAIL || (!ADMIN_PASSWORD_HASH && !ADMIN_PASSWORD_PLAIN)) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
     return res.status(500).json({ error: 'Admin credentials not configured' });
   }
 
@@ -37,19 +36,8 @@ module.exports = async (req, res) => {
     Buffer.from(String(ADMIN_EMAIL).toLowerCase().padEnd(100))
   );
 
-  // Vérification mot de passe — bcrypt hash obligatoire en prod, plain toléré en dev
-  let passOk = false;
-  if (ADMIN_PASSWORD_HASH) {
-    passOk = await bcrypt.compare(String(password), ADMIN_PASSWORD_HASH);
-  } else if (process.env.NODE_ENV !== 'production' && ADMIN_PASSWORD_PLAIN) {
-    passOk = crypto.timingSafeEqual(
-      Buffer.from(String(password).padEnd(100)),
-      Buffer.from(String(ADMIN_PASSWORD_PLAIN).padEnd(100))
-    );
-  } else {
-    // En production sans hash → refus total
-    return res.status(500).json({ error: 'Admin credentials not configured' });
-  }
+  // Vérification mot de passe — bcrypt hash uniquement
+  const passOk = await bcrypt.compare(String(password), ADMIN_PASSWORD_HASH);
 
   if (!emailOk || !passOk) {
     await logAuthFailure(req);
