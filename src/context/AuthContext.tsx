@@ -27,7 +27,6 @@ interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<{ otpRequired?: boolean; needsOnboarding?: boolean }>;
   loginVerifyOtp: (email: string, code: string) => Promise<boolean>;
   adminLogin: (credentials: { email: string; password: string }) => Promise<void>;
-  adminVerifyOtp: (code: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
   approveUser: (id: number) => void;
@@ -134,18 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const adminVerifyOtp = useCallback(async (code: string) => {
-    try {
-      const data = await apiService.adminVerifyOtp(code);
-      setToken(data.token);
-      apiService.setToken(data.token);
-      setUser({ ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] });
-      return true;
-    } catch (err) {
-      console.error("Admin OTP verify failed:", err);
-      return false;
-    }
-  }, []);
+
 
   const setGuestMode = useCallback(() => {
     setToken(null);
@@ -198,11 +186,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, adminVerifyOtp, logout, setGuestMode,
+    login, loginVerifyOtp, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   }), [
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, adminVerifyOtp, logout, setGuestMode,
+    login, loginVerifyOtp, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   ]);
 

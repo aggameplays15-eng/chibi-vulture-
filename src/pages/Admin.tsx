@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap, Palette, Truck, Bell, Settings2, Brush, Music } from 'lucide-react';
+import {
+  LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap,
+  Truck, Bell, Settings2, Brush, Music, ClipboardList
+} from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
+import AdminActivityLog from '@/components/admin/AdminActivityLog';
 import ShopManagement from '@/components/admin/ShopManagement';
 import PostModeration from '@/components/admin/PostModeration';
 import UserManagement from '@/components/admin/UserManagement';
@@ -15,25 +19,33 @@ import PushNotificationManager from '@/components/admin/PushNotificationManager'
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
 import ArtistDashboard from '@/components/admin/ArtistDashboard';
 import MusicManager from '@/components/admin/MusicManager';
+import OrdersManagement from '@/components/admin/OrdersManagement';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
 const Admin = () => {
-  const { primaryColor } = useApp();
+  const { primaryColor, users, posts, orders } = useApp();
 
-  // Charger les données admin-only au montage
+  const safeUsers  = Array.isArray(users)  ? users  : [];
+  const safePosts  = Array.isArray(posts)  ? posts  : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  const pendingCount  = safeUsers.filter(u => !u.isApproved && u.role !== 'Admin').length;
+  const reportedCount = safePosts.filter(p => (p.reports || 0) > 0).length;
+  const pendingOrders = safeOrders.filter(o => o.status === 'En attente').length;
+
   useEffect(() => {
     const load = async () => {
       try {
-        const [users, orders] = await Promise.allSettled([
+        const [usersRes, ordersRes] = await Promise.allSettled([
           apiService.getUsers(),
           apiService.getOrders(),
         ]);
-        if (users.status === 'fulfilled' && Array.isArray(users.value)) {
-          localStorage.setItem('cv_users_list', JSON.stringify(users.value));
+        if (usersRes.status === 'fulfilled' && Array.isArray(usersRes.value)) {
+          localStorage.setItem('cv_users_list', JSON.stringify(usersRes.value));
         }
-        if (orders.status === 'fulfilled' && Array.isArray(orders.value)) {
-          localStorage.setItem('cv_orders', JSON.stringify(orders.value));
+        if (ordersRes.status === 'fulfilled' && Array.isArray(ordersRes.value)) {
+          localStorage.setItem('cv_orders', JSON.stringify(ordersRes.value));
         }
       } catch (e) {
         console.error('Admin data load error:', e);
@@ -41,6 +53,7 @@ const Admin = () => {
     };
     load();
   }, []);
+
   return (
     <MainLayout>
       <header className="p-8 space-y-1">
@@ -49,7 +62,7 @@ const Admin = () => {
             <p className="text-[10px] font-black text-purple-500 uppercase tracking-[0.2em]">Panel Suprême</p>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">ADMINISTRATION</h1>
           </div>
-          <div className="bg-gray-50 p-2 rounded-2xl text-gray-400">
+          <div className="bg-gray-50 p-2 rounded-2xl">
             <Zap size={20} className="text-emerald-500" />
           </div>
         </div>
@@ -57,39 +70,28 @@ const Admin = () => {
 
       <div className="px-6 pb-10">
         <Tabs defaultValue="dashboard" className="w-full space-y-8">
-          <TabsList className="w-full bg-gray-100/50 p-1.5 rounded-[24px] h-14 border border-gray-100 overflow-x-auto no-scrollbar">
-            <TabsTrigger value="dashboard" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <LayoutDashboard size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="shop" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <ShoppingBag size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="delivery" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Truck size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="mod" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <ShieldCheck size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Users size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="artist" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Brush size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Bell size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Settings2 size={18} />
-            </TabsTrigger>
-            <TabsTrigger value="music" className="flex-1 rounded-[18px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all">
-              <Music size={18} />
-            </TabsTrigger>
+          {/* Tab bar — scrollable, with labels */}
+          <TabsList className="w-full bg-gray-100/50 p-1.5 rounded-[24px] h-auto border border-gray-100 overflow-x-auto no-scrollbar flex gap-1">
+            <TabTrigger value="dashboard" icon={<LayoutDashboard size={15} />} label="Dashboard" />
+            <TabTrigger value="orders"    icon={<ClipboardList size={15} />}   label="Commandes" badge={pendingOrders} />
+            <TabTrigger value="shop"      icon={<ShoppingBag size={15} />}     label="Boutique" />
+            <TabTrigger value="delivery"  icon={<Truck size={15} />}           label="Livraison" />
+            <TabTrigger value="mod"       icon={<ShieldCheck size={15} />}     label="Modération" badge={pendingCount + reportedCount} badgeColor="orange" />
+            <TabTrigger value="users"     icon={<Users size={15} />}           label="Utilisateurs" />
+            <TabTrigger value="artist"    icon={<Brush size={15} />}           label="Artiste" />
+            <TabTrigger value="notifs"    icon={<Bell size={15} />}            label="Notifs" />
+            <TabTrigger value="appearance" icon={<Settings2 size={15} />}     label="Apparence" />
+            <TabTrigger value="music"     icon={<Music size={15} />}           label="Musique" />
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-8 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <AdminStats />
             <AdminCharts />
+            <AdminActivityLog />
+          </TabsContent>
+
+          <TabsContent value="orders" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <OrdersManagement />
           </TabsContent>
 
           <TabsContent value="shop" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -115,7 +117,7 @@ const Admin = () => {
             <ArtistDashboard />
           </TabsContent>
 
-          <TabsContent value="notifications" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="notifs" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PushNotificationManager />
           </TabsContent>
 
@@ -129,6 +131,40 @@ const Admin = () => {
         </Tabs>
       </div>
     </MainLayout>
+  );
+};
+
+// Reusable tab trigger with label + optional badge
+const TabTrigger = ({
+  value, icon, label, badge, badgeColor = 'purple'
+}: {
+  value: string;
+  icon: React.ReactNode;
+  label: string;
+  badge?: number;
+  badgeColor?: 'purple' | 'orange' | 'red';
+}) => {
+  const badgeClasses = {
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500',
+    red:    'bg-red-500',
+  };
+
+  return (
+    <TabsTrigger
+      value={value}
+      className="relative flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-[18px] min-w-[60px] data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-purple-600 transition-all text-gray-400"
+    >
+      <div className="relative">
+        {icon}
+        {!!badge && badge > 0 && (
+          <span className={`absolute -top-1.5 -right-1.5 ${badgeClasses[badgeColor]} text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center`}>
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
+      </div>
+      <span className="text-[9px] font-black uppercase tracking-wide leading-none">{label}</span>
+    </TabsTrigger>
   );
 };
 

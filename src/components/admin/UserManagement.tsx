@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { MoreVertical, UserX, Mail, ShieldCheck, UserCheck, Trash2, CheckCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { MoreVertical, UserX, Mail, ShieldCheck, UserCheck, Trash2, CheckCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useApp } from '@/context/AppContext';
@@ -24,16 +25,45 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { logAdminAction } from './AdminActivityLog';
+
+const PAGE_SIZE = 8;
+
 const UserManagement = () => {
   const { users, banUser, approveUser } = useApp();
   const safeUsers = Array.isArray(users) ? users : [];
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [localUsers, setLocalUsers] = useState<typeof safeUsers | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'Tous' | 'Actif' | 'Banni' | 'En attente'>('Tous');
+  const [page, setPage] = useState(1);
 
-  const displayUsers = localUsers ?? safeUsers;
+  const baseUsers = localUsers ?? safeUsers;
+
+  const filtered = useMemo(() => {
+    return baseUsers.filter(u => {
+      const matchSearch = !search ||
+        u.name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase()) ||
+        u.handle?.toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        filterStatus === 'Tous' ? true :
+        filterStatus === 'En attente' ? !u.isApproved && u.role !== 'Admin' :
+        u.status === filterStatus;
+      return matchSearch && matchStatus;
+    });
+  }, [baseUsers, search, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const displayUsers = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const handleSearch = (val: string) => { setSearch(val); setPage(1); };
+  const handleFilter = (val: typeof filterStatus) => { setFilterStatus(val); setPage(1); };
 
   const handleBan = (id: number, name: string) => {
     banUser(id);
+    setLocalUsers((localUsers ?? safeUsers).map(u => u.id === id ? { ...u, status: 'Banni' } : u));
+    logAdminAction('Utilisateur banni', name, 'user');
     showSuccess(`${name} a été banni de la plateforme.`);
   };
 
@@ -41,6 +71,7 @@ const UserManagement = () => {
     try {
       await approveUser(id);
       setLocalUsers((localUsers ?? safeUsers).map(u => u.id === id ? { ...u, isApproved: true } : u));
+      logAdminAction('Utilisateur approuvé', name, 'user');
       showSuccess(`${name} a été approuvé ! ✅`);
     } catch {
       showError("Impossible d'approuver cet utilisateur.");
@@ -64,6 +95,7 @@ const UserManagement = () => {
       });
       if (!res.ok) throw new Error();
       setLocalUsers((localUsers ?? safeUsers).filter(u => u.id !== id));
+      logAdminAction('Utilisateur supprimé', `ID ${id}`, 'user');
       showSuccess("Utilisateur supprimé. 🗑️");
     } catch {
       showError("Impossible de supprimer cet utilisateur.");
@@ -72,15 +104,54 @@ const UserManagement = () => {
     }
   };
 
+  const pendingCount = safeUsers.filter(u => !u.isApproved && u.role !== 'Admin').length;
+  const bannedCount  = safeUsers.filter(u => u.status === 'Banni').length;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center px-2">
-        <h3 className="font-black text-gray-900 text-lg">Utilisateurs</h3>
-        <Badge variant="secondary" className="bg-purple-50 text-purple-600 border-none px-3 py-1 rounded-full font-bold">
-          {safeUsers.length} au total
-        </Badge>
+        <div>
+          <h3 className="font-black text-gray-900 text-lg">Utilisateurs</h3>
+          <p className="text-xs text-gray-400 font-bold uppercase">{safeUsers.length} inscrits</p>
+        </div>
+        <div className="flex gap-2">
+          {pendingCount > 0 && (
+            <Badge className="bg-orange-100 text-orange-600 border-none font-black rounded-full">{pendingCount} en attente</Badge>
+          )}
+          {bannedCount > 0 && (
+            <Badge className="bg-red-50 text-red-500 border-none font-black rounded-full">{bannedCount} bannis</Badge>
+          )}
+        </div>
       </div>
-      
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+        <Input
+          value={search}
+          onChange={e => handleSearch(e.target.value)}
+          placeholder="Rechercher par nom, email, handle..."
+          className="pl-10 h-12 rounded-2xl border-gray-100 bg-white font-medium text-sm"
+        />
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        {(['Tous', 'Actif', 'Banni', 'En attente'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => handleFilter(f)}
+            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[11px] font-black transition-all ${
+              filterStatus === f
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
         {displayUsers.map((user) => (
           <div key={user.id} className="bg-white p-4 rounded-[28px] border border-gray-50 shadow-sm flex items-center justify-between group hover:border-purple-100 transition-colors">
@@ -155,10 +226,35 @@ const UserManagement = () => {
         {displayUsers.length === 0 && (
           <div className="text-center py-8 text-gray-400">
             <UserCheck size={36} className="mx-auto mb-2 opacity-30" />
-            <p className="text-sm font-bold">Aucun utilisateur enregistré.</p>
+            <p className="text-sm font-bold">Aucun utilisateur trouvé.</p>
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="rounded-xl gap-1 font-bold text-xs"
+          >
+            <ChevronLeft size={14} /> Préc.
+          </Button>
+          <span className="text-xs font-black text-gray-400">{page} / {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="rounded-xl gap-1 font-bold text-xs"
+          >
+            Suiv. <ChevronRight size={14} />
+          </Button>
+        </div>
+      )}
 
       <AlertDialog open={confirmDeleteId !== null} onOpenChange={() => setConfirmDeleteId(null)}>
         <AlertDialogContent className="rounded-3xl">

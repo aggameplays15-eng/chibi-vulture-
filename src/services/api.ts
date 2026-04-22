@@ -319,19 +319,6 @@ export const apiService = {
     return safeJson(response); // { otpRequired: true }
   },
 
-  adminVerifyOtp: async (code: string) => {
-    const response = await fetch('/api/admin-verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    if (!response.ok) {
-      const err = await safeJson(response);
-      throw new Error(err?.error || 'Code invalide');
-    }
-    return safeJson(response); // { user, token }
-  },
-
   loginVerifyOtp: async (email: string, code: string) => {
     const response = await fetch('/api/login-verify-otp', {
       method: 'POST',

@@ -19,7 +19,6 @@ export const useApp = () => {
     login: auth.login,
     loginVerifyOtp: auth.loginVerifyOtp,
     adminLogin: auth.adminLogin,
-    adminVerifyOtp: auth.adminVerifyOtp,
     logout: auth.logout,
     setGuestMode: auth.setGuestMode,
     updateUser: auth.updateUser,
