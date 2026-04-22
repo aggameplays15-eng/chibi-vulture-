@@ -98,6 +98,10 @@ module.exports = async (req, res) => {
       // Email au membre si son compte vient d'être approuvé (false → true)
       if (data.is_approved === true && !wasApproved) {
         sendEmail(user.email, 'accountApproved', { name: user.name, handle: user.handle }).catch(() => {});
+        // Confirmation à l'admin
+        if (ADMIN_EMAIL) {
+          sendEmail(ADMIN_EMAIL, 'approvalConfirmAdmin', { name: user.name, handle: user.handle, email: user.email }).catch(() => {});
+        }
       }
 
       // Email à l'admin si le compte vient d'être banni

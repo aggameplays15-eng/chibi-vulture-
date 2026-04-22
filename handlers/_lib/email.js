@@ -88,22 +88,30 @@ function avatar(name) {
 
 const templates = {
 
-  // 1. Bienvenue après inscription
+  // 1. Bienvenue après inscription — compte en attente d'approbation
   welcome: ({ name, handle }) => ({
-    subject: `🎨 Bienvenue sur ${APP_NAME}, ${name} !`,
+    subject: `🎨 Compte créé — En attente d'approbation sur ${APP_NAME}`,
     html: baseTemplate(`Bienvenue sur ${APP_NAME}`, `
       <h2 style="margin:0 0 8px;color:${DARK};font-size:24px;">Bienvenue, ${name} ! 🎉</h2>
       <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Ton compte <strong>${handle}</strong> est créé. Tu fais maintenant partie de la communauté artistique de ${APP_NAME}.
+        Ton compte <strong>${handle}</strong> a bien été créé sur ${APP_NAME}.
       </p>
-      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 8px;">Ce que tu peux faire :</p>
-      <ul style="color:#555;font-size:15px;line-height:2;padding-left:20px;margin:0 0 16px;">
+
+      <div style="background:#fff8f0;border-left:4px solid #F59E0B;border-radius:0 12px 12px 0;padding:16px 20px;margin-bottom:24px;">
+        <p style="margin:0 0 6px;font-weight:700;color:#92400E;font-size:15px;">⏳ En attente d'approbation</p>
+        <p style="margin:0;color:#78350F;font-size:14px;line-height:1.6;">
+          Ton compte est en cours de vérification par notre équipe. Tu recevras un email dès que ton accès sera activé.
+        </p>
+      </div>
+
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">Une fois approuvé, tu pourras :</p>
+      <ul style="color:#555;font-size:14px;line-height:2;padding-left:20px;margin:0 0 16px;">
         <li>📸 Partager tes créations</li>
         <li>🛍️ Vendre tes œuvres dans la boutique</li>
         <li>💬 Discuter avec d'autres artistes</li>
         <li>❤️ Liker et commenter les posts</li>
       </ul>
-      ${btn('Accéder à mon profil', `${APP_URL}/profile/${handle}`)}
+      <p style="color:#aaa;font-size:13px;margin:0;">Merci pour ta patience — l'équipe ${APP_NAME} 💖</p>
     `),
   }),
 
@@ -297,14 +305,29 @@ const templates = {
 
   // 10. Nouveau membre inscrit (admin)
   newSignupAdmin: ({ name, handle, email }) => ({
-    subject: `👤 Nouveau membre inscrit — ${APP_NAME}`,
-    html: baseTemplate('Nouveau membre', `
-      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Nouveau membre inscrit 👤</h2>
+    subject: `🔔 Nouveau compte en attente d'approbation — ${APP_NAME}`,
+    html: baseTemplate('Nouveau membre en attente', `
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Nouveau compte à approuver 🔔</h2>
       <div style="background:#fff3f8;border-left:4px solid ${PRIMARY};padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
         <p style="margin:0;color:${DARK};font-size:16px;font-weight:700;">${name} <span style="color:#888;font-weight:400;font-size:14px;">${handle}</span></p>
-        <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
+        <p style="margin:4px 0 0;color:#555;font-size:14px;">📧 ${email}</p>
       </div>
-      <p style="color:#555;font-size:15px;margin:0 0 24px;">Ce membre attend ton approbation pour accéder à la plateforme.</p>
+      <p style="color:#555;font-size:15px;margin:0 0 8px;">Ce membre attend ton approbation pour accéder à la plateforme.</p>
+      <p style="color:#aaa;font-size:13px;margin:0 0 24px;">Rends-toi dans le panneau admin pour approuver ou rejeter ce compte.</p>
+      ${btn('Approuver dans le panneau admin', `${APP_URL}/goated-panel`)}
+    `),
+  }),
+
+  // 10b. Confirmation d'approbation (admin)
+  approvalConfirmAdmin: ({ name, handle, email }) => ({
+    subject: `✅ Compte approuvé — ${name} (${handle}) — ${APP_NAME}`,
+    html: baseTemplate('Compte approuvé', `
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Compte approuvé ✅</h2>
+      <div style="background:#f0fdf4;border-left:4px solid #10B981;padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
+        <p style="margin:0;color:${DARK};font-size:16px;font-weight:700;">${name} <span style="color:#888;font-weight:400;font-size:14px;">${handle}</span></p>
+        <p style="margin:4px 0 0;color:#555;font-size:14px;">📧 ${email}</p>
+      </div>
+      <p style="color:#555;font-size:14px;margin:0 0 24px;">Ce membre a été notifié par email et peut maintenant accéder à la plateforme.</p>
       ${btn('Gérer les membres', `${APP_URL}/goated-panel`)}
     `),
   }),
