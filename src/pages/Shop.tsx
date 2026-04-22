@@ -3,14 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { ShoppingCart, Search, Filter, ArrowRight, ArrowUpDown } from 'lucide-react';
+import { ShoppingCart, Search, ArrowUpDown, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { showSuccess } from '@/utils/toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { apiService } from '@/services/api';
 import {
@@ -35,7 +34,6 @@ const Shop = () => {
       .finally(() => setIsLoadingProducts(false));
   }, []);
 
-  // Catégories dynamiques : celles de la DB + celles utilisées dans les produits existants
   const categories = useMemo(() => {
     const fromProducts = products.map(p => p.category).filter(Boolean);
     const all = [...new Set([...dbCategories, ...fromProducts])].sort();
@@ -53,64 +51,89 @@ const Shop = () => {
       return 0;
     });
 
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
   return (
     <MainLayout>
-      <header className="p-6 space-y-6">
+      <header className="p-6 space-y-5">
+        {/* Title row */}
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Collection</p>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Boutique</h1>
+            <div className="flex items-center gap-2">
+              <Sparkles size={12} style={{ color: primaryColor }} className="animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600">Collection</p>
+            </div>
+            <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">Boutique</h1>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="w-12 h-12 rounded-2xl bg-white shadow-sm relative"
+          <button
+            className="relative w-12 h-12 rounded-2xl bg-white dark:bg-white/5 shadow-sm flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors tap-scale"
             onClick={() => navigate('/cart')}
           >
-            <ShoppingCart size={22} />
-            {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white" style={{ backgroundColor: primaryColor }}>
-                {cart.reduce((acc, item) => acc + item.quantity, 0)}
-              </span>
-            )}
-          </Button>
+            <ShoppingCart size={20} />
+            <AnimatePresence>
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-1 -right-1 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-[hsl(224,20%,7%)]"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {cartCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
         </div>
-        
+
+        {/* Search + Sort */}
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <Input 
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+            <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 rounded-2xl border-none bg-white shadow-sm focus-visible:ring-2" 
-              style={{ "--tw-ring-color": primaryColor } as React.CSSProperties}
-              placeholder="Rechercher un produit..." 
+              className="pl-11 h-13 rounded-2xl border-none bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 focus-visible:ring-2 h-12"
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              placeholder="Rechercher..."
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-white shadow-sm text-gray-400">
-                <ArrowUpDown size={18} />
+              <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-gray-50 dark:bg-white/5 text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 border-none">
+                <ArrowUpDown size={16} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-2xl p-2">
-              <DropdownMenuItem onClick={() => setSortBy('default')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'default' && 'text-pink-500')}>Par défaut</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy('price-asc')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'price-asc' && 'text-pink-500')}>Prix croissant ↑</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy('price-desc')} className={cn("rounded-xl font-bold text-xs p-3", sortBy === 'price-desc' && 'text-pink-500')}>Prix décroissant ↓</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="rounded-2xl p-2 dark:bg-[hsl(224,20%,12%)] dark:border-white/10">
+              {[
+                { key: 'default', label: 'Par défaut' },
+                { key: 'price-asc', label: 'Prix croissant ↑' },
+                { key: 'price-desc', label: 'Prix décroissant ↓' },
+              ].map(opt => (
+                <DropdownMenuItem
+                  key={opt.key}
+                  onClick={() => setSortBy(opt.key as typeof sortBy)}
+                  className={cn("rounded-xl font-bold text-xs p-3 dark:text-gray-300 dark:hover:bg-white/5", sortBy === opt.key && 'font-black')}
+                  style={{ color: sortBy === opt.key ? primaryColor : undefined }}
+                >
+                  {opt.label}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+        {/* Category pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {categories.map(cat => (
-            <button 
-              key={cat} 
+            <button
+              key={cat}
               onClick={() => setActiveCategory(cat)}
               className={cn(
-                "px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-premium",
-                activeCategory === cat 
-                  ? "text-white shadow-lg" 
-                  : "bg-white text-gray-400 hover:bg-gray-50"
+                "px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-premium whitespace-nowrap tap-scale",
+                activeCategory === cat
+                  ? "text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
               )}
               style={{ backgroundColor: activeCategory === cat ? primaryColor : undefined }}
             >
@@ -120,10 +143,22 @@ const Shop = () => {
         </div>
       </header>
 
-      <div className="px-4 grid grid-cols-2 gap-4 pb-32">
+      {/* Stats bar */}
+      {!isLoadingProducts && filteredProducts.length > 0 && (
+        <div className="px-6 mb-4 flex items-center gap-2">
+          <TrendingUp size={12} className="text-gray-400 dark:text-gray-600" />
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600">
+            {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''}
+            {activeCategory !== 'Tous' ? ` · ${activeCategory}` : ''}
+          </p>
+        </div>
+      )}
+
+      {/* Product grid */}
+      <div className="px-4 grid grid-cols-2 gap-3 pb-32">
         {isLoadingProducts && products.length === 0
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-[32px] overflow-hidden border border-gray-50">
+              <div key={i} className="bg-white dark:bg-[hsl(224,20%,10%)] rounded-[28px] overflow-hidden border border-gray-50 dark:border-white/5">
                 <Skeleton className="aspect-square w-full" />
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-2 w-16 rounded-full" />
@@ -133,49 +168,71 @@ const Shop = () => {
               </div>
             ))
           : filteredProducts.map((product, index) => (
-          <motion.div 
-            key={product.id} 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
-            onClick={() => navigate(`/product/${product.id}`)}
-            className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-50 group cursor-pointer hover:shadow-xl transition-premium"
-          >
-            <div className="aspect-square relative overflow-hidden bg-gray-50">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-              />
-              <div className="absolute top-3 right-3">
-                <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-sm">
-                  <ArrowRight size={14} className="text-gray-400 group-hover:text-gray-900 transition-colors" />
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.3), ease: [0.23, 1, 0.32, 1] }}
+                onClick={() => navigate(`/product/${product.id}`)}
+                className="bg-white dark:bg-[hsl(224,20%,10%)] rounded-[28px] overflow-hidden border border-gray-50 dark:border-white/5 group cursor-pointer hover:shadow-xl dark:hover:shadow-black/30 transition-premium"
+              >
+                {/* Image */}
+                <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-white/5">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700"
+                  />
+                  {/* Badges */}
+                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
+                    {index < 3 && (
+                      <span
+                        className="text-white text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-wider"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        Nouveau
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="space-y-1">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{product.category}</p>
-                <h3 className="font-bold text-sm text-gray-900 line-clamp-1">{product.name}</h3>
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <span className="font-black text-sm" style={{ color: primaryColor }}>{product.price.toLocaleString()} GNF</span>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(product);
-                    showSuccess("Ajouté au panier ! 🛒");
-                  }}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <ShoppingCart size={14} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+
+                {/* Info */}
+                <div className="p-3.5 space-y-2.5">
+                  <div>
+                    <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-0.5">{product.category}</p>
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1 leading-tight">{product.name}</h3>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-base" style={{ color: primaryColor }}>
+                      {product.price.toLocaleString()} <span className="text-xs font-bold opacity-70">GNF</span>
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                        showSuccess("Ajouté au panier ! 🛒");
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-[10px] font-black shadow-sm active:scale-90 transition-transform tap-scale"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      <ShoppingCart size={12} />
+                      Ajouter
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+        }
       </div>
+
+      {!isLoadingProducts && filteredProducts.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+            <ShoppingCart size={24} className="text-gray-300 dark:text-gray-700" />
+          </div>
+          <p className="text-gray-400 dark:text-gray-600 font-bold text-sm">Aucun produit trouvé</p>
+        </div>
+      )}
     </MainLayout>
   );
 };

@@ -61,8 +61,8 @@ const SmartHeader = () => {
         animate={{ y: 0, opacity: 1 }}
         className={cn(
           "w-full sm:max-w-xl pointer-events-auto transition-all duration-500 ease-in-out",
-          "glass rounded-[32px] py-2 px-3 flex items-center justify-between gap-2",
-          scrolled ? "shadow-lg scale-[0.98]" : "shadow-sm"
+          "glass rounded-[28px] py-2 px-3 flex items-center justify-between gap-2",
+          scrolled ? "shadow-xl scale-[0.98]" : "shadow-md"
         )}
       >
         <div className="flex items-center gap-1">
@@ -70,14 +70,14 @@ const SmartHeader = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="w-10 h-10 rounded-full hover:bg-gray-50 text-gray-600"
+              className="w-10 h-10 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400"
               onClick={() => navigate(-1)}
             >
               <ChevronLeft size={20} strokeWidth={2.5} />
             </Button>
           ) : (
             <div 
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm cursor-pointer active:scale-90 transition-transform overflow-hidden bg-white"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm cursor-pointer active:scale-90 transition-transform overflow-hidden bg-white dark:bg-white/5"
               onClick={() => navigate('/feed')}
             >
               <img src={headerLogoUrl} alt="Logo" className="w-7 h-7 object-contain" />
@@ -86,7 +86,7 @@ const SmartHeader = () => {
         </div>
 
         <div className="flex-1 px-2">
-          <h1 className="font-black text-xs text-gray-900 tracking-tight uppercase text-center">
+          <h1 className="font-black text-xs text-gray-900 dark:text-white tracking-tight uppercase text-center">
             {getPageTitle()}
           </h1>
         </div>
@@ -95,7 +95,7 @@ const SmartHeader = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="w-10 h-10 rounded-full text-gray-400 hover:text-gray-900 relative"
+            className="w-10 h-10 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 relative"
             onClick={() => { navigate('/notifications'); setUnreadCount(0); }}
           >
             <Bell size={18} strokeWidth={2} />
@@ -105,7 +105,7 @@ const SmartHeader = () => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="absolute top-1 right-1 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white"
+                  className="absolute top-1 right-1 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-[hsl(224,20%,9%)]"
                   style={{ backgroundColor: primaryColor }}
                 >
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -117,7 +117,7 @@ const SmartHeader = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="w-10 h-10 rounded-full text-gray-400 hover:text-gray-900 relative"
+            className="w-10 h-10 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5 relative"
             onClick={() => navigate('/cart')}
           >
             <ShoppingCart size={18} strokeWidth={2} />
@@ -127,7 +127,7 @@ const SmartHeader = () => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="absolute top-1 right-1 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white"
+                  className="absolute top-1 right-1 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-[hsl(224,20%,9%)]"
                   style={{ backgroundColor: primaryColor }}
                 >
                   {cart.reduce((acc, item) => acc + item.quantity, 0)}
@@ -136,7 +136,7 @@ const SmartHeader = () => {
             </AnimatePresence>
           </Button>
           
-          <div className="w-px h-6 bg-gray-100 mx-1" />
+          <div className="w-px h-5 bg-gray-100 dark:bg-white/8 mx-1" />
           
           <MobileMenu />
         </div>

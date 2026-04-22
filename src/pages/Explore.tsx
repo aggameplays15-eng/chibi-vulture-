@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { Search, Flame, Star, TrendingUp, Sparkles, Loader2, X } from 'lucide-react';
+import { Search, Flame, Star, TrendingUp, Sparkles, Loader2, X, UserPlus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 import { useDebounce } from '@/hooks/use-debounce';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const TAGS = ["#chibi", "#kawaii", "#vulture", "#stickers", "#digitalart", "#pastel", "#anime", "#guinee", "#conakry"];
 
@@ -28,7 +28,6 @@ const Explore = () => {
   const [isSearching, setIsSearching] = useState(false);
   const debouncedQuery = useDebounce(searchQuery, 400);
 
-  // Recherche réelle
   useEffect(() => {
     if (debouncedQuery.length < 2) {
       setSearchResults(null);
@@ -41,223 +40,269 @@ const Explore = () => {
       .finally(() => setIsSearching(false));
   }, [debouncedQuery]);
 
-  // Filtrer les posts du contexte par tag actif
   const taggedPosts = activeTag
     ? contextPosts.filter(p => p.caption?.toLowerCase().includes(activeTag.replace('#', '')))
-    : contextPosts.slice(0, 4);
+    : contextPosts.slice(0, 6);
 
   const isSearchMode = searchQuery.length >= 2;
 
   return (
     <MainLayout>
-      <header className="p-6 space-y-6">
+      <header className="p-6 space-y-5">
         <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: primaryColor }}>Exploration</p>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">DÉCOUVRIR</h1>
+          <div className="flex items-center gap-2">
+            <Sparkles size={12} style={{ color: primaryColor }} className="animate-pulse" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600">Exploration</p>
+          </div>
+          <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">Découvrir</h1>
         </div>
 
+        {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 pr-10 h-14 rounded-2xl border-gray-100 bg-gray-50/50 focus-visible:ring-2"
+            className="pl-12 pr-10 h-13 rounded-2xl border-none bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 focus-visible:ring-2 h-12"
             style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             placeholder="Artistes, tags, styles..."
           />
-          {searchQuery && (
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              onClick={() => setSearchQuery('')}
-              aria-label="Effacer la recherche"
-            >
-              <X size={18} />
-            </button>
-          )}
+          <AnimatePresence>
+            {searchQuery && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                onClick={() => setSearchQuery('')}
+                aria-label="Effacer la recherche"
+              >
+                <X size={16} />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
+        {/* Tag pills */}
         {!isSearchMode && (
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {TAGS.map(tag => (
-              <Badge
+              <button
                 key={tag}
                 onClick={() => setActiveTag(tag === activeTag ? '' : tag)}
-                className={`cursor-pointer px-5 py-2 rounded-full border-none transition-all whitespace-nowrap font-bold ${
-                  activeTag === tag ? 'text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-premium whitespace-nowrap tap-scale",
+                  activeTag === tag
+                    ? "text-white shadow-lg"
+                    : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10"
+                )}
                 style={{ backgroundColor: activeTag === tag ? primaryColor : undefined }}
               >
                 {tag}
-              </Badge>
+              </button>
             ))}
           </div>
         )}
       </header>
 
-      <div className="px-6 space-y-10 pb-20">
+      <div className="px-5 space-y-10 pb-24">
 
-        {/* Résultats de recherche */}
-        {isSearchMode && (
-          <section className="space-y-6">
-            {isSearching && (
-              <div className="flex justify-center py-8">
-                <Loader2 size={24} className="animate-spin text-gray-300" />
-              </div>
-            )}
-
-            {!isSearching && searchResults && (
-              <>
-                {/* Utilisateurs */}
-                {searchResults.users.length > 0 && (
-                  <div>
-                    <h2 className="font-black text-gray-900 uppercase tracking-wider text-sm mb-4">Artistes</h2>
-                    <div className="space-y-3">
-                      {searchResults.users.map(u => (
-                        <div
-                          key={u.id}
-                          className="flex items-center gap-3 p-3 bg-white rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors"
-                          onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
-                        >
-                          <Avatar className="w-12 h-12 rounded-2xl">
-                            <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} />
-                            <AvatarFallback>{u.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm text-gray-900 truncate">{u.name}</p>
-                            <p className="text-[10px] text-gray-400 font-bold">{u.handle}</p>
-                          </div>
-                          {u.handle !== user.handle && !user.isGuest && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleFollow(u.handle); }}
-                              className="text-[10px] font-black px-3 py-1.5 rounded-full text-white"
-                              style={{ backgroundColor: primaryColor }}
-                            >
-                              SUIVRE
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Posts */}
-                {searchResults.posts.length > 0 && (
-                  <div>
-                    <h2 className="font-black text-gray-900 uppercase tracking-wider text-sm mb-4">Posts</h2>
-                    <div className="grid grid-cols-2 gap-3">
-                      {searchResults.posts.map(p => (
-                        <motion.div
-                          key={p.id}
-                          whileHover={{ y: -3 }}
-                          className="aspect-square rounded-[24px] overflow-hidden cursor-pointer relative group"
-                          onClick={() => navigate(`/post/${p.id}`)}
-                        >
-                          <img src={p.image} alt={p.caption} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                            <p className="text-white text-[10px] font-bold truncate">{p.caption}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {searchResults.users.length === 0 && searchResults.posts.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-gray-400 font-bold">Aucun résultat pour "{searchQuery}"</p>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        )}
-
-        {/* Vue par défaut */}
-        {!isSearchMode && (
-          <>
-            <section>
-              <div className="flex items-center justify-between mb-6 px-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-orange-50 text-orange-500">
-                    <Flame size={20} />
-                  </div>
-                  <h2 className="font-black text-gray-900 uppercase tracking-wider text-sm">
-                    {activeTag ? `Posts ${activeTag}` : 'Tendances'}
-                  </h2>
+        {/* Search results */}
+        <AnimatePresence mode="wait">
+          {isSearchMode && (
+            <motion.section
+              key="search"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              {isSearching && (
+                <div className="flex justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-gray-300 dark:text-gray-700" />
                 </div>
-                <TrendingUp size={16} className="text-gray-300" />
-              </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                {taggedPosts.length > 0 ? taggedPosts.slice(0, 4).map((post) => (
-                  <motion.div
-                    key={post.id}
-                    whileHover={{ y: -5 }}
-                    className="aspect-[3/4] rounded-[32px] bg-gray-100 overflow-hidden relative group cursor-pointer shadow-sm"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  >
-                    <img
-                      src={post.image}
-                      alt={post.caption}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                      <p className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Illustration</p>
-                      <p className="text-white text-xs font-bold">{post.handle}</p>
-                    </div>
-                  </motion.div>
-                )) : [1, 2, 3, 4].map(i => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ y: -5 }}
-                    className="aspect-[3/4] rounded-[32px] bg-gray-100 overflow-hidden relative group cursor-pointer shadow-sm"
-                  >
-                    <img
-                      src={`https://picsum.photos/seed/chibi${i + 10}/400/600`}
-                      alt="Trend"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-6 px-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-yellow-50 text-yellow-500">
-                    <Star size={20} />
-                  </div>
-                  <h2 className="font-black text-gray-900 uppercase tracking-wider text-sm">Artistes à suivre</h2>
-                </div>
-                <Sparkles size={16} className="text-gray-300" />
-              </div>
-
-              <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar">
-                {contextUsers.filter(u => u.handle !== user.handle && u.isApproved).slice(0, 8).map((u) => (
-                  <div key={u.id} className="flex flex-col items-center gap-3 min-w-[90px] group cursor-pointer" onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}>
-                    <div className="relative">
-                      <div
-                        className="w-20 h-20 rounded-[28px] p-1 transition-transform group-hover:rotate-6"
-                        style={{ backgroundColor: `${primaryColor}20` }}
-                      >
-                        <img
-                          src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
-                          alt={u.name}
-                          className="w-full h-full rounded-[24px] bg-white object-cover"
-                        />
+              {!isSearching && searchResults && (
+                <>
+                  {searchResults.users.length > 0 && (
+                    <div>
+                      <h2 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <Star size={12} style={{ color: primaryColor }} />
+                        Artistes
+                      </h2>
+                      <div className="space-y-2">
+                        {searchResults.users.map(u => (
+                          <motion.div
+                            key={u.id}
+                            whileHover={{ x: 4 }}
+                            className="flex items-center gap-3 p-3 bg-white dark:bg-[hsl(224,20%,10%)] rounded-2xl cursor-pointer border border-gray-50 dark:border-white/5 hover:shadow-sm transition-shadow"
+                            onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
+                          >
+                            <Avatar className="w-11 h-11 rounded-[14px]">
+                              <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} />
+                              <AvatarFallback className="rounded-[14px]">{u.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-black text-sm text-gray-900 dark:text-white truncate">{u.name}</p>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-600 font-semibold">{u.handle}</p>
+                            </div>
+                            {u.handle !== user.handle && !user.isGuest && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleFollow(u.handle); }}
+                                className="flex items-center gap-1 text-[10px] font-black px-3 py-1.5 rounded-full text-white tap-scale"
+                                style={{ backgroundColor: primaryColor }}
+                              >
+                                <UserPlus size={10} />
+                                Suivre
+                              </button>
+                            )}
+                          </motion.div>
+                        ))}
                       </div>
                     </div>
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter truncate w-full text-center">
-                      {u.handle}
-                    </span>
+                  )}
+
+                  {searchResults.posts.length > 0 && (
+                    <div>
+                      <h2 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <Flame size={12} className="text-orange-400" />
+                        Posts
+                      </h2>
+                      <div className="grid grid-cols-2 gap-2">
+                        {searchResults.posts.map((p, i) => (
+                          <motion.div
+                            key={p.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: i * 0.04 }}
+                            whileHover={{ y: -3 }}
+                            className="aspect-square rounded-[20px] overflow-hidden cursor-pointer relative group"
+                            onClick={() => navigate(`/post/${p.id}`)}
+                          >
+                            <img src={p.image} alt={p.caption} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                              <p className="text-white text-[10px] font-bold truncate">{p.caption}</p>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResults.users.length === 0 && searchResults.posts.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <div className="w-14 h-14 rounded-3xl bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+                        <Search size={20} className="text-gray-300 dark:text-gray-700" />
+                      </div>
+                      <p className="text-gray-400 dark:text-gray-600 font-bold text-sm">Aucun résultat pour "{searchQuery}"</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.section>
+          )}
+
+          {/* Default view */}
+          {!isSearchMode && (
+            <motion.div
+              key="default"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-10"
+            >
+              {/* Trending posts */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-500">
+                      <Flame size={16} />
+                    </div>
+                    <h2 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs">
+                      {activeTag ? `Posts ${activeTag}` : 'Tendances'}
+                    </h2>
                   </div>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
+                  <TrendingUp size={14} className="text-gray-300 dark:text-gray-700" />
+                </div>
+
+                {/* Masonry-style grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {(taggedPosts.length > 0 ? taggedPosts : Array.from({ length: 6 })).slice(0, 6).map((post, i) => {
+                    const isWide = i === 0;
+                    return (
+                      <motion.div
+                        key={post ? (post as { id: number }).id : i}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        whileHover={{ y: -4 }}
+                        className={cn(
+                          "rounded-[24px] bg-gray-100 dark:bg-white/5 overflow-hidden relative group cursor-pointer",
+                          isWide ? "col-span-2 aspect-[2/1]" : "aspect-[3/4]"
+                        )}
+                        onClick={() => post && navigate(`/post/${(post as { id: number }).id}`)}
+                      >
+                        <img
+                          src={post ? (post as { image: string }).image : `https://picsum.photos/seed/chibi${i + 10}/400/600`}
+                          alt="Trend"
+                          className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                          {post && (
+                            <p className="text-white text-[10px] font-bold truncate">{(post as { handle: string }).handle}</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Artists to follow */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-yellow-50 dark:bg-yellow-500/10 text-yellow-500">
+                      <Star size={16} />
+                    </div>
+                    <h2 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs">Artistes à suivre</h2>
+                  </div>
+                  <Sparkles size={14} className="text-gray-300 dark:text-gray-700" />
+                </div>
+
+                <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+                  {contextUsers.filter(u => u.handle !== user.handle && u.isApproved).slice(0, 10).map((u, i) => (
+                    <motion.div
+                      key={u.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex flex-col items-center gap-2 min-w-[72px] cursor-pointer group"
+                      onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
+                    >
+                      <div
+                        className="w-16 h-16 rounded-[20px] p-[2px] transition-transform group-hover:scale-105 tap-scale"
+                        style={{ background: `linear-gradient(135deg, ${primaryColor}80, #8B5CF680)` }}
+                      >
+                        <div className="w-full h-full rounded-[18px] bg-white dark:bg-[hsl(224,20%,10%)] p-[2px]">
+                          <img
+                            src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
+                            alt={u.name}
+                            className="w-full h-full rounded-[16px] object-cover"
+                          />
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-tight truncate w-full text-center">
+                        {u.handle.replace('@', '')}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </MainLayout>
   );
