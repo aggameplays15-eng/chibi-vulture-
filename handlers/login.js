@@ -1,31 +1,9 @@
-const crypto = require('crypto');
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('./_lib/rateLimit');
 const { handleCors } = require('./_lib/cors');
 const { logAuthFailure } = require('./_lib/security');
-const { sendEmail } = require('./_lib/email');
-
-// Generate a 6-digit OTP, store its hash, return the plain code
-async function issueUserOtp(userId) {
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes (augmenté pour production)
-
-  // Invalidate any previous unused OTPs for this user
-  await db.query(
-    `UPDATE user_otp SET used = TRUE WHERE user_id = $1 AND used = FALSE`,
-    [userId]
-  );
-
-  await db.query(
-    `INSERT INTO user_otp (user_id, code_hash, expires_at) VALUES ($1, $2, $3)`,
-    [userId, codeHash, expiresAt]
-  );
-
-  return code;
-}
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
@@ -46,7 +24,6 @@ module.exports = async (req, res) => {
 
   const { email, password } = req.body || {};
 
-  // Validation des entrées
   if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
   }
@@ -63,54 +40,36 @@ module.exports = async (req, res) => {
 
     const user = rows[0];
 
-    // Vérifier si le compte est supprimé
+    // Compte supprimé
     if (user.status === 'Supprimé') {
       return res.status(403).json({ error: 'This account has been deleted. Please contact support.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password || '');
-
     if (!isMatch) {
       await logAuthFailure(req);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check if user is approved
+    // Compte non approuvé
     if (!user.is_approved) {
       return res.status(403).json({ error: 'Account pending approval. Please contact an administrator.' });
     }
 
-    // MODE DEV: Skip OTP in development
-    if (process.env.NODE_ENV === 'development') {
-      const token = auth.signToken(user);
-      console.log(`🔓 [DEV MODE] User login without OTP: ${user.email}`);
-      return res.status(200).json({ 
-        token, 
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          handle: user.handle,
-          role: user.role,
-          avatarColor: user.avatar_color,
-          avatarImage: user.avatar_image,
-          bio: user.bio
-        }
-      });
-    }
-
-    // Credentials OK — issue OTP
-    const code = await issueUserOtp(user.id);
-
-    // Respond immediately, send email async
-    res.status(200).json({ otpRequired: true });
-
-    sendEmail(user.email, 'userOtp', { name: user.name, code }).then(sent => {
-      if (!sent) {
-        console.warn(`[Login OTP] Email non envoyé à ${user.email} — code: ${code}`);
+    // Connexion directe — pas d'OTP pour les utilisateurs
+    const token = auth.signToken(user);
+    return res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        handle: user.handle,
+        role: user.role,
+        avatarColor: user.avatar_color,
+        avatarImage: user.avatar_image,
+        bio: user.bio
       }
-      // Log OTP en production pour debug (à retirer après résolution)
-      console.log(`[Login OTP] Code généré pour ${user.email}: ${code} (expire dans 30 min)`);
     });
 
   } catch (error) {
