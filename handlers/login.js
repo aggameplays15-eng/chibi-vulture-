@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
       return res.status(403).json({ error: 'Account pending approval. Please contact an administrator.' });
     }
 
-    // Connexion directe — pas d'OTP pour les utilisateurs
+    // Connexion directe
     const token = auth.signToken(user);
     return res.status(200).json({
       token,

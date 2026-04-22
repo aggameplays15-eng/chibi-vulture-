@@ -22,7 +22,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://chibi-vulture.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",

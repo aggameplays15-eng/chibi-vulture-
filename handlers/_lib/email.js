@@ -361,39 +361,6 @@ const templates = {
     `),
   }),
 
-  // 12. User 2FA OTP (connexion) - Version optimisée
-  userOtp: ({ name, code }) => ({
-    subject: `🔐 Code: ${code} — ${APP_NAME}`,
-    html: baseTemplate('Code de connexion', `
-      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Code de connexion 🔐</h2>
-      <p style="color:#555;font-size:15px;margin:0 0 16px;">
-        Bonjour <strong>${name}</strong>, voici ton code de vérification :
-      </p>
-      <div style="text-align:center;padding:24px;background:#f9f9fb;border-radius:12px;margin-bottom:16px;">
-        <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:${DARK};">${code}</p>
-        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>30 minutes</strong></p>
-      </div>
-      <p style="color:#aaa;font-size:13px;margin:0;">
-        Si tu n'es pas à l'origine de cette connexion, ignore cet email.
-      </p>
-    `),
-  }),
-
-  // 13. Admin 2FA OTP - Version optimisée
-  adminOtp: ({ code }) => ({
-    subject: `🔐 Code Admin: ${code} — ${APP_NAME}`,
-    html: baseTemplate('Code Admin', `
-      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Code Admin 🔐</h2>
-      <div style="text-align:center;padding:24px;background:#f9f9fb;border-radius:12px;margin-bottom:16px;">
-        <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:${DARK};">${code}</p>
-        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>30 minutes</strong></p>
-      </div>
-      <p style="color:#aaa;font-size:13px;margin:0;">
-        Connexion au panneau Admin. Si ce n'est pas vous, changez votre mot de passe immédiatement.
-      </p>
-    `),
-  }),
-
   // 13. Réinitialisation de mot de passe
   passwordReset: ({ name, resetUrl }) => ({
     subject: `🔑 Réinitialisation de mot de passe — ${APP_NAME}`,

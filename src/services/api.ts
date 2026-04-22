@@ -316,20 +316,7 @@ export const apiService = {
       const err = await safeJson(response);
       throw new Error(err?.error || 'Accès admin refusé');
     }
-    return safeJson(response); // { otpRequired: true }
-  },
-
-  loginVerifyOtp: async (email: string, code: string) => {
-    const response = await fetch('/api/login-verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code }),
-    });
-    if (!response.ok) {
-      const err = await safeJson(response);
-      throw new Error(err?.error || 'Code invalide');
-    }
-    return safeJson(response); // { user, token }
+    return safeJson(response);
   },
 
   forgotPassword: async (email: string) => {

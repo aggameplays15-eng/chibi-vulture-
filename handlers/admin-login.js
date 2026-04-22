@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
 
   const token = auth.signToken(adminUser);
 
-  console.log(`[Admin] Connexion réussie depuis ${req.headers['x-forwarded-for'] || req.socket?.remoteAddress}`);
+  console.log(`[Admin] Connexion réussie pour l'administrateur`);
 
   return res.status(200).json({
     token,

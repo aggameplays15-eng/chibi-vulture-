@@ -32,8 +32,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setIsLoading(true);
     try {
       await login(email.trim().toLowerCase(), password);
-      // Le serveur a envoyé un OTP par email
-      navigation.navigate('LoginOtp', { email: email.trim().toLowerCase() });
+      navigation.navigate('Main');
     } catch (error: any) {
       Alert.alert('Erreur de connexion', error.message || 'Identifiants incorrects');
     } finally {

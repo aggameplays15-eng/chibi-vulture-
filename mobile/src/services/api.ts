@@ -65,19 +65,6 @@ export const apiService = {
       const err = await safeJson(response);
       throw new Error(err?.error || 'Identifiants incorrects');
     }
-    return safeJson(response); // returns { otpRequired: true }
-  },
-
-  verifyLoginOtp: async (credentials: { email: string; code: string }) => {
-    const response = await fetch(`${API_BASE_URL}/api/login-verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-    if (!response.ok) {
-      const err = await safeJson(response);
-      throw new Error(err?.error || 'Code invalide ou expiré');
-    }
     const data = await safeJson(response);
     if (data.token) {
       await apiService.setToken(data.token);

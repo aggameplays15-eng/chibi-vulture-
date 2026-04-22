@@ -129,7 +129,8 @@ module.exports = async (req, res) => {
       return res.status(429).json({ error: 'Too many signup attempts. Please try again later.', retryAfter: limit.resetInSeconds });
     }
 
-    const { name, handle: rawHandle, email, bio, avatarColor, password } = req.body;
+    const { name, handle: rawHandle, email, avatarColor, password } = req.body;
+    let { bio } = req.body;
     // Normaliser le handle — accepter avec ou sans @
     const handle = rawHandle
       ? (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`)

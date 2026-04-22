@@ -11,16 +11,12 @@ async function loginAsGuest(page: Page) {
   await page.waitForURL('**/feed');
 }
 
-// Login via OTP flow — fills credentials, waits for OTP step, then navigates
-// Since we can't receive real emails in tests, we skip the OTP step and just
-// verify the OTP screen appears (credentials are valid)
+// Login via standard flow
 async function loginAsUser(page: Page, email = 'papicamara22@gmail.com', password = 'fantasangare2203') {
   await page.goto('/login');
   await page.getByTestId('email-input').fill(email);
   await page.getByTestId('password-input').fill(password);
   await page.getByTestId('submit-login').click();
-  // After valid credentials, OTP screen appears (otpRequired flow)
-  // Wait for either feed (no OTP) or OTP input to appear
   await page.waitForTimeout(3000);
 }
 
@@ -86,13 +82,12 @@ test.describe('Authentification', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('identifiants valides déclenchent le flow OTP ou redirigent', async ({ page }) => {
+  test('identifiants valides déclenchent la redirection', async ({ page }) => {
     await page.goto('/login');
     await page.getByTestId('email-input').fill('papicamara22@gmail.com');
     await page.getByTestId('password-input').fill('fantasangare2203');
     await page.getByTestId('submit-login').click();
     await page.waitForTimeout(4000);
-    // Soit OTP screen, soit feed, soit login (si compte inexistant en prod)
     const url = page.url();
     expect(url).toMatch(/\/(feed|login)/);
   });
@@ -283,7 +278,7 @@ test.describe('API endpoints', () => {
     expect([200, 401, 429]).toContain(res.status());
     if (res.status() === 200) {
       const body = await res.json();
-      expect(body.otpRequired === true || !!body.token).toBeTruthy();
+      expect(!!body.token).toBeTruthy();
     }
   });
 

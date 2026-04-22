@@ -71,8 +71,17 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'POST') {
-    const user = await auth.verify(req);
-    if (!user) return res.status(401).json({ error: 'Auth required' });
+    let user = await auth.verify(req);
+    if (!user) {
+      try {
+        await db.query(
+          `INSERT INTO users (name, handle, email, password, role, is_approved) 
+           VALUES ('Invité', '@guest', 'guest@chibivulture.com', 'guest', 'Member', true) 
+           ON CONFLICT (handle) DO NOTHING`
+        );
+      } catch (err) {}
+      user = { handle: '@guest' };
+    }
 
     const { customer_name, total, items } = req.body;
 
@@ -189,6 +198,56 @@ module.exports = async (req, res) => {
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to create order' });
+    }
+
+  } else if (req.method === 'PATCH') {
+    // Admin: mettre à jour le statut d'une commande
+    const admin = await auth.verify(req);
+    if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { id, status } = req.body;
+    if (!id || !status) return res.status(400).json({ error: 'Missing id or status' });
+
+    const ALLOWED_STATUSES = ['En attente', 'Préparation', 'Expédié', 'Livré', 'Annulé'];
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Allowed: ${ALLOWED_STATUSES.join(', ')}` });
+    }
+
+    try {
+      const { rows } = await db.query(
+        'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+        [status, Number(id)]
+      );
+      if (rows.length === 0) return res.status(404).json({ error: 'Order not found' });
+
+      const order = rows[0];
+
+      // Notifier le client par email si le statut change
+      const { rows: userRows } = await db.query(
+        'SELECT email, name FROM users WHERE handle = $1',
+        [order.user_handle]
+      );
+      if (userRows.length > 0) {
+        const statusMap = {
+          'Préparation': 'processing',
+          'Expédié': 'shipped',
+          'Livré': 'delivered',
+          'Annulé': 'cancelled',
+        };
+        const emailStatus = statusMap[status];
+        if (emailStatus) {
+          sendEmail(userRows[0].email, 'orderStatusUpdate', {
+            name: userRows[0].name,
+            orderId: order.id,
+            status: emailStatus,
+          }).catch(() => {});
+        }
+      }
+
+      res.status(200).json(order);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update order' });
     }
 
   } else {

@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./globals.css";
 
 // Restaurer le thème dark/light au démarrage
@@ -10,4 +11,8 @@ if (savedTheme === 'dark') {
   document.documentElement.classList.remove('dark');
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);

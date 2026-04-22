@@ -24,8 +24,7 @@ interface AuthContextType {
   user: UserProfile;
   users: UserProfile[];
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<{ otpRequired?: boolean; needsOnboarding?: boolean }>;
-  loginVerifyOtp: (email: string, code: string) => Promise<boolean>;
+  login: (credentials: { email: string; password: string }) => Promise<{ needsOnboarding?: boolean }>;
   adminLogin: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
@@ -94,7 +93,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
       const data = await apiService.login(credentials);
-      if (data?.otpRequired) return { otpRequired: true };
       setToken(data.token);
       apiService.setToken(data.token);
       const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] };
@@ -104,19 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       console.error("Login failed:", err);
       throw err;
-    }
-  }, []);
-
-  const loginVerifyOtp = useCallback(async (email: string, code: string) => {
-    try {
-      const data = await apiService.loginVerifyOtp(email, code);
-      setToken(data.token);
-      apiService.setToken(data.token);
-      setUser({ ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] });
-      return true;
-    } catch (err) {
-      console.error("Login OTP verify failed:", err);
-      return false;
     }
   }, []);
 
@@ -186,11 +171,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, logout, setGuestMode,
+    login, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   }), [
     user, users, isLoading,
-    login, loginVerifyOtp, adminLogin, logout, setGuestMode,
+    login, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   ]);
 
