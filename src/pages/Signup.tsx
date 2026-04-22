@@ -112,7 +112,19 @@ const Signup = () => {
 
           <div className="space-y-2">
             <Label className="font-bold text-gray-700 ml-1">Identifiant</Label>
-            <Input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="Ton pseudo unique" data-testid="handle-input" className="h-14 rounded-2xl border-gray-100 focus-visible:ring-blue-500" required />
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold select-none">@</span>
+              <Input
+                value={handle.replace(/^@/, '')}
+                onChange={(e) => setHandle(e.target.value.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, ''))}
+                placeholder="ton_pseudo"
+                data-testid="handle-input"
+                className="pl-8 h-14 rounded-2xl border-gray-100 focus-visible:ring-blue-500"
+                maxLength={20}
+                required
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 ml-1">3-20 caractères, lettres, chiffres et _</p>
           </div>
 
           <div className="space-y-2">

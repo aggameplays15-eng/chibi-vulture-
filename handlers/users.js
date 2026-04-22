@@ -129,7 +129,11 @@ module.exports = async (req, res) => {
       return res.status(429).json({ error: 'Too many signup attempts. Please try again later.', retryAfter: limit.resetInSeconds });
     }
 
-    const { name, handle, email, bio, avatarColor, password } = req.body;
+    const { name, handle: rawHandle, email, bio, avatarColor, password } = req.body;
+    // Normaliser le handle — accepter avec ou sans @
+    const handle = rawHandle
+      ? (rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`)
+      : rawHandle;
 
     if (!name || typeof name !== 'string' || name.length < 2 || name.length > 50)
       return res.status(400).json({ error: 'Invalid name (2-50 chars)' });
