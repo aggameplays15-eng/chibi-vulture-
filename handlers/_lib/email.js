@@ -346,42 +346,50 @@ const templates = {
     `),
   }),
 
-  // 12. User 2FA OTP (connexion)
+  // 11b. Compte supprimé (admin — log interne)
+  accountDeleted: ({ name, handle, email }) => ({
+    subject: `🗑️ Compte supprimé — ${handle} — ${APP_NAME}`,
+    html: baseTemplate('Compte supprimé', `
+      <h2 style="margin:0 0 16px;color:#F59E0B;font-size:22px;">Compte supprimé 🗑️</h2>
+      <div style="background:#fffbeb;border-left:4px solid #F59E0B;padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
+        <p style="margin:0;color:${DARK};font-size:16px;font-weight:700;">${name} <span style="color:#888;font-weight:400;font-size:14px;">${handle}</span></p>
+        <p style="margin:4px 0 0;color:#555;font-size:14px;">${email}</p>
+      </div>
+      <p style="color:#555;font-size:14px;margin:0 0 8px;">Le compte a été marqué comme "Supprimé" et désactivé.</p>
+      <p style="color:#aaa;font-size:13px;margin:0;">Les données sont conservées dans la base de données pour l'historique.</p>
+      ${btn('Gérer les membres', `${APP_URL}/goated-panel`)}
+    `),
+  }),
+
+  // 12. User 2FA OTP (connexion) - Version optimisée
   userOtp: ({ name, code }) => ({
-    subject: `🔐 Ton code de connexion — ${APP_NAME}`,
+    subject: `🔐 Code: ${code} — ${APP_NAME}`,
     html: baseTemplate('Code de connexion', `
-      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Vérification en deux étapes 🔐</h2>
-      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Bonjour <strong>${name}</strong>, une tentative de connexion à ton compte a été détectée.
-        Utilise le code ci-dessous pour finaliser ta connexion.
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Code de connexion 🔐</h2>
+      <p style="color:#555;font-size:15px;margin:0 0 16px;">
+        Bonjour <strong>${name}</strong>, voici ton code de vérification :
       </p>
-      <div style="text-align:center;padding:32px;background:#f9f9fb;border-radius:12px;margin-bottom:24px;">
-        <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Ton code</p>
+      <div style="text-align:center;padding:24px;background:#f9f9fb;border-radius:12px;margin-bottom:16px;">
         <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:${DARK};">${code}</p>
-        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>10 minutes</strong></p>
+        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>30 minutes</strong></p>
       </div>
       <p style="color:#aaa;font-size:13px;margin:0;">
-        Si tu n'es pas à l'origine de cette tentative, ignore cet email et change ton mot de passe immédiatement.
+        Si tu n'es pas à l'origine de cette connexion, ignore cet email.
       </p>
     `),
   }),
 
-  // 13. Admin 2FA OTP
+  // 13. Admin 2FA OTP - Version optimisée
   adminOtp: ({ code }) => ({
-    subject: `🔐 Code de vérification Admin — ${APP_NAME}`,
-    html: baseTemplate('Code de vérification Admin', `
-      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Vérification en deux étapes 🔐</h2>
-      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Une tentative de connexion au panneau Admin a été détectée.
-        Utilise le code ci-dessous pour finaliser l'authentification.
-      </p>
-      <div style="text-align:center;padding:32px;background:#f9f9fb;border-radius:12px;margin-bottom:24px;">
-        <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:2px;">Ton code</p>
+    subject: `🔐 Code Admin: ${code} — ${APP_NAME}`,
+    html: baseTemplate('Code Admin', `
+      <h2 style="margin:0 0 16px;color:${DARK};font-size:22px;">Code Admin 🔐</h2>
+      <div style="text-align:center;padding:24px;background:#f9f9fb;border-radius:12px;margin-bottom:16px;">
         <p style="margin:0;font-size:42px;font-weight:900;letter-spacing:12px;color:${DARK};">${code}</p>
-        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>10 minutes</strong></p>
+        <p style="margin:12px 0 0;color:#aaa;font-size:12px;">Expire dans <strong>30 minutes</strong></p>
       </div>
       <p style="color:#aaa;font-size:13px;margin:0;">
-        Si tu n'es pas à l'origine de cette tentative, ignore cet email et change ton mot de passe immédiatement.
+        Connexion au panneau Admin. Si ce n'est pas vous, changez votre mot de passe immédiatement.
       </p>
     `),
   }),

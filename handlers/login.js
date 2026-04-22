@@ -11,7 +11,7 @@ const { sendEmail } = require('./_lib/email');
 async function issueUserOtp(userId) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes (augmenté pour production)
 
   // Invalidate any previous unused OTPs for this user
   await db.query(
@@ -62,11 +62,41 @@ module.exports = async (req, res) => {
     }
 
     const user = rows[0];
+
+    // Vérifier si le compte est supprimé
+    if (user.status === 'Supprimé') {
+      return res.status(403).json({ error: 'This account has been deleted. Please contact support.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password || '');
 
     if (!isMatch) {
       await logAuthFailure(req);
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if user is approved
+    if (!user.is_approved) {
+      return res.status(403).json({ error: 'Account pending approval. Please contact an administrator.' });
+    }
+
+    // MODE DEV: Skip OTP in development
+    if (process.env.NODE_ENV === 'development') {
+      const token = auth.signToken(user);
+      console.log(`🔓 [DEV MODE] User login without OTP: ${user.email}`);
+      return res.status(200).json({ 
+        token, 
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          handle: user.handle,
+          role: user.role,
+          avatarColor: user.avatar_color,
+          avatarImage: user.avatar_image,
+          bio: user.bio
+        }
+      });
     }
 
     // Credentials OK — issue OTP
@@ -79,6 +109,8 @@ module.exports = async (req, res) => {
       if (!sent) {
         console.warn(`[Login OTP] Email non envoyé à ${user.email} — code: ${code}`);
       }
+      // Log OTP en production pour debug (à retirer après résolution)
+      console.log(`[Login OTP] Code généré pour ${user.email}: ${code} (expire dans 30 min)`);
     });
 
   } catch (error) {

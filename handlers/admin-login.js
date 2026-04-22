@@ -18,7 +18,7 @@ if (!ADMIN_EMAIL || (!ADMIN_PASSWORD_HASH && !ADMIN_PASSWORD_PLAIN)) {
 async function issueOtp() {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes (augmenté pour production)
 
   // Invalidate any previous unused OTPs
   await db.query(`UPDATE admin_otp SET used = TRUE WHERE used = FALSE`);
@@ -70,6 +70,18 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Access denied' });
   }
 
+  // MODE DEV: Skip OTP in development
+  if (process.env.NODE_ENV === 'development') {
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { email: ADMIN_EMAIL, role: 'Admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    console.log('🔓 [DEV MODE] Admin login without OTP');
+    return res.status(200).json({ token, role: 'Admin' });
+  }
+
   try {
     const code = await issueOtp();
 
@@ -80,6 +92,8 @@ module.exports = async (req, res) => {
       if (!sent && process.env.NODE_ENV !== 'production') {
         console.warn(`[2FA] SMTP not configured — OTP code: ${code}`);
       }
+      // Log OTP en production pour debug (à retirer après résolution)
+      console.log(`[2FA] Admin OTP généré: ${code} (expire dans 30 min)`);
     }).catch(err => console.error('[2FA] Email send error:', err));
 
   } catch (error) {

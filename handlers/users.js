@@ -32,8 +32,10 @@ module.exports = async (req, res) => {
     if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 
     try {
+      // Exclure les comptes supprimés de la liste admin (optionnel - commentez pour les voir)
       const { rows } = await db.query(
-        'SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users ORDER BY created_at DESC'
+        'SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users WHERE status != $1 OR status IS NULL ORDER BY created_at DESC',
+        ['Supprimé']
       );
       res.status(200).json(rows);
     } catch {
@@ -167,7 +169,7 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: 'Failed to create user' });
     }
 
-  // DELETE — suppression (admin only, ne peut pas supprimer l'admin .env)
+  // DELETE — suppression soft (admin only, ne peut pas supprimer l'admin .env)
   } else if (req.method === 'DELETE') {
     const requester = await auth.verify(req);
     if (!requester || requester.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
@@ -176,15 +178,32 @@ module.exports = async (req, res) => {
     if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
 
     try {
-      const { rows } = await db.query('SELECT id, email FROM users WHERE id = $1', [Number(id)]);
+      const { rows } = await db.query('SELECT id, email, name, handle FROM users WHERE id = $1', [Number(id)]);
       if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
+      const user = rows[0];
+
       // Bloquer la suppression de l'admin .env
-      if (ADMIN_EMAIL && rows[0].email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      if (ADMIN_EMAIL && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         return res.status(403).json({ error: 'Cannot delete the admin account' });
       }
 
-      await db.query('DELETE FROM users WHERE id = $1', [Number(id)]);
+      // Suppression soft : marquer comme supprimé au lieu de supprimer définitivement
+      await db.query(
+        `UPDATE users SET status = 'Supprimé', is_approved = false WHERE id = $1`,
+        [Number(id)]
+      );
+
+      // Email à l'admin pour confirmation
+      if (ADMIN_EMAIL) {
+        sendEmail(ADMIN_EMAIL, 'accountDeleted', { 
+          name: user.name, 
+          handle: user.handle, 
+          email: user.email 
+        }).catch(() => {});
+      }
+
+      console.log(`[Admin] Compte supprimé (soft): ${user.handle} (${user.email})`);
       res.status(200).json({ status: 'Deleted' });
     } catch (error) {
       console.error(error);
