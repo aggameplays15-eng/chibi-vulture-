@@ -18,6 +18,14 @@ const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/login');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) { showError("Les mots de passe ne correspondent pas."); return; }
@@ -74,7 +82,7 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 relative">
-      <Button variant="ghost" size="icon" className="absolute top-6 left-6 rounded-2xl bg-gray-50 text-gray-400" onClick={() => navigate(-1)}>
+      <Button variant="ghost" size="icon" className="absolute top-6 left-6 rounded-2xl bg-gray-50 text-gray-400" onClick={handleBack}>
         <ChevronLeft size={24} />
       </Button>
 

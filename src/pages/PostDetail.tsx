@@ -48,10 +48,18 @@ const PostDetail = () => {
   const handleDeletePost = async () => {
     try {
       await deletePost(postId);
-      showSuccess("Post supprimé. 🗑️");
+      showSuccess('Post supprimé !');
       navigate('/feed');
-    } catch {
-      showError("Impossible de supprimer ce post.");
+    } catch (err) {
+      showError('Erreur lors de la suppression');
+    }
+  };
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/feed');
     }
   };
 
@@ -124,7 +132,7 @@ const PostDetail = () => {
       <MainLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <p className="text-gray-400 font-bold">Publication introuvable.</p>
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+          <Button variant="ghost" onClick={handleBack}>
             <ChevronLeft size={18} className="mr-1" /> Retour
           </Button>
         </div>
@@ -141,13 +149,7 @@ const PostDetail = () => {
         type="article"
       />
       <header className="p-4 flex items-center gap-3 border-b border-pink-50 bg-white/80 backdrop-blur-md sticky top-0 z-20">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => {
-          if (window.history.length <= 2) {
-            navigate('/feed');
-          } else {
-            navigate(-1);
-          }
-        }}>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
           <ChevronLeft size={24} />
         </Button>
         <h1 className="font-black text-gray-800 uppercase tracking-widest text-sm">Publication</h1>

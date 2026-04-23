@@ -218,6 +218,15 @@ export const apiService = {
     return safeJson(response);
   },
 
+  markMessagesAsRead: async (sender_handle: string) => {
+    const response = await fetchWithAuth('/api/messages', {
+      method: 'PATCH',
+      body: JSON.stringify({ sender_handle }),
+    });
+    if (!response.ok) throw new Error('Failed to mark messages as read');
+    return safeJson(response);
+  },
+
   // Search
   search: async (query: string) => {
     const response = await fetchWithAuth(`/api/search?q=${encodeURIComponent(query)}`);

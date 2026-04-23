@@ -146,6 +146,10 @@ async function rateLimit(req, type = 'default') {
     // FAIL OPEN — si la DB est down, on laisse passer pour ne pas bloquer tous les utilisateurs
     // Un log d'alerte est émis pour investigation
     console.error('[RateLimit] DB unavailable — failing open for type:', type);
+    // En production, envoyer une alerte monitoring (ex: Sentry, Vercel logs, etc.)
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[ALERT] Rate limiting DB failure - potential security risk');
+    }
     return {
       allowed: true,
       limit: config.maxRequests,

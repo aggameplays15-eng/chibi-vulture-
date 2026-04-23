@@ -75,31 +75,36 @@ const ProductDetail = () => {
     }
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/shop');
+    }
+  };
+
   return (
     <MainLayout>
+      <header className="p-4 flex items-center gap-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
+          <ChevronLeft size={24} />
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon"
+            className="rounded-full shadow-lg bg-white/90 backdrop-blur-sm border-none"
+            onClick={handleShare}>
+            <Share2 size={20} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleFavorite}
+            className={`rounded-full shadow-lg bg-white/90 backdrop-blur-sm border-none transition-colors ${isFav ? 'text-red-500' : 'text-gray-400'}`}>
+            <Heart size={20} fill={isFav ? "currentColor" : "none"} />
+          </Button>
+        </div>
+      </header>
+
       {/* Image hero */}
       <div className="relative">
         <img src={product.image} alt={product.name} className="w-full aspect-[4/5] object-cover" />
-
-        {/* Overlay buttons */}
-        <div className="absolute top-6 left-6 right-6 flex justify-between">
-          <Button variant="outline" size="icon"
-            className="rounded-full shadow-lg bg-white/90 backdrop-blur-sm border-none"
-            onClick={() => navigate(-1)}>
-            <ChevronLeft size={24} />
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon"
-              className="rounded-full shadow-lg bg-white/90 backdrop-blur-sm border-none"
-              onClick={handleShare}>
-              <Share2 size={20} />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleFavorite}
-              className={`rounded-full shadow-lg bg-white/90 backdrop-blur-sm border-none transition-colors ${isFav ? 'text-red-500' : 'text-gray-400'}`}>
-              <Heart size={20} fill={isFav ? "currentColor" : "none"} />
-            </Button>
-          </div>
-        </div>
 
         {/* Stock badge */}
         {product.stock <= 5 && product.stock > 0 && (

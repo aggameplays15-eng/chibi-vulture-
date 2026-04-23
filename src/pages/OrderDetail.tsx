@@ -36,8 +36,6 @@ const statusConfig: Record<string, { color: string; bg: string; icon: React.Elem
   'Annulée':        { color: 'text-red-600',    bg: 'bg-red-50',    icon: XCircle,      label: 'Annulée' },
 };
 
-import { apiService } from '@/services/api';
-
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,6 +43,14 @@ const OrderDetail = () => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/orders');
+    }
+  };
 
   useEffect(() => {
     if (!id || isNaN(Number(id))) { setIsLoading(false); setError(true); return; }
@@ -70,7 +76,7 @@ const OrderDetail = () => {
   return (
     <MainLayout>
       <header className="p-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate('/orders')}>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
           <ChevronLeft size={24} />
         </Button>
         <h1 className="text-xl font-black text-gray-900">Commande #{id}</h1>

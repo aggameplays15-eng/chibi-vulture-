@@ -13,6 +13,14 @@ const NotFound = () => {
   const navigate = useNavigate();
   const { primaryColor } = useApp();
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/feed');
+    }
+  };
+
   useEffect(() => {
     console.error('404 — route inexistante :', location.pathname);
   }, [location.pathname]);
@@ -34,7 +42,7 @@ const NotFound = () => {
 
         <div className="flex flex-col gap-3">
           <Button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             variant="outline"
             className="w-full h-14 rounded-2xl font-bold flex gap-2 border-gray-100"
           >

@@ -33,7 +33,7 @@ const Chat = () => {
   // Trouver le nom réel de l'interlocuteur
   const otherUser = users.find(u => u.handle === otherHandle || u.handle === `@${otherHandle}`);
   const otherName = otherUser?.name || otherHandle || 'Utilisateur';
-  const otherAvatar = getAvatarUrl(otherUser?.avatarImage, otherHandle);
+  const otherAvatar = getAvatarUrl(otherUser?.avatarImage, otherHandle || '');
 
   const fetchMessages = useCallback(async () => {
     if (!user.handle || !otherHandle) return;
@@ -50,9 +50,13 @@ const Chat = () => {
 
   useEffect(() => {
     fetchMessages();
+    // Mark messages as read when opening conversation
+    if (otherHandle && user.handle) {
+      apiService.markMessagesAsRead(otherHandle).catch(console.error);
+    }
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [fetchMessages]);
+  }, [fetchMessages, otherHandle, user.handle]);
 
   // Auto-scroll uniquement si on est déjà en bas
   useEffect(() => {
@@ -95,10 +99,18 @@ const Chat = () => {
     }
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/messages');
+    }
+  };
+
   return (
     <MainLayout>
       <header className="p-4 flex items-center gap-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-20">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
           <ChevronLeft size={24} />
         </Button>
         <div className="flex items-center gap-3 flex-1">

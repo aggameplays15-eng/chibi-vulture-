@@ -13,11 +13,11 @@ import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 interface Conversation {
-  id: number;
-  other_user_handle: string;
-  other_user_name?: string;
-  last_message?: string;
-  last_message_time?: string;
+  other_handle: string;
+  other_name: string;
+  other_avatar: string | null;
+  last_msg: string;
+  last_time: string;
   unread_count: number;
 }
 
@@ -57,29 +57,28 @@ export default function MessagesScreen({ navigation }: { navigation: any }) {
       style={styles.conversationItem}
       onPress={() =>
         navigation.navigate('Chat', {
-          conversationId: item.id,
-          otherUser: item.other_user_handle,
+          otherUser: item.other_handle,
         })
       }
     >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>
-          {(item.other_user_name?.[0] || item.other_user_handle[1]).toUpperCase()}
+          {(item.other_name?.[0] || item.other_handle[1]).toUpperCase()}
         </Text>
       </View>
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
           <Text style={styles.userName}>
-            {item.other_user_name || item.other_user_handle}
+            {item.other_name || item.other_handle}
           </Text>
-          {item.last_message_time && (
+          {item.last_time && (
             <Text style={styles.time}>
-              {new Date(item.last_message_time).toLocaleDateString()}
+              {new Date(item.last_time).toLocaleDateString()}
             </Text>
           )}
         </View>
         <Text style={styles.lastMessage} numberOfLines={1}>
-          {item.last_message || 'Aucun message'}
+          {item.last_msg || 'Aucun message'}
         </Text>
       </View>
       {item.unread_count > 0 && (
@@ -124,7 +123,7 @@ export default function MessagesScreen({ navigation }: { navigation: any }) {
       <FlatList
         data={conversations}
         renderItem={renderConversation}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.other_handle}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
         }

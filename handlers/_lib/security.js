@@ -6,46 +6,94 @@ const db = require('./db');
 
 // ─── 1. USER-AGENT BLACKLIST ────────────────────────────────
 const BLOCKED_UA_PATTERNS = [
+  // CLI tools
   /curl\//i,
   /wget\//i,
   /python-requests\//i,
   /python-urllib\//i,
+  /python-httpx\//i,
+  /aiohttp\//i,
   /go-http-client\//i,
-  /java\//i,
+  /httpx\//i,
+  /reqwest\//i,
+  /httpie\//i,
+  /lwp/i,
   /libwww-perl\//i,
+  /libcurl\//i,
+  /java\//i,
+  /okhttp\//i,
+  /apache-httpclient\//i,
+  /restsharp\//i,
+  /axios\//i,
+  /fetch\//i,
+  /node-fetch\//i,
+  /undici\//i,
+  /got\//i,
+  /superagent\//i,
+  /request\//i,
+  
+  // Web scanners
   /nikto/i,
   /sqlmap/i,
   /nmap/i,
   /masscan/i,
+  /zmap/i,
+  /unicornscan/i,
   /dirbuster/i,
   /dirb\//i,
   /gobuster/i,
   /wfuzz/i,
+  /ffuf/i,
+  /feroxbuster/i,
+  /rustbuster/i,
+  /dirsearch/i,
+  /patator/i,
   /hydra/i,
   /medusa/i,
+  /john/i,
+  /hashcat/i,
   /burpsuite/i,
   /burp\s/i,
   /owasp/i,
   /zap\//i,
   /zaproxy/i,
   /nuclei/i,
+  /xray/i,
+  /subfinder/i,
+  /amass/i,
+  /assetfinder/i,
+  /subjack/i,
+  /sublist3r/i,
+  
+  // Exploitation frameworks
   /metasploit/i,
+  /msfconsole/i,
   /nessus/i,
   /openvas/i,
+  /greenbone/i,
   /acunetix/i,
   /appscan/i,
   /w3af/i,
   /skipfish/i,
   /arachni/i,
   /havij/i,
+  /sqlninja/i,
+  /bsql-hacker/i,
+  /absinthe/i,
+  /sqlbrute/i,
+  
+  // Load testing / DoS tools
   /httperf/i,
   /ab\//i,
   /siege\//i,
   /wrk\//i,
   /hey\//i,
   /vegeta/i,
-  /^-$/,
-  /^$/,           // UA complètement vide
+  /jmeter/i,
+  /locust/i,
+  /k6/i,
+  /gatling/i,
+  /tsung/i,
   /flood/i,
   /stress/i,
   /ddos/i,
@@ -54,6 +102,65 @@ const BLOCKED_UA_PATTERNS = [
   /slowloris/i,
   /r-u-dead-yet/i,
   /torshammer/i,
+  /goldeneye/i,
+  /xerxes/i,
+  /pyloris/i,
+  /thc-ssl-dos/i,
+  
+  // Suspicious patterns (specific, not broad to avoid blocking legitimate bots)
+  /^-$/,
+  /^$/,           // UA complètement vide
+  /scraper/i,
+  /harvest/i,
+  /extract/i,
+  /grab/i,
+  /miner/i,
+  /miner\.js/i,
+  /monero/i,
+  /bitcoin/i,
+  /crypto/i,
+  /malware/i,
+  /virus/i,
+  /trojan/i,
+  /worm/i,
+  /exploit/i,
+  /payload/i,
+  /shell/i,
+  /backdoor/i,
+  /rootkit/i,
+  /ransomware/i,
+  
+  // Common script kiddie tools
+  /c99/i,
+  /r57/i,
+  /webshell/i,
+  /wso/i,
+  /b374k/i,
+  /mini-shell/i,
+  /phpshell/i,
+  /aspshell/i,
+  /jspshell/i,
+];
+
+// Allowlist for legitimate bots and services
+const ALLOWED_UA_PATTERNS = [
+  /googlebot/i,
+  /bingbot/i,
+  /slurp/i,
+  /duckduckbot/i,
+  /baiduspider/i,
+  /yandexbot/i,
+  /facebookexternalhit/i,
+  /twitterbot/i,
+  /linkedinbot/i,
+  /whatsapp/i,
+  /telegrambot/i,
+  /applebot/i,
+  /semrushbot/i,
+  /ahrefsbot/i,
+  /mj12bot/i,
+  /dotbot/i,
+  /screaming frog/i,
 ];
 
 // ─── 2. PAYLOAD MALVEILLANT ─────────────────────────────────
@@ -274,11 +381,15 @@ async function securityMiddleware(req, res) {
     return true;
   }
 
-  // 7c. User-Agent bloqué (uniquement en production, et seulement si un Origin navigateur est présent)
+  // 7c. User-Agent bloqué
   // Les apps mobiles React Native/Expo n'ont pas d'Origin et peuvent avoir des UA non standards
   const hasOrigin = !!req.headers['origin'];
   const isBlockedUA = BLOCKED_UA_PATTERNS.some(p => p.test(ua));
-  if (isBlockedUA && process.env.NODE_ENV === 'production' && hasOrigin) {
+  const isAllowedUA = ALLOWED_UA_PATTERNS.some(p => p.test(ua));
+  
+  // Bloquer si UA est dans la blacklist ET n'est pas dans l'allowlist
+  // Et seulement si un Origin navigateur est présent (pour ne pas bloquer les apps mobiles)
+  if (isBlockedUA && !isAllowedUA && hasOrigin) {
     await logThreat(ip, 'BLOCKED_UA', 'Blocked UA: ' + ua, req);
     res.status(403).json({ error: 'Access denied' });
     return true;
@@ -316,9 +427,24 @@ async function securityMiddleware(req, res) {
     return true;
   }
 
-  // 7g. Bypass DoS pour les admins
-  if (isAdmin) return false;
-
+  // 7g. Pour les admins, appliquer une limite réduite (ne pas bypasser complètement)
+  if (isAdmin) {
+    // Limite admin: 200 req/60s (vs 50/10s pour flood normal)
+    const adminWindowStart = new Date(Date.now() - 60 * 1000);
+    const { rows: adminRows } = await db.query(
+      `SELECT COUNT(*) as cnt FROM rate_limit_log
+       WHERE ip = $1 AND created_at > $2`,
+      [ip, adminWindowStart]
+    );
+    const adminCount = parseInt(adminRows[0]?.cnt || 0, 10);
+    if (adminCount > 200) {
+      await logThreat(ip, 'ADMIN_RATE_LIMIT', `Admin rate limit exceeded: ${path}`, req);
+      res.setHeader('Retry-After', '60');
+      res.status(429).json({ error: 'Admin rate limit exceeded' });
+      return true;
+    }
+    return false; // Admin passe les autres checks
+  }
 
   // 7g. Détection flood (DoS burst)
   const isFlooding = await detectFlood(ip);

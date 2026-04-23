@@ -13,7 +13,7 @@ interface ImageCropperProps {
   circular?: boolean;
 }
 
-const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCropperProps) => {
+const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = false }: ImageCropperProps) => {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [showGrid, setShowGrid] = useState(true);
@@ -36,13 +36,32 @@ const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCroppe
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
     
-    const maskSize = rect.width > rect.height ? rect.height * 0.8 : rect.width * 0.8;
-    const maskX = (rect.width - maskSize) / 2;
-    const maskY = (rect.height - maskSize) / 2;
+    // Taille du masque basée sur le container
+    const maxMaskSize = Math.min(rect.width, rect.height) * 0.8;
+    
+    // Dimensions du canvas selon l'aspect ratio
+    let canvasWidth: number;
+    let canvasHeight: number;
+    let maskWidth: number;
+    let maskHeight: number;
+    
+    if (aspectRatio >= 1) {
+      // Paysage ou carré
+      maskWidth = maxMaskSize;
+      maskHeight = maxMaskSize / aspectRatio;
+      canvasWidth = 1000;
+      canvasHeight = 1000 / aspectRatio;
+    } else {
+      // Portrait (ex: 9/16 pour stories)
+      maskHeight = maxMaskSize;
+      maskWidth = maxMaskSize * aspectRatio;
+      canvasHeight = 1000;
+      canvasWidth = 1000 * aspectRatio;
+    }
 
     const canvas = document.createElement('canvas');
-    canvas.width = 1000; // Resolution fixe haute qualité
-    canvas.height = 1000;
+    canvas.width = Math.round(canvasWidth);
+    canvas.height = Math.round(canvasHeight);
     const ctx = canvas.getContext('2d');
 
     if (!ctx) return;
@@ -62,19 +81,20 @@ const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCroppe
     const drawWidth = img.naturalWidth;
     const drawHeight = img.naturalHeight;
     
-    // On compense l'échelle et la position pour correspondre à ce que l'utilisateur voit dans le masque
-    const scaleFactor = (maskSize / 1000); // Rapport entre le masque UI et le canvas final
+    // Scale factor: rapport entre le masque UI et le canvas final
+    const scaleFactorX = maskWidth / canvas.width;
+    const scaleFactorY = maskHeight / canvas.height;
     
     ctx.drawImage(
       img,
-      -drawWidth / 2 + (imgX / scaleFactor),
-      -drawHeight / 2 + (imgY / scaleFactor),
+      -drawWidth / 2 + (imgX / scaleFactorX),
+      -drawHeight / 2 + (imgY / scaleFactorY),
       drawWidth,
       drawHeight
     );
 
     onCrop(canvas.toDataURL('image/jpeg', 0.95));
-  }, [onCrop, x, y, zoom, rotation]);
+  }, [onCrop, x, y, zoom, rotation, aspectRatio]);
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/98 flex flex-col items-center justify-center p-4 backdrop-blur-xl">
@@ -106,9 +126,13 @@ const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCroppe
 
           {/* Mask Overlay */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-             <div 
+             <div
+              style={{
+                width: aspectRatio >= 1 ? '80%' : `${80 * aspectRatio}%`,
+                height: aspectRatio >= 1 ? `${80 / aspectRatio}%` : '80%',
+              }}
               className={cn(
-                "w-[80%] aspect-square border-2 border-white/40 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] z-10 relative overflow-hidden",
+                "border-2 border-white/40 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] z-10 relative overflow-hidden",
                 circular ? 'rounded-full' : 'rounded-3xl'
               )}
             >

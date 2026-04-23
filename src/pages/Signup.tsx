@@ -13,11 +13,22 @@ import { useApp } from '@/context/AppContext';
 const Signup = () => {
   const navigate = useNavigate();
   const { primaryColor, headerLogoUrl, signup } = useApp();
-  const [name, setName] = useState("");
-  const [handle, setHandle] = useState("");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState('');
+  const [handle, setHandle] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarColor, setAvatarColor] = useState('#94a3b8');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/login');
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +68,7 @@ const Signup = () => {
         variant="ghost"
         size="icon"
         className="absolute top-6 left-6 rounded-2xl bg-gray-50 dark:bg-white/5 text-gray-400"
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
       >
         <ChevronLeft size={24} />
       </Button>

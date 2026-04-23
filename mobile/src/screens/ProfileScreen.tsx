@@ -74,6 +74,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   if (!isAuthenticated || !user) {
     return (
       <View style={styles.centerContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
         <Text style={styles.notLoggedTitle}>Non connecté</Text>
         <Text style={styles.notLoggedText}>
           Connectez-vous pour voir votre profil
@@ -97,6 +100,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     >
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ChevronLeft size={24} color="#333" />
+        </TouchableOpacity>
         <View
           style={[
             styles.avatar,
@@ -196,10 +202,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   header: {
-    alignItems: 'center',
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    top: 60,
+    padding: 8,
+    zIndex: 1,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
   },
   avatar: {
     width: 100,

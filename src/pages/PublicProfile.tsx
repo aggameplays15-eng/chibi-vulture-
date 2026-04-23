@@ -36,6 +36,14 @@ const PublicProfile = () => {
   const decodedHandle = handle ? decodeURIComponent(handle) : '';
   const isOwnProfile = user.handle === decodedHandle || user.handle === `@${decodedHandle}`;
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/feed');
+    }
+  };
+
   useEffect(() => {
     if (isOwnProfile) { navigate('/profile', { replace: true }); return; }
     if (!decodedHandle) return;
@@ -97,7 +105,7 @@ const PublicProfile = () => {
       ) : !profile ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <p className="font-bold">Utilisateur introuvable.</p>
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mt-4">Retour</Button>
+          <Button variant="ghost" onClick={handleBack} className="mt-4">Retour</Button>
         </div>
       ) : (
         <>

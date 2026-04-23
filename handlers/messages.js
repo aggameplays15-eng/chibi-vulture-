@@ -42,6 +42,28 @@ module.exports = async (req, res) => {
       console.error(error);
       res.status(500).json({ error: 'Failed to send message' });
     }
+  } else if (req.method === 'PATCH') {
+    const user = await auth.verify(req);
+    if (!user) return res.status(401).json({ error: 'Auth required' });
+
+    const { sender_handle } = req.body;
+
+    if (!sender_handle || typeof sender_handle !== 'string') {
+      return res.status(400).json({ error: 'Invalid sender handle' });
+    }
+
+    try {
+      await db.query(
+        `UPDATE messages 
+         SET is_read = true 
+         WHERE sender_handle = $1 AND receiver_handle = $2 AND is_read = false`,
+        [sender_handle, user.handle]
+      );
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to mark messages as read' });
+    }
   } else if (req.method === 'GET') {
     // SECURITY FIX: Require authentication — anyone could read any conversation without this check.
     const user = await auth.verify(req);

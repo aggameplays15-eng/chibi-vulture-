@@ -79,6 +79,7 @@ const routes = {
   '/api/reset-password': resetPasswordHandler,
   '/api/stories': storiesHandler,
   '/api/sitemap.js': sitemapHandler,
+  '/api/security-logs': securityLogsHandler,
 };
 
 module.exports = async (req, res) => {

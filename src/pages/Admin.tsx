@@ -5,7 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutDashboard, ShoppingBag, Users, Zap,
-  Truck, Bell, Settings2, Music, ClipboardList
+  Truck, Bell, Settings2, Music, ClipboardList, Shield
 } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
@@ -18,6 +18,7 @@ import PushNotificationManager from '@/components/admin/PushNotificationManager'
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
 import MusicManager from '@/components/admin/MusicManager';
 import OrdersManagement from '@/components/admin/OrdersManagement';
+import SecurityDashboard from '@/components/admin/SecurityDashboard';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 
@@ -106,6 +107,10 @@ const Admin = () => {
 
           <TabsContent value="notifs" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <PushNotificationManager />
+          </TabsContent>
+
+          <TabsContent value="security" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <SecurityDashboard />
           </TabsContent>
 
           <TabsContent value="appearance" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

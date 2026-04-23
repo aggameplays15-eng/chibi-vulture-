@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '@/context/AppContext';
 import MainLayout from '@/components/layout/MainLayout';
 import { ChevronLeft, MessageCircle, Mail, Phone, HelpCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,23 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const Support = () => {
   const navigate = useNavigate();
+  const { primaryColor } = useApp();
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/profile');
+    }
+  };
 
   return (
     <MainLayout>
       <header className="p-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={handleBack}>
           <ChevronLeft size={24} />
         </Button>
         <h1 className="text-2xl font-black text-gray-800">AIDE & SUPPORT</h1>
