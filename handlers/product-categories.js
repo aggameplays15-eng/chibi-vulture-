@@ -11,6 +11,23 @@ module.exports = async (req, res) => {
 
   if (req.method === 'GET') {
     try {
+      // S'assurer que la table existe
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS product_categories (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(100) UNIQUE NOT NULL,
+          description TEXT,
+          icon VARCHAR(50),
+          color VARCHAR(7) DEFAULT '#EC4899',
+          sort_order INTEGER DEFAULT 0,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // S'assurer que l'index existe
+      await db.query('CREATE INDEX IF NOT EXISTS idx_product_categories_name ON product_categories(name)');
+
       // Vérifier si des catégories existent
       const { rows: countCheck } = await db.query('SELECT COUNT(*) FROM product_categories');
       if (parseInt(countCheck[0].count) === 0) {
@@ -23,25 +40,12 @@ module.exports = async (req, res) => {
           ('Vêtements', 'T-shirts, hoodies et vêtements personnalisés', 'Shirt', '#3B82F6', 4),
           ('Livres', 'Livres, comics et publications', 'Book', '#10B981', 5),
           ('Limited', 'Éditions limitées et exclusives', 'Star', '#EF4444', 0)
+          ON CONFLICT (name) DO NOTHING
         `);
       }
 
       // Real database query for all active categories
-      const query = `
-        SELECT 
-          id,
-          name,
-          description,
-          icon,
-          color,
-          sort_order
-        FROM product_categories
-        WHERE is_active = true
-        ORDER BY sort_order ASC, name ASC
-      `;
-
-      const result = await db.query(query);
-
+      const result = await db.query('SELECT * FROM product_categories WHERE is_active = true ORDER BY sort_order ASC, name ASC');
       res.status(200).json(result.rows || []);
 
     } catch (error) {

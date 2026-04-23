@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Star, X, Package } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, X, Package, Tags, Palette, Trash } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
+import { apiService } from '@/services/api';
 import { showSuccess, showError } from '@/utils/toast';
 import ImageUploader, { type UploadedImage } from './ImageUploader';
 
@@ -36,6 +37,9 @@ const ShopManagement = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [errors, setErrors] = useState<Partial<ProductForm & { images: string }>>({});
   const [categories, setCategories] = useState<Array<{ id: number; name: string; color: string; icon: string }>>([]);
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [isAddingCat, setIsAddingCat] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -48,6 +52,27 @@ const ShopManagement = () => {
     } catch (error) {
       console.error('Failed to load categories:', error);
       setCategories([]);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    setIsAddingCat(true);
+    try {
+      await apiService.createProductCategory({
+        name: newCatName.trim(),
+        description: '',
+        icon: 'Tag',
+        color: primaryColor,
+        sort_order: categories.length + 1
+      });
+      showSuccess(`Catégorie "${newCatName}" créée !`);
+      setNewCatName('');
+      loadCategories();
+    } catch (error) {
+      showError('Erreur lors de la création de la catégorie');
+    } finally {
+      setIsAddingCat(false);
     }
   };
 
@@ -146,13 +171,22 @@ const ShopManagement = () => {
           <h3 className="font-black text-gray-900 text-lg">Inventaire Pro</h3>
           <p className="text-xs text-gray-400 font-bold uppercase">{products.length} produits actifs</p>
         </div>
-        <Button
-          onClick={openAdd}
-          className="rounded-2xl gap-2 text-white"
-          style={{ backgroundColor: primaryColor }}
-        >
-          <Plus size={18} /> Nouveau Produit
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowCatManager(true)}
+            variant="outline"
+            className="rounded-2xl gap-2 border-pink-200 text-pink-600 hover:bg-pink-50"
+          >
+            <Tags size={18} /> Catégories
+          </Button>
+          <Button
+            onClick={openAdd}
+            className="rounded-2xl gap-2 text-white"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Plus size={18} /> Nouveau Produit
+          </Button>
+        </div>
       </div>
 
       {/* Formulaire ajout/édition */}
@@ -301,9 +335,71 @@ const ShopManagement = () => {
             <p className="text-xs mt-1">Cliquez sur "Nouveau Produit" pour commencer</p>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
+      {/* Gestion des Catégories Modal */}
+      {showCatManager && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md rounded-[32px] overflow-hidden border-none shadow-2xl animate-in zoom-in-95 duration-200">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-pink-100 flex items-center justify-center">
+                    <Tags size={18} className="text-pink-600" />
+                  </div>
+                  <h4 className="font-black text-gray-900">Gérer les catégories</h4>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowCatManager(false)} className="rounded-xl">
+                  <X size={20} />
+                </Button>
+              </div>
+
+              {/* Add category form */}
+              <div className="flex gap-2 mb-6">
+                <Input
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  placeholder="Nom de la catégorie..."
+                  className="rounded-xl h-11 border-pink-100 focus-visible:ring-pink-200"
+                  onKeyDown={e => e.key === 'Enter' && !isAddingCat && handleAddCategory()}
+                />
+                <Button
+                  onClick={handleAddCategory}
+                  disabled={!newCatName.trim() || isAddingCat}
+                  className="rounded-xl h-11 text-white font-black px-4"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {isAddingCat ? '...' : <Plus size={20} />}
+                </Button>
+              </div>
+
+              {/* Categories list */}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {categories.map(cat => (
+                  <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ backgroundColor: cat.color || primaryColor }}>
+                        <Palette size={14} />
+                      </div>
+                      <span className="font-bold text-gray-800 text-sm">{cat.name}</span>
+                    </div>
+                    {/* Placeholder for delete - usually we don't want to delete active categories easily */}
+                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mr-2 group-hover:text-pink-300 transition-colors">Active</p>
+                  </div>
+                ))}
+                {categories.length === 0 && (
+                  <p className="text-center py-4 text-gray-400 text-xs font-bold uppercase tracking-widest">Chargement...</p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => setShowCatManager(false)}
+                className="w-full mt-6 rounded-2xl h-12 font-black tracking-widest"
+                variant="secondary"
+              >
+                FERMER
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
 export default ShopManagement;

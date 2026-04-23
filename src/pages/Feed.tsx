@@ -6,7 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bell, Bookmark, Sparkles, Loader2, Trash2, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { PostSkeleton, StorySkeleton } from "@/components/ui/Skeleton";
+import { Skeleton, PostSkeleton, StorySkeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { useInfinitePosts } from '@/hooks/use-infinite-posts';
 import { apiService } from '@/services/api';

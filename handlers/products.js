@@ -7,6 +7,14 @@ module.exports = async (req, res) => {
 
   if (req.method === 'GET') {
     try {
+      // S'assurer que les colonnes nécessaires existent
+      await db.query(`
+        ALTER TABLE products 
+        ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Art Digital',
+        ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
+        ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0
+      `);
+      
       const { rows } = await db.query('SELECT * FROM products ORDER BY is_featured DESC, id DESC');
       res.status(200).json(rows);
     } catch (error) {
