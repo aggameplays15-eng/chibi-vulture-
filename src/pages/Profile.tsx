@@ -110,7 +110,7 @@ const Profile = () => {
               <Avatar className="w-28 h-28 rounded-[28px] border-4 border-white dark:border-[hsl(224,20%,10%)] shadow-xl">
                 <AvatarImage
                   src={user.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}&backgroundColor=${(user.avatarColor || primaryColor).replace('#', '')}`}
-                  className="rounded-[24px]"
+                  className="rounded-[24px] object-cover w-full h-full"
                 />
                 <AvatarFallback className="rounded-[24px] text-2xl font-black">{user.name?.[0]}</AvatarFallback>
               </Avatar>

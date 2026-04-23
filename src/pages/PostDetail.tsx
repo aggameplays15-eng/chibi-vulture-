@@ -173,7 +173,7 @@ const PostDetail = () => {
             </Button>
           )}        </div>
 
-        <div className="aspect-square bg-gray-100">
+        <div className="aspect-square bg-gray-100 overflow-hidden">
           <img
             src={post.image}
             alt={`Post de ${post.user}`}

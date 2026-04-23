@@ -140,7 +140,7 @@ const Explore = () => {
                             onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
                           >
                             <Avatar className="w-11 h-11 rounded-[14px]">
-                              <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} />
+                              <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} className="object-cover w-full h-full" />
                               <AvatarFallback className="rounded-[14px]">{u.name[0]}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">

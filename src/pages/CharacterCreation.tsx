@@ -48,7 +48,7 @@ const CharacterCreation = () => {
               <img 
                 src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name || 'Chibi'}&backgroundColor=${color.replace('#', '')}`} 
                 alt="Preview" 
-                className="w-24 h-24"
+                className="w-full h-full object-contain p-2"
               />
             </div>
           </div>

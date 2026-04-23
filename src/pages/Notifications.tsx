@@ -111,6 +111,7 @@ const Notifications = () => {
                   <AvatarImage
                     src={notif.actor_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.actor_handle}`}
                     alt={notif.actor_name}
+                    className="object-cover w-full h-full"
                   />
                   <AvatarFallback>{notif.actor_name?.[0] ?? '?'}</AvatarFallback>
                 </Avatar>

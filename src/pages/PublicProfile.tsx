@@ -103,7 +103,7 @@ const PublicProfile = () => {
             <div className="relative inline-block">
               <div className="absolute inset-0 rounded-full blur-lg opacity-40 animate-pulse" style={{ backgroundColor: profile.avatar_color }} />
               <Avatar className="w-32 h-32 border-4 border-white relative z-10">
-                <AvatarImage src={profile.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`} />
+                <AvatarImage src={profile.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`} className="object-cover w-full h-full" />
                 <AvatarFallback>{profile.name[0]}</AvatarFallback>
               </Avatar>
             </div>
