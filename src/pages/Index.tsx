@@ -14,9 +14,7 @@ const FEATURES = [
 ];
 
 // ─── 3D Floating Logo ────────────────────────────────────────────────────────
-// ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
-// ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
-// ─── Orbital Particle Component ─────────────────────────────────────────────
+// ─── 360 Libre Floating Logo ──────�// ─── Orbital Particle Component ─────────────────────────────────────────────
 const Particle = ({ color, index, total }: { color: string, index: number, total: number }) => {
   const angle = (index / total) * Math.PI * 2;
   const radius = 180 + Math.random() * 40;
@@ -56,46 +54,47 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
   const velocityX = useRef(0);
   const velocityY = useRef(0);
  
-  // Base rotation
-  const rotateX = useMotionValue(-10);
+  // Base rotation & Physics
+  const rotateX = useMotionValue(-12);
   const rotateY = useMotionValue(0);
   const velocity = useMotionValue(0);
+  const perspective = useMotionValue(2000);
  
-  // Springs for heavy, premium physics
-  const springX = useSpring(rotateX, { stiffness: 45, damping: 25, mass: 1.2 });
-  const springY = useSpring(rotateY, { stiffness: 45, damping: 25, mass: 1.2 });
+  // Springs for heavy, liquid-metal physics
+  const springX = useSpring(rotateX, { stiffness: 35, damping: 20, mass: 1.5 });
+  const springY = useSpring(rotateY, { stiffness: 35, damping: 20, mass: 1.5 });
+  const springPersp = useSpring(perspective, { stiffness: 50, damping: 30 });
  
   // Floating animation
   const floatY = useMotionValue(0);
-  const floatSpring = useSpring(floatY, { stiffness: 35, damping: 20 });
+  const floatSpring = useSpring(floatY, { stiffness: 30, damping: 15 });
  
-  // Slices count for extrusion (thickness)
-  const slices = 18; // Increased slices
-  const thickness = 22; // Increased thickness
+  // Rendering Constants
+  const slices = 22; // Ultra-high density
+  const thickness = 26; // Deep extrusion
  
   React.useEffect(() => {
     let frame: number;
     let t = 0;
     const tick = () => {
-      t += 0.012;
-      floatY.set(Math.sin(t) * 15);
+      t += 0.01;
+      floatY.set(Math.sin(t) * 18);
  
       if (!isDragging.current) {
-        // High-friction inertia
-        velocityX.current *= 0.97;
-        velocityY.current *= 0.97;
+        velocityX.current *= 0.98; // Lower friction for longer spins
+        velocityY.current *= 0.98;
  
-        // Constant elegant auto-rotation
-        const autoY = 0.2 + (Math.sin(t * 0.4) * 0.08);
+        const autoY = 0.22 + (Math.sin(t * 0.3) * 0.1);
         rotateY.set(rotateY.get() + velocityX.current + autoY);
         
-        // Auto-center X rotation with a bit of sway
-        const targetX = -12 + (Math.cos(t * 0.6) * 6);
-        rotateX.set(rotateX.get() + (targetX - rotateX.get()) * 0.03 + velocityY.current);
+        const targetX = -12 + (Math.cos(t * 0.5) * 8);
+        rotateX.set(rotateX.get() + (targetX - rotateX.get()) * 0.02 + velocityY.current);
       }
 
-      // Update absolute velocity for effects
-      velocity.set(Math.abs(velocityX.current) + Math.abs(velocityY.current));
+      // Dynamic FOV based on speed (Perspective warp)
+      const speed = Math.abs(velocityX.current) + Math.abs(velocityY.current);
+      velocity.set(speed);
+      perspective.set(2000 - (speed * 40));
  
       frame = requestAnimationFrame(tick);
     };
@@ -117,11 +116,10 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
  
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current) return;
-    
     const deltaX = e.clientX - lastX.current;
     const deltaY = e.clientY - lastY.current;
     
-    const sensitivity = 0.55;
+    const sensitivity = 0.5;
     rotateY.set(rotateY.get() + deltaX * sensitivity);
     rotateX.set(rotateX.get() - deltaY * sensitivity);
     
@@ -132,48 +130,52 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
     lastY.current = e.clientY;
   };
 
-  // Lighting Math based on rotation
+  // Advanced Rendering Math
   const shimmerOpacity = useTransform(springY, (y) => {
     const angle = (y % 360 + 360) % 360;
-    const factor = Math.abs(Math.cos((angle * Math.PI) / 180));
-    return factor * 0.5;
+    const factor = Math.pow(Math.abs(Math.cos((angle * Math.PI) / 180)), 2); // Sharp glint
+    return factor * 0.6;
   });
 
-  const glowScale = useTransform(velocity, [0, 10], [1, 1.4]);
-  const glowOpacity = useTransform(velocity, [0, 10], [0.2, 0.5]);
-  const glossTranslateX = useTransform(springY, [-180, 180], [120, -120], { clamp: false });
+  const envX = useTransform(springY, [-180, 180], [200, -200], { clamp: false });
+  const glowScale = useTransform(velocity, [0, 15], [1, 1.6]);
+  const glowOpacity = useTransform(velocity, [0, 15], [0.2, 0.6]);
  
   return (
     <div
       ref={containerRef}
       className="relative flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
-      style={{ perspective: '2000px', width: 340, height: 340 }}
+      style={{ 
+        perspective: springPersp as any, 
+        width: 360, 
+        height: 360 
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
       {/* Orbital Particles */}
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Particle key={i} index={i} total={6} color={i % 2 === 0 ? primaryColor : '#8B5CF6'} />
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Particle key={i} index={i} total={8} color={i % 2 === 0 ? primaryColor : '#8B5CF6'} />
       ))}
 
-      {/* Dynamic floor shadow */}
+      {/* Volumetric shadow */}
       <motion.div
-        className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
+        className="absolute bottom-[-60px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
-          width: 220,
-          height: 45,
-          background: `radial-gradient(ellipse, ${primaryColor}60 0%, transparent 85%)`,
-          filter: 'blur(28px)',
-          opacity: useTransform(floatSpring, [-15, 15], [0.7, 0.3]),
-          scale: useTransform(floatSpring, [-15, 15], [0.85, 1.25]),
+          width: 240,
+          height: 50,
+          background: `radial-gradient(ellipse, ${primaryColor}70 0%, transparent 90%)`,
+          filter: 'blur(35px)',
+          opacity: useTransform(floatSpring, [-18, 18], [0.8, 0.2]),
+          scale: useTransform(floatSpring, [-18, 18], [0.8, 1.3]),
           rotateX: 85,
-          z: -150
+          z: -200
         }}
       />
  
-      {/* 3D Extruded Container */}
+      {/* MASTER 3D SCENE */}
       <motion.div
         style={{
           rotateX: springX,
@@ -183,23 +185,27 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
         }}
         className="relative w-full h-full flex items-center justify-center select-none"
       >
-        {/* Core Volumetric Glow - Reacts to speed */}
+        {/* Environmental Glow */}
         <motion.div 
-          className="absolute inset-0 blur-[70px] pointer-events-none rounded-full"
+          className="absolute inset-0 blur-[80px] pointer-events-none rounded-full"
           style={{ 
             backgroundColor: primaryColor, 
-            transform: 'translateZ(0px)',
+            transform: 'translateZ(-10px)',
             scale: glowScale,
             opacity: glowOpacity
           }}
         />
 
-        {/* EXTRUSION LAYERS */}
+        {/* ULTRA-HD EXTRUSION STACK */}
         {Array.from({ length: slices }).map((_, i) => {
-          const zOffset = (i - slices / 2) * (thickness / slices);
-          const isOuter = i === 0 || i === slices - 1;
-          // Subtler darkening for smoother volume
-          const brightness = isOuter ? 1 : 0.8 + (Math.sin((i / slices) * Math.PI) * 0.2);
+          const zPos = (i - slices / 2) * (thickness / slices);
+          const isFront = i === slices - 1;
+          const isBack = i === 0;
+          
+          // Depth of Field Calculation (Math.abs(zPos) = distance from center)
+          const dofBlur = Math.abs(zPos) * 0.15;
+          // Shading: Middle layers get darker to simulate ambient occlusion
+          const ambientOcclusion = 0.75 + (Math.sin((i / slices) * Math.PI) * 0.25);
           
           return (
             <img
@@ -209,28 +215,67 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
               draggable={false}
               style={{
                 position: 'absolute',
-                width: 250,
-                height: 250,
+                width: 260,
+                height: 260,
                 objectFit: 'contain',
-                transform: `translateZ(${zOffset}px) ${i === slices - 1 ? 'rotateY(180deg)' : ''}`,
-                filter: `brightness(${brightness}) ${!isOuter ? 'blur(0.4px)' : ''} drop-shadow(0 ${isOuter ? 12 : 0}px 24px rgba(0,0,0,0.25))`,
+                transform: `translateZ(${zPos}px) ${isBack ? 'rotateY(180deg)' : ''}`,
+                filter: `brightness(${ambientOcclusion}) blur(${dofBlur}px) 
+                         ${(isFront || isBack) ? 'drop-shadow(0 15px 30px rgba(0,0,0,0.3))' : ''}`,
                 pointerEvents: 'none',
-                backfaceVisibility: isOuter ? 'hidden' : 'visible',
+                backfaceVisibility: (isFront || isBack) ? 'hidden' : 'visible',
+                // Chrome optimization
+                willChange: 'transform',
               }}
             />
           );
         })}
 
-        {/* Improved Light Glint */}
+        {/* Dynamic Reflection Layer (HDRi simulation) */}
         <motion.div 
-          className="absolute w-[320px] h-[320px] pointer-events-none overflow-hidden"
-          style={{ transform: 'translateZ(12px)' }}
+          className="absolute w-[300px] h-[300px] pointer-events-none overflow-hidden rounded-full"
+          style={{ transform: 'translateZ(15px)', mixBlendMode: 'soft-light' }}
         >
           <motion.div
             className="w-full h-full"
             style={{
-              background: `linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.9) 50%, transparent 65%)`,
+              background: `radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 60%)`,
               opacity: shimmerOpacity,
+              x: envX,
+              y: useTransform(springX, [-45, 45], [-50, 50]),
+              scale: 2,
+              filter: 'blur(10px)',
+            }}
+          />
+        </motion.div>
+
+        {/* Surface Highlight (Edge Light) */}
+        <motion.div 
+          className="absolute w-[265px] h-[265px] pointer-events-none rounded-full"
+          style={{ 
+            border: `1px solid white`,
+            opacity: useTransform(shimmerOpacity, [0, 0.6], [0.05, 0.3]),
+            transform: 'translateZ(14px)',
+            filter: 'blur(2px)'
+          }}
+        />
+
+        {/* Atmosphere / Halo */}
+        <motion.div 
+          className="absolute rounded-full pointer-events-none"
+          style={{ 
+            width: 300, 
+            height: 300, 
+            border: `2px solid ${primaryColor}20`,
+            transform: 'translateZ(-15px)',
+            scale: useTransform(velocity, [0, 20], [1, 1.25]),
+            opacity: useTransform(velocity, [0, 20], [0.1, 0.4])
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+};
+immerOpacity,
               x: glossTranslateX,
               mixBlendMode: 'overlay',
             }}
