@@ -28,7 +28,20 @@ const SmartHeader = () => {
     if (!user.isAuthenticated || user.isGuest) return;
     const fetchCount = () => {
       apiService.getNotifications()
-        .then((data: { id: number }[] | null) => { if (Array.isArray(data)) setUnreadCount(Math.min(data.length, 99)); })
+        .then((data: { id: number }[] | null) => { 
+          if (Array.isArray(data)) {
+            const count = Math.min(data.length, 99);
+            setUnreadCount(count);
+            // Sync with PWA badge
+            if ('setAppBadge' in navigator) {
+              if (count > 0) {
+                (navigator as any).setAppBadge(count).catch(() => {});
+              } else {
+                (navigator as any).clearAppBadge().catch(() => {});
+              }
+            }
+          }
+        })
         .catch(() => {});
     };
     fetchCount();
@@ -55,7 +68,10 @@ const SmartHeader = () => {
   if (isHome) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] px-4 pt-4 pointer-events-none flex justify-center">
+    <div 
+      className="fixed left-0 right-0 z-[100] px-4 pointer-events-none flex justify-center"
+      style={{ top: 'calc(var(--safe-area-top) + 16px)' }}
+    >
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

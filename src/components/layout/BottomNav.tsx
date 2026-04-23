@@ -43,7 +43,8 @@ const BottomNav = () => {
           animate={{ y: 0, x: "-50%", opacity: 1 }}
           exit={{ y: 100, x: "-50%", opacity: 0 }}
           transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-          className="fixed bottom-5 left-1/2 w-[92%] max-w-md bg-white/85 dark:bg-[hsl(224,20%,10%)]/90 backdrop-blur-2xl border border-white/60 dark:border-white/8 shadow-[0_20px_60px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] px-2 py-2 z-50 flex justify-around items-center rounded-[32px]"
+          className="fixed left-1/2 w-[92%] max-w-md bg-white/85 dark:bg-[hsl(224,20%,10%)]/90 backdrop-blur-2xl border border-white/60 dark:border-white/8 shadow-[0_20px_60px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] px-2 py-2 z-50 flex justify-around items-center rounded-[32px]"
+          style={{ bottom: 'calc(var(--safe-area-bottom) + 20px)' }}
         >
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;

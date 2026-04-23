@@ -47,7 +47,8 @@ const PwaInstallPrompt = () => {
           animate={{ y: 0, opacity: 1, x: '-50%' }}
           exit={{ y: 100, opacity: 0, x: '-50%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-24 left-1/2 w-[92%] max-w-sm z-[200] bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/20 p-5 flex items-center gap-4"
+          className="fixed left-1/2 w-[92%] max-w-sm z-[200] bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/20 p-5 flex items-center gap-4"
+          style={{ bottom: 'calc(var(--safe-area-bottom) + 96px)' }}
         >
           <div className="relative flex-shrink-0">
             <div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center overflow-hidden border border-gray-50">

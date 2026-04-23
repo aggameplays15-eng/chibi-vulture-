@@ -21,7 +21,37 @@
       "purpose": "maskable any"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Créer un Post",
+      "short_name": "Créer",
+      "description": "Partager une nouvelle œuvre",
+      "url": "/create",
+      "icons": [{ "src": "https://api.dicebear.com/7.x/icons/svg?seed=plus&backgroundColor=EC4899", "sizes": "192x192" }]
+    },
+    {
+      "name": "Boutique",
+      "short_name": "Shop",
+      "description": "Voir les produits",
+      "url": "/shop",
+      "icons": [{ "src": "https://api.dicebear.com/7.x/icons/svg?seed=shop&backgroundColor=EC4899", "sizes": "192x192" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "Voir mes discussions",
+      "url": "/messages",
+      "icons": [{ "src": "https://api.dicebear.com/7.x/icons/svg?seed=mail&backgroundColor=EC4899", "sizes": "192x192" }]
+    }
+  ],
   "categories": ["social", "shopping", "lifestyle"],
-  "related_applications": [],
-  "prefer_related_applications": false
+  "share_target": {
+    "action": "/create",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
