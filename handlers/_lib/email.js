@@ -388,19 +388,47 @@ async function sendEmail(to, templateName, data) {
     return false;
   }
 
+  const db = require('./db');
+  let dynamicBranding = { name: APP_NAME, color: PRIMARY, url: APP_URL };
+
+  try {
+    const { rows } = await db.query(
+      "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'primary_color')"
+    );
+    rows.forEach(row => {
+      if (row.key === 'app_name') dynamicBranding.name = row.value;
+      if (row.key === 'primary_color') dynamicBranding.color = row.value;
+    });
+  } catch (e) {
+    console.error('[Email] Failed to fetch branding settings, using defaults.');
+  }
+
   const template = templates[templateName];
   if (!template) {
     console.error(`[Email] Template inconnu : ${templateName}`);
     return false;
   }
 
-  const { subject, html } = template(data);
+  // Inject dynamic branding into templates by wrapping the template function
+  // We'll temporarily override the global constants for this execution
+  // Actually, better to pass them as a second argument to template() if we refactor,
+  // but for now, we'll replace the placeholders in the final HTML.
+  
+  let { subject, html } = template(data);
+
+  // Apply dynamic branding to the final HTML
+  html = html.split(APP_NAME).join(dynamicBranding.name);
+  html = html.split(PRIMARY).join(dynamicBranding.color);
+  html = html.split(APP_URL).join(dynamicBranding.url);
+  
+  // Also update subject
+  const dynamicSubject = subject.split(APP_NAME).join(dynamicBranding.name);
 
   try {
     await transporter.sendMail({
-      from: `"${APP_NAME}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+      from: `"${dynamicBranding.name}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
       to,
-      subject,
+      subject: dynamicSubject,
       html,
     });
     console.log(`[Email] ✓ "${templateName}" envoyé à ${to}`);
@@ -410,5 +438,6 @@ async function sendEmail(to, templateName, data) {
     return false;
   }
 }
+
 
 module.exports = { sendEmail, templates };

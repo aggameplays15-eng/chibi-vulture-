@@ -52,11 +52,13 @@ const LogoManagement = () => {
     try {
       await apiService.updateAppSettings({
         app_name: appName,
-        app_logo: headerLogoUrl,
+        app_logo_header: headerLogoUrl,
+        app_logo_home: homeLogoUrl,
         pwa_icon: pwaIconUrl || headerLogoUrl,
         app_description: appDescription,
         primary_color: primaryColor,
       });
+
       // Mettre à jour le contexte global
       updateAppName(appName);
       showSuccess('Paramètres sauvegardés ! ✨');

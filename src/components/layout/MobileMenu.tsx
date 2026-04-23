@@ -29,7 +29,7 @@ import { useApp } from '@/context/AppContext';
 
 const MobileMenu = () => {
   const navigate = useNavigate();
-  const { user, logout } = useApp();
+  const { user, logout, primaryColor } = useApp();
 
   const menuItems = [
     { icon: User, label: "Mon Profil", path: "/profile", color: "text-blue-500" },
@@ -52,25 +52,29 @@ const MobileMenu = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="w-10 h-10 rounded-full hover:bg-pink-50 text-gray-800 transition-all active:scale-90"
+          className="w-10 h-10 rounded-full text-gray-800 transition-all active:scale-90"
+          style={{ '--hover-bg': `${primaryColor}15` } as any}
         >
           <Menu size={24} strokeWidth={2.5} />
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="rounded-t-[40px] border-t-pink-50 bg-white max-h-[85vh]">
+      <DrawerContent 
+        className="rounded-t-[40px] bg-white max-h-[85vh]"
+        style={{ borderTop: `2px solid ${primaryColor}15` }}
+      >
         <div className="mx-auto w-12 h-1.5 bg-gray-100 rounded-full mt-3 mb-2" />
         
         <div className="flex flex-col h-full">
-          <DrawerHeader className="p-6 border-b border-pink-50">
+          <DrawerHeader className="p-6 border-b" style={{ borderColor: `${primaryColor}15` }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Avatar className="w-14 h-14 border-4 border-pink-50 shadow-sm">
+                <Avatar className="w-14 h-14 shadow-sm" style={{ border: `4px solid ${primaryColor}15` }}>
                   <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}&backgroundColor=${user.avatarColor?.replace('#', '')}`} />
                   <AvatarFallback>{user.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="text-left">
                   <DrawerTitle className="text-lg font-black text-gray-900">{user.name}</DrawerTitle>
-                  <p className="text-xs font-bold text-pink-500">{user.handle}</p>
+                  <p className="text-xs font-bold" style={{ color: primaryColor }}>{user.handle}</p>
                 </div>
               </div>
               <DrawerClose asChild>
@@ -86,7 +90,9 @@ const MobileMenu = () => {
               <DrawerClose asChild key={item.label}>
                 <button
                   onClick={() => navigate(item.path)}
-                  className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-pink-50 transition-colors group"
+                  className="w-full flex items-center gap-4 p-3.5 rounded-2xl transition-colors group"
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}10`}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <div className={`p-2 rounded-xl bg-gray-50 group-hover:bg-white transition-colors ${item.color}`}>
                     <item.icon size={18} />
@@ -100,18 +106,19 @@ const MobileMenu = () => {
               <DrawerClose asChild>
                 <button
                   onClick={() => navigate('/goated-panel')}
-                  className="w-full flex items-center gap-4 p-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 transition-colors group mt-2"
+                  className="w-full flex items-center gap-4 p-3.5 rounded-2xl transition-colors group mt-2"
+                  style={{ backgroundColor: `${primaryColor}10` }}
                 >
-                  <div className="p-2 rounded-xl bg-white text-purple-600">
+                  <div className="p-2 rounded-xl bg-white" style={{ color: primaryColor }}>
                     <ShieldCheck size={18} />
                   </div>
-                  <span className="font-black text-sm text-purple-700">ADMINISTRATION</span>
+                  <span className="font-black text-sm" style={{ color: primaryColor }}>ADMINISTRATION</span>
                 </button>
               </DrawerClose>
             )}
           </div>
 
-          <div className="p-6 border-t border-pink-50 mb-4">
+          <div className="p-6 border-t mb-4" style={{ borderColor: `${primaryColor}15` }}>
             <Button 
               variant="ghost" 
               onClick={handleLogout}
@@ -127,6 +134,7 @@ const MobileMenu = () => {
         </div>
       </DrawerContent>
     </Drawer>
+
   );
 };
 

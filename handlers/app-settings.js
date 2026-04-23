@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     try {
       const { rows } = await db.query(
-        "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'app_logo', 'pwa_icon', 'app_description', 'primary_color')"
+        "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'app_logo', 'app_logo_header', 'app_logo_home', 'pwa_icon', 'app_description', 'primary_color')"
       );
       
       const settings = rows.reduce((acc, row) => {
@@ -20,10 +20,18 @@ module.exports = async (req, res) => {
       const defaults = {
         app_name: 'Chibi Vulture',
         app_logo: '/favicon.ico',
+        app_logo_header: '/favicon.ico',
+        app_logo_home: '/favicon.ico',
         pwa_icon: null,
         app_description: 'Le réseau social artistique',
         primary_color: '#EC4899',
       };
+
+      // Fallback for separated logos
+      if (settings.app_logo) {
+        if (!settings.app_logo_header) settings.app_logo_header = settings.app_logo;
+        if (!settings.app_logo_home) settings.app_logo_home = settings.app_logo;
+      }
 
       res.status(200).json({ ...defaults, ...settings });
     } catch (error) {
@@ -32,6 +40,8 @@ module.exports = async (req, res) => {
       res.status(200).json({
         app_name: 'Chibi Vulture',
         app_logo: '/favicon.ico',
+        app_logo_header: '/favicon.ico',
+        app_logo_home: '/favicon.ico',
         app_description: 'Le réseau social artistique',
         primary_color: '#EC4899',
       });
@@ -44,12 +54,14 @@ module.exports = async (req, res) => {
     const user = await auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(401).json({ error: 'Admin access required' });
 
-    const { app_name, app_logo, pwa_icon, app_description, primary_color } = req.body;
+    const { app_name, app_logo, app_logo_header, app_logo_home, pwa_icon, app_description, primary_color } = req.body;
     
     try {
       const settings = [
         { key: 'app_name',        value: app_name },
         { key: 'app_logo',        value: app_logo },
+        { key: 'app_logo_header', value: app_logo_header },
+        { key: 'app_logo_home',   value: app_logo_home },
         { key: 'pwa_icon',        value: pwa_icon },
         { key: 'app_description', value: app_description },
         { key: 'primary_color',   value: primary_color },
@@ -62,6 +74,7 @@ module.exports = async (req, res) => {
           ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()
         `, [key, value]);
       }
+
 
       res.status(200).json({ success: true, message: 'Settings updated' });
     } catch (error) {

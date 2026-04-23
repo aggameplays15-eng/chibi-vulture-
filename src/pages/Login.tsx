@@ -69,14 +69,19 @@ const Login = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-            className="w-20 h-20 rounded-[28px] flex items-center justify-center mx-auto shadow-2xl mb-4"
+            className="w-20 h-20 rounded-[28px] flex items-center justify-center mx-auto shadow-2xl mb-4 overflow-hidden bg-white"
             style={{
-              backgroundColor: primaryColor,
               boxShadow: `0 20px 50px ${primaryColor}40`,
+              border: `2px solid ${primaryColor}20`
             }}
           >
-            <Lock className="text-white" size={30} />
+            <img 
+              src={headerLogoUrl || "/favicon.ico"} 
+              alt="Logo" 
+              className="w-14 h-14 object-contain" 
+            />
           </motion.div>
+
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
             CONNEXION
           </h1>

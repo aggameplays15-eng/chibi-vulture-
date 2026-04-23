@@ -77,10 +77,14 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
 
       try {
         const settings = await apiService.getAppSettings();
-        if (settings?.app_logo && !savedHeader) setHeaderLogoUrl(settings.app_logo);
-        if (settings?.app_logo && !savedHome)   setHomeLogoUrl(settings.app_logo);
+        if (settings?.app_logo_header) setHeaderLogoUrl(settings.app_logo_header);
+        else if (settings?.app_logo) setHeaderLogoUrl(settings.app_logo);
+
+        if (settings?.app_logo_home) setHomeLogoUrl(settings.app_logo_home);
+        else if (settings?.app_logo) setHomeLogoUrl(settings.app_logo);
+
         if (settings?.primary_color) setPrimaryColor(settings.primary_color);
-        if (settings?.pwa_icon && !savedPwaIcon) setPwaIconUrl(settings.pwa_icon);
+        if (settings?.pwa_icon) setPwaIconUrl(settings.pwa_icon);
         if (settings?.app_name) {
           setAppName(settings.app_name);
           document.title = settings.app_name;
@@ -90,6 +94,7 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
         console.error("Failed to fetch app settings:", err);
       }
 
+
       if (savedColor) document.documentElement.style.setProperty('--primary-theme', savedColor);
     };
     load();
@@ -97,7 +102,13 @@ export const AppSettingsProvider = ({ children }: { children: React.ReactNode })
 
   useEffect(() => { localStorage.setItem('cv_logo_header', headerLogoUrl); }, [headerLogoUrl]);
   useEffect(() => { localStorage.setItem('cv_logo_home', homeLogoUrl); }, [homeLogoUrl]);
-  useEffect(() => { localStorage.setItem('cv_pwa_icon', pwaIconUrl); }, [pwaIconUrl]);
+  useEffect(() => {
+    localStorage.setItem('cv_pwa_icon', pwaIconUrl);
+    const link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+    if (link) link.href = pwaIconUrl || headerLogoUrl;
+    const appleLink: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
+    if (appleLink) appleLink.href = pwaIconUrl || headerLogoUrl;
+  }, [pwaIconUrl, headerLogoUrl]);
   useEffect(() => {
     localStorage.setItem('cv_app_name', appName);
     document.title = appName;
