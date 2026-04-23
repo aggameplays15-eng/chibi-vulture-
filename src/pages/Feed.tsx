@@ -75,52 +75,96 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
 
   if (!stories || stories.length === 0 || !currentStory) return null;
 
+  const formatTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}j`;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-black flex flex-col"
+      className="fixed inset-0 z-[100] bg-black flex flex-col overflow-hidden"
     >
-      {/* Top progress bars */}
-      <div className="flex gap-1 p-2">
-        {stories.map((_, i) => (
-          <div key={i} className="h-1 bg-white/20 flex-1 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-white transition-all duration-100 ease-linear"
-              style={{ 
-                width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%' 
-              }}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-2">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 border border-white/20">
-            <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`} />
-            <AvatarFallback>{user.name[0]}</AvatarFallback>
-          </Avatar>
-          <span className="text-white font-bold text-sm">{user.name}</span>
-        </div>
-        <button onClick={onClose} className="text-white/60 hover:text-white p-2">
-          <Plus className="rotate-45" size={24} />
-        </button>
-      </div>
-
-      {/* Image */}
-      <div className="flex-1 relative flex items-center justify-center p-4">
+      {/* Blurred Background */}
+      <div className="absolute inset-0 z-0">
         <img 
           src={currentStory.image} 
-          alt="Story" 
-          className="max-h-full max-w-full rounded-3xl object-contain shadow-2xl"
+          className="w-full h-full object-cover blur-[100px] opacity-50 scale-150" 
+          alt="" 
         />
-        
-        {/* Navigation tap areas */}
-        <div className="absolute inset-y-0 left-0 w-1/3" onClick={() => currentIndex > 0 && (setCurrentIndex(i => i - 1), setProgress(0))} />
-        <div className="absolute inset-y-0 right-0 w-2/3" onClick={() => currentIndex < stories.length - 1 ? (setCurrentIndex(i => i + 1), setProgress(0)) : onClose()} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+      </div>
+
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Top progress bars */}
+        <div className="flex gap-1.5 p-3 pt-4">
+          {stories.map((_, i) => (
+            <div key={i} className="h-1 bg-white/20 flex-1 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-100 ease-linear"
+                style={{ 
+                  width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%' 
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex items-center gap-3">
+            <div className="p-[2px] rounded-full bg-gradient-to-tr from-yellow-400 to-pink-500">
+              <Avatar className="w-9 h-9 border-2 border-black">
+                <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`} />
+                <AvatarFallback className="bg-gray-800 text-white">{user.name[0]}</AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="flex flex-col -space-y-0.5">
+              <span className="text-white font-black text-sm tracking-tight">{user.name}</span>
+              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
+                {formatTime(currentStory.created_at)}
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
+          >
+            <Plus className="rotate-45" size={24} />
+          </button>
+        </div>
+
+        {/* Image Container */}
+        <div className="flex-1 relative flex items-center justify-center p-4 pb-20">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentStory.id}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1.1, y: -20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              src={currentStory.image} 
+              alt="Story" 
+              className="max-h-full max-w-full rounded-[2.5rem] object-contain shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] border border-white/10"
+            />
+          </AnimatePresence>
+          
+          {/* Navigation tap areas */}
+          <div 
+            className="absolute inset-y-0 left-0 w-1/4 cursor-pointer" 
+            onClick={() => currentIndex > 0 && (setCurrentIndex(i => i - 1), setProgress(0))} 
+          />
+          <div 
+            className="absolute inset-y-0 right-0 w-3/4 cursor-pointer" 
+            onClick={() => currentIndex < stories.length - 1 ? (setCurrentIndex(i => i + 1), setProgress(0)) : onClose()} 
+          />
+        </div>
       </div>
     </motion.div>
   );
