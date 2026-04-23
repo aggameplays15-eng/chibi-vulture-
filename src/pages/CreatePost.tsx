@@ -97,7 +97,7 @@ const CreatePost = () => {
         )}
       </AnimatePresence>
 
-      <div className="px-6 space-y-6 pb-10">
+      <div className="px-6 space-y-6 pb-32">
         <input
           ref={fileInputRef}
           type="file"

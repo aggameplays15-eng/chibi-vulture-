@@ -73,7 +73,7 @@ const EditProfile = () => {
         )}
       </AnimatePresence>
 
-      <div className="px-6 space-y-8 pb-10">
+      <div className="px-6 space-y-8 pb-32">
         <input 
           type="file" 
           ref={fileInputRef} 
