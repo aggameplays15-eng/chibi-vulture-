@@ -12,7 +12,7 @@ interface UserProfile {
   avatarColor: string;
   avatarImage?: string;
   avatar_image?: string;
-  role: 'Member' | 'Admin';
+  role: 'Member' | 'Artist' | 'Admin';
   isApproved: boolean;
   isAuthenticated: boolean;
   isGuest: boolean;

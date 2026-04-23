@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
-    // BUG FIX: $1 = id (WHERE), $2...$N = values
+    // $1 = id (WHERE), $2...$N = values
     const values = [id];
     const setClauses = [];
     for (const key of dataKeys) {

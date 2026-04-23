@@ -214,21 +214,24 @@ const StoriesBar = ({ users, stories, currentUser, primaryColor, onStoryClick, o
 }) => {
   const usersWithStories = users.filter(u => stories.some(s => s.user_handle === u.handle));
   const iHaveStories = stories.some(s => s.user_handle === currentUser.handle);
+  const isGuest = currentUser.isGuest;
 
   return (
     <div className="flex gap-5 overflow-x-auto no-scrollbar px-6 py-4">
-      {/* Add Story */}
-      <div className="flex flex-col items-center gap-2.5 min-w-[65px]">
-        <div
-          onClick={onAddStory}
-          className="w-16 h-16 rounded-[24px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale group hover:border-indigo-400 transition-all shadow-sm"
-        >
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-            <Plus size={20} className="text-gray-900 dark:text-white" />
+      {/* Add Story — membres connectés uniquement */}
+      {!isGuest && (
+        <div className="flex flex-col items-center gap-2.5 min-w-[65px]">
+          <div
+            onClick={onAddStory}
+            className="w-16 h-16 rounded-[24px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale group hover:border-indigo-400 transition-all shadow-sm"
+          >
+            <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <Plus size={20} className="text-gray-900 dark:text-white" />
+            </div>
           </div>
+          <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Partager</span>
         </div>
-        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Partager</span>
-      </div>
+      )}
 
       {/* My Story */}
       {iHaveStories && (
@@ -543,7 +546,7 @@ const Feed = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-black text-sm text-gray-900 dark:text-white">{post.user}</p>
-                      {post.handle !== user.handle && !user.isGuest && (
+                      {post.handle !== user.handle && !user.isGuest && user.isAuthenticated && (
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleFollow(post.handle); }}
                           className="text-[9px] font-black px-2.5 py-1 rounded-full transition-all tap-scale"
@@ -618,8 +621,8 @@ const Feed = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => handleToggleLike(post.id)}
-                      className={cn("flex items-center gap-1.5 transition-all tap-scale", isLiked ? "scale-110" : "text-gray-400 dark:text-gray-600 hover:text-gray-600")}
+                      onClick={() => !user.isGuest && handleToggleLike(post.id)}
+                      className={cn("flex items-center gap-1.5 transition-all tap-scale", isLiked ? "scale-110" : "text-gray-400 dark:text-gray-600 hover:text-gray-600", user.isGuest && "cursor-default")}
                       style={{ color: isLiked ? primaryColor : undefined }}
                       aria-label={isLiked ? "Retirer le like" : "Aimer ce post"}
                       aria-pressed={isLiked}
@@ -651,6 +654,8 @@ const Feed = () => {
                       <Share2 size={22} strokeWidth={2.5} aria-hidden="true" />
                     </button>
                   </div>
+                  {/* Favoris — membres connectés uniquement */}
+                  {!user.isGuest && (
                   <button
                     onClick={() => {
                       toggleFavoritePost(post.id);
@@ -663,6 +668,9 @@ const Feed = () => {
                   >
                     <Bookmark size={22} strokeWidth={2.5} fill={isFav ? "currentColor" : "none"} aria-hidden="true" />
                   </button>
+                  )}
+                  {/* Signaler — membres connectés uniquement */}
+                  {!user.isGuest && (
                   <button
                     onClick={async () => {
                       try {
@@ -677,6 +685,7 @@ const Feed = () => {
                   >
                     <MoreHorizontal size={22} strokeWidth={2.5} />
                   </button>
+                  )}
                 </div>
 
                 {post.caption && (

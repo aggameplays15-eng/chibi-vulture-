@@ -30,9 +30,11 @@ const BottomNav = () => {
   const navItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: Search, label: 'Explore', path: '/explore' },
-    { icon: PlusSquare, label: 'Post', path: '/create' },
+    // Créer un post — réservé aux membres connectés
+    ...(!user.isGuest ? [{ icon: PlusSquare, label: 'Post', path: '/create' }] : []),
     { icon: ShoppingBag, label: 'Shop', path: '/shop' },
-    { icon: User, label: 'Profil', path: '/profile' },
+    // Profil — réservé aux membres connectés
+    ...(!user.isGuest ? [{ icon: User, label: 'Profil', path: '/profile' }] : []),
   ];
 
   return (
