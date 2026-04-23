@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
         SELECT s.*, u.name as user_name, u.avatar_image as user_avatar 
         FROM stories s
         JOIN users u ON s.user_handle = u.handle
-        WHERE s.created_at > NOW() - INTERVAL '24 hours'
+        WHERE s.created_at > NOW() - INTERVAL '12 hours'
         ORDER BY s.created_at DESC
       `);
       res.status(200).json(rows);

@@ -14,7 +14,86 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
-// Stories bar component
+const StoryViewer = ({ stories, user, onClose, primaryColor }: {
+  stories: any[];
+  user: { name: string; handle: string; avatar?: string };
+  onClose: () => void;
+  primaryColor: string;
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) {
+          if (currentIndex < stories.length - 1) {
+            setCurrentIndex(i => i + 1);
+            return 0;
+          } else {
+            onClose();
+            return 100;
+          }
+        }
+        return p + 2; // ~5 seconds per story
+      });
+    }, 100);
+    return () => clearInterval(timer);
+  }, [currentIndex, stories.length, onClose]);
+
+  const currentStory = stories[currentIndex];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-black flex flex-col"
+    >
+      {/* Top progress bars */}
+      <div className="flex gap-1 p-2">
+        {stories.map((_, i) => (
+          <div key={i} className="h-1 bg-white/20 flex-1 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white transition-all duration-100 ease-linear"
+              style={{ 
+                width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%' 
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pt-2">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-8 h-8 border border-white/20">
+            <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`} />
+            <AvatarFallback>{user.name[0]}</AvatarFallback>
+          </Avatar>
+          <span className="text-white font-bold text-sm">{user.name}</span>
+        </div>
+        <button onClick={onClose} className="text-white/60 hover:text-white p-2">
+          <Plus className="rotate-45" size={24} />
+        </button>
+      </div>
+
+      {/* Image */}
+      <div className="flex-1 relative flex items-center justify-center p-4">
+        <img 
+          src={currentStory.image} 
+          alt="Story" 
+          className="max-h-full max-w-full rounded-3xl object-contain shadow-2xl"
+        />
+        
+        {/* Navigation tap areas */}
+        <div className="absolute inset-y-0 left-0 w-1/3" onClick={() => currentIndex > 0 && (setCurrentIndex(i => i - 1), setProgress(0))} />
+        <div className="absolute inset-y-0 right-0 w-2/3" onClick={() => currentIndex < stories.length - 1 ? (setCurrentIndex(i => i + 1), setProgress(0)) : onClose()} />
+      </div>
+    </motion.div>
+  );
+};
+
 const StoriesBar = ({ users, stories, primaryColor, onStoryClick, onAddStory }: {
   users: any[];
   stories: any[];
@@ -73,6 +152,7 @@ const Feed = () => {
   const { likedPosts, favoritePosts, toggleLike, toggleFavoritePost, toggleFollow, user, primaryColor, users, deletePost } = useApp();
   const [showHeart, setShowHeart] = useState<number | null>(null);
   const [stories, setStories] = useState<any[]>([]);
+  const [viewingUser, setViewingUser] = useState<any | null>(null);
   const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +233,18 @@ const Feed = () => {
         onChange={handleAddStory}
       />
 
+      {/* Story Viewer Overlay */}
+      <AnimatePresence>
+        {viewingUser && (
+          <StoryViewer 
+            user={viewingUser}
+            stories={stories.filter(s => s.user_handle === viewingUser.handle)}
+            onClose={() => setViewingUser(null)}
+            primaryColor={primaryColor}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="px-6 pt-12 pb-4 flex justify-between items-end">
         <div className="space-y-1">
@@ -181,8 +273,8 @@ const Feed = () => {
           primaryColor={primaryColor}
           onAddStory={() => fileInputRef.current?.click()}
           onStoryClick={(handle) => {
-            // Pour l'instant, redirige vers le profil, mais on pourrait ouvrir un viewer
-            navigate(`/profile/${encodeURIComponent(handle)}`);
+            const found = users.find(u => u.handle === handle);
+            if (found) setViewingUser(found);
           }}
         />
       </div>
