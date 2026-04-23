@@ -61,11 +61,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         avatarColor: selectedColor,
       });
       
-      Alert.alert(
-        'Inscription réussie !',
-        'Votre compte a été créé. Connectez-vous pour continuer.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-      );
+      navigation.navigate('Main');
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Impossible de créer le compte');
     } finally {

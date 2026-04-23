@@ -2,7 +2,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuration - Change this to your production URL
-const API_BASE_URL = 'https://chibi-vulture.vercel.app';
+// For local development, use your machine's IP (e.g., 'http://192.168.1.XX:3000')
+const API_BASE_URL = __DEV__ 
+  ? 'http://localhost:3000' // Change to your local IP for physical device testing
+  : 'https://chibi-vulture.vercel.app';
 
 let authToken: string | null = null;
 

@@ -25,6 +25,7 @@ interface AuthContextType {
   users: UserProfile[];
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<{ needsOnboarding?: boolean }>;
+  signup: (userData: any) => Promise<{ needsOnboarding?: boolean }>;
   adminLogin: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<UserProfile>) => void;
@@ -105,6 +106,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  const signup = useCallback(async (userData: any) => {
+    try {
+      const data = await apiService.signup(userData);
+      
+      // Si le backend renvoie un token (connexion auto), on l'utilise
+      if (data.token) {
+        setToken(data.token);
+        apiService.setToken(data.token);
+        const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: [] };
+        setUser(loggedUser);
+        return { needsOnboarding: !data.user.bio };
+      }
+      
+      return { needsOnboarding: true };
+    } catch (err) {
+      console.error("Signup failed:", err);
+      throw err;
+    }
+  }, []);
+
   const adminLogin = useCallback(async (credentials: { email: string; password: string }) => {
     try {
       const data = await apiService.adminLogin(credentials);
@@ -171,11 +192,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     user, users, isLoading,
-    login, adminLogin, logout, setGuestMode,
+    login, signup, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   }), [
     user, users, isLoading,
-    login, adminLogin, logout, setGuestMode,
+    login, signup, adminLogin, logout, setGuestMode,
     updateUser, approveUser, banUser, toggleFollow
   ]);
 

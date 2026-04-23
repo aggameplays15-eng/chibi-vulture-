@@ -66,7 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const data = await apiService.signup(userData);
-      // After signup, user needs to login
+      
+      // Connexion automatique si le token est présent
+      if (data.token) {
+        await apiService.setToken(data.token);
+        setUser(data.user);
+        await AsyncStorage.setItem('cv_user', JSON.stringify(data.user));
+      }
+      
       return data;
     } finally {
       setIsLoading(false);

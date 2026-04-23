@@ -13,8 +13,7 @@ import { apiService } from '@/services/api';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { primaryColor, headerLogoUrl } = useApp();
-  const [step, setStep] = useState(1);
+  const { primaryColor, headerLogoUrl, signup } = useApp();
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +24,7 @@ const Signup = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await apiService.createUser({
+      const result = await signup({
         name,
         handle: handle.startsWith('@') ? handle : `@${handle}`,
         email,
@@ -34,8 +33,8 @@ const Signup = () => {
         password
       });
       
-      setStep(2);
-      showSuccess("Compte créé avec succès ! 🎉");
+      showSuccess("Bienvenue ! Ton compte est prêt. ✨");
+      navigate(result?.needsOnboarding ? '/onboarding' : '/feed');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       if (message.includes('already exists') || message.includes('409')) {
@@ -47,38 +46,6 @@ const Signup = () => {
       setIsSubmitting(false);
     }
   };
-
-  if (step === 2) {
-    return (
-      <div data-testid="signup-success" className="min-h-screen bg-white dark:bg-[hsl(224,20%,7%)] flex flex-col items-center justify-center p-8 text-center">
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="max-w-sm space-y-6"
-        >
-          <div 
-            className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center mx-auto shadow-xl overflow-hidden"
-            style={{ border: `4px solid ${primaryColor}15` }}
-          >
-            <img src={headerLogoUrl || "/favicon.ico"} alt="Logo" className="w-16 h-16 object-contain" />
-          </div>
-          <div className="space-y-2">
-            <h1 data-testid="patience-message" className="text-3xl font-black text-gray-900 dark:text-white">COMPTE CRÉÉ ! 🎉</h1>
-            <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-              Ton compte est en attente d'approbation par un admin. Tu recevras un email dès que ton compte sera activé.
-            </p>
-          </div>
-          <Button 
-            onClick={() => navigate('/login')} 
-            className="w-full h-14 rounded-2xl text-white font-black text-lg shadow-xl"
-            style={{ backgroundColor: primaryColor, boxShadow: `0 16px 40px ${primaryColor}40` }}
-          >
-            Se connecter
-          </Button>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-[hsl(224,20%,7%)] flex flex-col items-center justify-center p-8 relative overflow-hidden">

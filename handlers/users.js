@@ -54,20 +54,13 @@ module.exports = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    // Bloquer tout changement de rôle sauf si c'est un admin qui change le rôle d'un autre user
+    // Bloquer tout changement de rôle — l'architecture est à admin unique (.env)
     if ('role' in data) {
-      if (requester.role !== 'Admin') {
-        return res.status(403).json({ error: 'Role changes are not allowed' });
-      }
-      // L'admin ne peut assigner que Member — jamais Admin
-      const ALLOWED_ROLES = ['Member'];
-      if (!ALLOWED_ROLES.includes(data.role)) {
-        return res.status(403).json({ error: 'Invalid role' });
-      }
+      return res.status(403).json({ error: 'Role changes are not allowed. There is only one unique Administrator.' });
     }
 
-    // Whitelist — role autorisé uniquement pour les admins (déjà validé ci-dessus)
-    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'is_approved', 'status', ...(requester.role === 'Admin' ? ['role'] : [])];
+    // Whitelist des champs modifiables
+    const ALLOWED_FIELDS = ['name', 'handle', 'email', 'bio', 'avatar_color', 'avatar_image', 'is_approved', 'status'];
     const dataKeys = Object.keys(data).filter(key => ALLOWED_FIELDS.includes(key));
 
     if (dataKeys.length === 0) {
@@ -160,20 +153,35 @@ module.exports = async (req, res) => {
         [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword, true]
       );
       const user = rows[0];
+
+      // Générer le token pour connexion automatique immédiate
+      const token = auth.signToken(user);
+
       // Email de bienvenue au nouveau membre (fire & forget)
       sendEmail(user.email, 'welcome', { name: user.name, handle: user.handle }).catch(() => {});
-      // Alerte à l'admin — nouveau membre en attente d'approbation
+      
+      // Alerte à l'admin (fire & forget)
       if (ADMIN_EMAIL) {
         sendEmail(ADMIN_EMAIL, 'newSignupAdmin', { name: user.name, handle: user.handle, email: user.email }).catch(() => {});
       }
+
       res.status(201).json({
-        ...user,
-        avatarColor: user.avatar_color,
-        avatarImage: user.avatar_image,
-        isApproved: user.is_approved
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          handle: user.handle,
+          email: user.email,
+          bio: user.bio,
+          avatarColor: user.avatar_color,
+          avatarImage: user.avatar_image,
+          role: user.role,
+          isApproved: user.is_approved
+        }
       });
     } catch (error) {
       if (error.code === '23505') return res.status(409).json({ error: 'Handle or email already exists' });
+      console.error('Signup error:', error);
       res.status(500).json({ error: 'Failed to create user' });
     }
 
