@@ -401,5 +401,8 @@ const ShopManagement = () => {
           </Card>
         </div>
       )}
+    </div>
+  );
+};
 
 export default ShopManagement;
