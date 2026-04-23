@@ -401,6 +401,7 @@ const ShopManagement = () => {
           </Card>
         </div>
       )}
+      </div>
     </div>
   );
 };
