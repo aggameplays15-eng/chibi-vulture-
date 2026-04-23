@@ -150,7 +150,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     handle: post.handle || post.user_handle || '@user',
     avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
     time: post.time || (post.created_at ? new Date(post.created_at).toLocaleDateString('fr-FR') : "À l'instant"),
-    likes: post.likes || 0
+    likes: Number(post.likes_count || post.likes || 0),
+    comments_count: Number(post.comments_count || 0)
   }), []);
 
   const addPost = useCallback((post: any) => {
@@ -160,10 +161,19 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const toggleLike = useCallback(async (postId: number) => {
     if (user.isGuest || !user.isAuthenticated) return;
     try {
+      const alreadyLiked = likedPosts.includes(postId);
       await apiService.toggleLike(postId, user.handle);
-      setLikedPosts(prev => prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]);
+      
+      setLikedPosts(prev => alreadyLiked ? prev.filter(id => id !== postId) : [...prev, postId]);
+      
+      // Update local count in posts list
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, likes: Math.max(0, p.likes + (alreadyLiked ? -1 : 1)) } 
+          : p
+      ));
     } catch (err) { console.error(err); }
-  }, [user.isGuest, user.isAuthenticated, user.handle]);
+  }, [user.isGuest, user.isAuthenticated, user.handle, likedPosts]);
 
   const toggleFavoritePost = useCallback((postId: number) => {
     setFavoritePosts(prev => prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]);

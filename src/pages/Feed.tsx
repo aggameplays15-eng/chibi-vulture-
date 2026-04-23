@@ -319,7 +319,7 @@ const Feed = () => {
                       aria-pressed={isLiked}
                     >
                       <Heart size={22} strokeWidth={2.5} fill={isLiked ? "currentColor" : "none"} aria-hidden="true" />
-                      <span className="font-black text-xs">{post.likes + (isLiked ? 1 : 0)}</span>
+                      <span className="font-black text-xs">{post.likes}</span>
                     </button>
                     <button
                       className="flex items-center gap-1.5 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-all tap-scale"

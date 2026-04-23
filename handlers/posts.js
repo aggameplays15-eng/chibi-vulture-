@@ -72,7 +72,9 @@ module.exports = async (req, res) => {
           return res.status(400).json({ error: 'Invalid handle' });
         }
         query = `
-          SELECT p.*, u.name as user_name, u.avatar_image as user_avatar 
+          SELECT p.*, u.name as user_name, u.avatar_image as user_avatar,
+          (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likes_count,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count
           FROM posts p 
           LEFT JOIN users u ON p.user_handle = u.handle 
           WHERE p.user_handle = $1
@@ -84,7 +86,9 @@ module.exports = async (req, res) => {
         const limit = Math.min(20, Math.max(1, parseInt(req.query.limit) || 10));
         const offset = (page - 1) * limit;
         query = `
-          SELECT p.*, u.name as user_name, u.avatar_image as user_avatar 
+          SELECT p.*, u.name as user_name, u.avatar_image as user_avatar,
+          (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likes_count,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count
           FROM posts p 
           LEFT JOIN users u ON p.user_handle = u.handle 
           ORDER BY p.created_at DESC

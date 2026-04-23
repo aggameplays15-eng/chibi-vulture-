@@ -186,7 +186,7 @@ const PostDetail = () => {
               aria-pressed={isLiked}
             >
               <Heart size={28} fill={isLiked ? "currentColor" : "none"} aria-hidden="true" />
-              <span className="font-black">{post.likes + (isLiked ? 1 : 0)}</span>
+              <span className="font-black">{post.likes}</span>
             </button>
             <button className="flex items-center gap-1 text-gray-600" aria-label="Commentaires">
               <MessageCircle size={28} aria-hidden="true" />
