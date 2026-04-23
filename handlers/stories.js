@@ -27,6 +27,15 @@ module.exports = async (req, res) => {
     if (!image) return res.status(400).json({ error: 'Image required' });
 
     try {
+      // Vérifier la limite de 5 stories actives
+      const { rows: countRows } = await db.query(
+        "SELECT COUNT(*) FROM stories WHERE user_handle = $1 AND created_at > NOW() - INTERVAL '12 hours'",
+        [user.handle]
+      );
+      if (parseInt(countRows[0].count) >= 5) {
+        return res.status(400).json({ error: 'Limite de 5 stories atteinte (expirent après 12h)' });
+      }
+
       const { rows } = await db.query(
         'INSERT INTO stories (user_handle, image) VALUES ($1, $2) RETURNING *',
         [user.handle, image]

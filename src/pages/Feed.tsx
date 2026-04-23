@@ -14,6 +14,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxWidth) {
+        height = (maxWidth / width) * height;
+        width = maxWidth;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.8)); // 0.8 quality
+    };
+  });
+};
+
 const StoryViewer = ({ stories, user, onClose, primaryColor }: {
   stories: any[];
   user: { name: string; handle: string; avatar?: string };
@@ -153,6 +176,8 @@ const Feed = () => {
   const [showHeart, setShowHeart] = useState<number | null>(null);
   const [stories, setStories] = useState<any[]>([]);
   const [viewingUser, setViewingUser] = useState<any | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -174,15 +199,25 @@ const Feed = () => {
     
     const reader = new FileReader();
     reader.onloadend = async () => {
-      try {
-        await apiService.addStory(reader.result as string);
-        showSuccess("Story publiée ! ✨");
-        fetchStories();
-      } catch {
-        showError("Impossible de publier la story.");
-      }
+      const compressed = await compressImage(reader.result as string);
+      setPreviewImage(compressed);
     };
     reader.readAsDataURL(file);
+  };
+
+  const confirmUploadStory = async () => {
+    if (!previewImage || isUploading) return;
+    setIsUploading(true);
+    try {
+      await apiService.addStory(previewImage);
+      showSuccess("Story publiée ! ✨");
+      setPreviewImage(null);
+      fetchStories();
+    } catch (err: any) {
+      showError(err.message || "Impossible de publier la story.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDeletePost = async (postId: number) => {
@@ -232,6 +267,43 @@ const Feed = () => {
         accept="image/*"
         onChange={handleAddStory}
       />
+
+      {/* Story Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-6"
+          >
+            <div className="relative w-full max-w-sm aspect-[9/16] bg-gray-900 rounded-[40px] overflow-hidden shadow-2xl border border-white/10">
+              <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              
+              <div className="absolute bottom-8 left-0 right-0 px-6 flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold h-12"
+                  onClick={() => setPreviewImage(null)}
+                  disabled={isUploading}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  className="flex-1 rounded-2xl font-bold h-12 shadow-lg shadow-pink-500/20"
+                  style={{ backgroundColor: primaryColor }}
+                  onClick={confirmUploadStory}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 size={20} className="animate-spin" /> : 'Publier ✨'}
+                </Button>
+              </div>
+            </div>
+            <p className="mt-6 text-white/40 text-[10px] font-bold uppercase tracking-widest">Aperçu de la story</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Story Viewer Overlay */}
       <AnimatePresence>
