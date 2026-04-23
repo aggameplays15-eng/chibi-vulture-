@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -29,57 +29,76 @@ const Particle = ({ color, index, total }) => {
 };
 
 const BookLogo = ({ logoUrl }) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const [isDragging, setIsDragging] = useState(false);
   
-  const rotateX = useSpring(useTransform(y, [-200, 200], [60, -60]), { stiffness: 120, damping: 40 });
-  const rotateY = useSpring(useTransform(x, [-200, 200], [-60, 60]), { stiffness: 120, damping: 40 });
+  const rotateX = useMotionValue(15);
+  const rotateY = useMotionValue(-20);
+  
+  const springX = useSpring(rotateX, { stiffness: 60, damping: 25 });
+  const springY = useSpring(rotateY, { stiffness: 60, damping: 25 });
+
+  // Floating animation when not dragging
+  useEffect(() => {
+    if (isDragging) return;
+    
+    const interval = setInterval(() => {
+      rotateY.set(rotateY.get() + 0.4);
+      rotateX.set(15 + Math.sin(Date.now() / 1000) * 10);
+    }, 16);
+    
+    return () => clearInterval(interval);
+  }, [isDragging, rotateX, rotateY]);
+
+  const onPan = (e, info) => {
+    rotateY.set(rotateY.get() + info.delta.x * 0.5);
+    rotateX.set(rotateX.get() - info.delta.y * 0.5);
+  };
 
   return (
-    <div className="relative perspective-[1200px] cursor-grab active:cursor-grabbing touch-none">
+    <div className="relative perspective-[1500px] cursor-grab active:cursor-grabbing touch-none select-none">
       <motion.div
-        drag
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.15}
-        onDrag={(e, info) => {
-          x.set(info.offset.x);
-          y.set(info.offset.y);
+        onPanStart={() => setIsDragging(true)}
+        onPanEnd={() => setIsDragging(false)}
+        onPan={onPan}
+        style={{ 
+          rotateX: springX, 
+          rotateY: springY, 
+          transformStyle: "preserve-3d" 
         }}
-        onDragEnd={() => {
-          x.set(0);
-          y.set(0);
-        }}
-        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-        className="relative w-[300px] h-[300px] flex items-center justify-center"
+        className="relative w-[280px] h-[280px] flex items-center justify-center transition-shadow"
       >
-        {/* Face Avant */}
-        <motion.img 
-          src={logoUrl} 
-          alt="Logo"
-          className="w-full h-full object-contain"
-          style={{ backfaceVisibility: "hidden", zIndex: 2 }}
-        />
+        {/* Layered thickness effect (10 layers for depth) */}
+        {[...Array(10)].map((_, i) => (
+          <motion.img
+            key={i}
+            src={logoUrl}
+            alt=""
+            className="absolute w-full h-full object-contain pointer-events-none"
+            style={{ 
+              transform: `translateZ(${i - 5}px)`,
+              opacity: i === 9 || i === 0 ? 1 : 0.2,
+              filter: i < 9 ? `brightness(${0.5 + i * 0.05}) blur(0.5px)` : "none",
+              zIndex: i
+            }}
+          />
+        ))}
         
-        {/* Face Arrière */}
-        <motion.img 
-          src={logoUrl} 
-          className="absolute w-full h-full object-contain"
-          style={{ 
-            backfaceVisibility: "hidden", 
-            transform: "rotateY(180deg)", 
-            zIndex: 1,
-            filter: "brightness(0.9)"
-          }}
+        {/* Glow effect inside */}
+        <div 
+          className="absolute inset-4 rounded-full blur-[40px] opacity-20 pointer-events-none"
+          style={{ backgroundColor: "#EC4899", transform: "translateZ(-10px)" }}
         />
       </motion.div>
 
-      {/* Ombre simple et stable */}
+      {/* Dynamic Shadow */}
       <motion.div
         style={{ 
-          scale: useTransform(y, [-200, 200], [1.1, 0.9]),
-          opacity: useTransform(y, [-200, 200], [0.1, 0.3])
+          opacity: 0.15,
+          scale: 0.8,
+          rotateX: 90,
+          transform: "translateY(160px) translateZ(-50px)",
         }}
-        className="absolute bottom-[-40px] left-1/2 -translate-x-1/2 w-[180px] h-[15px] rounded-full blur-xl bg-black/10"
+        className="absolute inset-0 w-[240px] h-[40px] left-1/2 -translate-x-1/2 rounded-[100%] blur-2xl bg-black/40"
       />
     </div>
   );
@@ -104,8 +123,15 @@ const Index = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="flex flex-col items-center gap-8"
+          className="flex flex-col items-center gap-8 relative"
         >
+          {/* Decorative Particles */}
+          <div className="absolute inset-0 flex items-center justify-center -z-10">
+            {[...Array(6)].map((_, i) => (
+              <Particle key={i} color={primaryColor} index={i} total={6} />
+            ))}
+          </div>
+          
           <BookLogo logoUrl={homeLogoUrl} />
           
           <div className="space-y-2">
