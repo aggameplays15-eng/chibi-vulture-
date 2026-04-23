@@ -7,6 +7,7 @@ import { Search, Edit, Loader2, MessageCircle } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 
 interface Conversation {
@@ -96,7 +97,7 @@ const Messages = () => {
             <div className="relative">
               <Avatar className="w-14 h-14 border-2 border-white shadow-sm">
                 <AvatarImage
-                  src={conv.other_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.other_handle}`}
+                  src={getAvatarUrl(conv.other_avatar, conv.other_handle)}
                   alt={conv.other_name}
                 />
                 <AvatarFallback>{conv.other_name?.[0] ?? '?'}</AvatarFallback>

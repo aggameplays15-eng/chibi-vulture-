@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { showError, showSuccess } from '@/utils/toast';
 import { apiService } from '@/services/api';
 import SEO from '@/components/SEO';
@@ -227,7 +228,7 @@ const PostDetail = () => {
             {comments.map((c) => (
               <div key={c.id} className="flex gap-3">
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarImage src={c.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.user_handle}`} />
+                  <AvatarImage src={getAvatarUrl(c.user_avatar, c.user_handle)} />
                   <AvatarFallback>{(c.user_name || c.user_handle)[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
@@ -263,7 +264,7 @@ const PostDetail = () => {
                       {c.replies.map(r => (
                         <div key={r.id} className="flex gap-2">
                           <Avatar className="w-6 h-6 flex-shrink-0">
-                            <AvatarImage src={r.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.user_handle}`} />
+                            <AvatarImage src={getAvatarUrl(r.user_avatar, r.user_handle)} />
                             <AvatarFallback>{(r.user_name || r.user_handle)[0]}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 bg-gray-50 p-2 rounded-xl rounded-tl-none">

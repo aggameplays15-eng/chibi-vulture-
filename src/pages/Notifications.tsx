@@ -6,6 +6,7 @@ import { Heart, MessageCircle, UserPlus, Bell, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 
 interface Notification {
@@ -109,7 +110,7 @@ const Notifications = () => {
               <div className="relative flex-shrink-0">
                 <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
                   <AvatarImage
-                    src={notif.actor_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.actor_handle}`}
+                    src={getAvatarUrl(notif.actor_avatar, notif.actor_handle)}
                     alt={notif.actor_name}
                     className="object-cover w-full h-full"
                   />

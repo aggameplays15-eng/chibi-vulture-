@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { showSuccess, showError } from "@/utils/toast";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import ImageCropper from '@/components/ImageCropper';
 import { AnimatePresence } from 'framer-motion';
 
@@ -85,7 +86,7 @@ const EditProfile = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             <Avatar className="w-32 h-32 border-4 border-pink-100 shadow-xl overflow-hidden">
-              <AvatarImage src={avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}&backgroundColor=${user.avatarColor.replace('#', '')}`} className="object-cover w-full h-full" />
+              <AvatarImage src={getAvatarUrl(avatar, user.handle)} className="object-cover w-full h-full" />
               <AvatarFallback>{name[0]}</AvatarFallback>
             </Avatar>
             <div className="absolute bottom-0 right-0 bg-pink-500 text-white p-2 rounded-2xl shadow-lg border-4 border-white">

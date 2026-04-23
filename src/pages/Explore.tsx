@@ -7,6 +7,7 @@ import { Search, Flame, Star, TrendingUp, Sparkles, Loader2, X, UserPlus } from 
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 import { useDebounce } from '@/hooks/use-debounce';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -140,7 +141,7 @@ const Explore = () => {
                             onClick={() => navigate(`/profile/${encodeURIComponent(u.handle)}`)}
                           >
                             <Avatar className="w-11 h-11 rounded-[14px]">
-                              <AvatarImage src={u.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`} className="object-cover w-full h-full" />
+                              <AvatarImage src={getAvatarUrl(u.avatar_image, u.handle)} className="object-cover w-full h-full" />
                               <AvatarFallback className="rounded-[14px]">{u.name[0]}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
@@ -290,7 +291,7 @@ const Explore = () => {
                       >
                         <div className="w-full h-full rounded-[18px] bg-white dark:bg-[hsl(224,20%,10%)] p-[2px]">
                           <img
-                            src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
+                            src={getAvatarUrl(u.avatarImage, u.handle)}
                             alt={u.name}
                             className="w-full h-full rounded-[16px] object-cover"
                           />

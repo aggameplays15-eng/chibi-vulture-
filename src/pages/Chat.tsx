@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 
 interface ChatMessage {
@@ -32,7 +33,7 @@ const Chat = () => {
   // Trouver le nom réel de l'interlocuteur
   const otherUser = users.find(u => u.handle === otherHandle || u.handle === `@${otherHandle}`);
   const otherName = otherUser?.name || otherHandle || 'Utilisateur';
-  const otherAvatar = otherUser?.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherHandle}`;
+  const otherAvatar = getAvatarUrl(otherUser?.avatarImage, otherHandle);
 
   const fetchMessages = useCallback(async () => {
     if (!user.handle || !otherHandle) return;

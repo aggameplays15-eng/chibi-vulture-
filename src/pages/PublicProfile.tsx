@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 import { showSuccess } from '@/utils/toast';
 import SEO from '@/components/SEO';
@@ -110,7 +111,7 @@ const PublicProfile = () => {
             <div className="relative inline-block">
               <div className="absolute inset-0 rounded-full blur-lg opacity-40 animate-pulse" style={{ backgroundColor: profile.avatar_color }} />
               <Avatar className="w-32 h-32 border-4 border-white relative z-10">
-                <AvatarImage src={profile.avatar_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`} className="object-cover w-full h-full" />
+                <AvatarImage src={getAvatarUrl(profile.avatar_image, profile.handle)} className="object-cover w-full h-full" />
                 <AvatarFallback>{profile.name[0]}</AvatarFallback>
               </Avatar>
             </div>

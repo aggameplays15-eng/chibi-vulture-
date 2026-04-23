@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 
 const MobileMenu = () => {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ const MobileMenu = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Avatar className="w-14 h-14 shadow-sm" style={{ border: `4px solid ${primaryColor}15` }}>
-                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}&backgroundColor=${user.avatarColor?.replace('#', '')}`} />
+                <AvatarImage src={getAvatarUrl(user.avatarImage, user.handle)} />
                   <AvatarFallback>{user.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="text-left">

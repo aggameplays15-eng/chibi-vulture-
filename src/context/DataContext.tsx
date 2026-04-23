@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { apiService } from '@/services/api';
 import { useAuth } from './AuthContext';
 import type { OrderItem } from '@/types/api';
+import { getAvatarUrl } from '@/utils/avatar';
 
 interface Product {
   id: number;
@@ -76,7 +77,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     ...post,
     user: post.user || post.user_name || 'Artiste',
     handle: post.handle || post.user_handle || '@user',
-    avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
+    avatar: post.avatar || post.user_avatar || getAvatarUrl(post.user_avatar, post.user_handle || post.handle || 'user'),
     time: post.time || (post.created_at ? new Date(post.created_at).toLocaleDateString('fr-FR') : "À l'instant"),
     likes: Number(post.likes_count || post.likes || 0),
     comments_count: Number(post.comments_count || 0)

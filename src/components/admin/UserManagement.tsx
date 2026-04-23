@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 import { showSuccess, showError } from '@/utils/toast';
+import { getAvatarUrl } from '@/utils/avatar';
 import {
   DropdownMenu, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -230,8 +231,7 @@ const UserManagement = () => {
             const isAdmin = user.role === 'Admin';
             const isBanned = user.status === 'Banni';
             const busy = loadingId === user.id;
-            const avatar = user.avatarImage || user.avatar_image
-              || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`;
+            const avatar = getAvatarUrl(user.avatarImage || user.avatar_image, user.id);
 
             return (
               <div key={user.id}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApp } from '@/context/AppContext';
+import { getAvatarUrl } from '@/utils/avatar';
 import { apiService } from '@/services/api';
 import { showSuccess } from '@/utils/toast';
 import { motion } from 'framer-motion';
@@ -109,7 +110,7 @@ const Profile = () => {
             <div className="relative">
               <Avatar className="w-28 h-28 rounded-[28px] border-4 border-white dark:border-[hsl(224,20%,10%)] shadow-xl">
                 <AvatarImage
-                  src={user.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}&backgroundColor=${(user.avatarColor || primaryColor).replace('#', '')}`}
+                  src={getAvatarUrl(user.avatarImage, user.handle)}
                   className="rounded-[24px] object-cover w-full h-full"
                 />
                 <AvatarFallback className="rounded-[24px] text-2xl font-black">{user.name?.[0]}</AvatarFallback>

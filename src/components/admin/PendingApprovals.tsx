@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { showSuccess, showError } from "@/utils/toast";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
+import { getAvatarUrl } from '@/utils/avatar';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription,
@@ -99,7 +100,7 @@ const PendingApprovals = () => {
               className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Avatar className="h-11 w-11 border-2 border-orange-100 rounded-2xl flex-shrink-0">
-                  <AvatarImage src={user.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} />
+                  <AvatarImage src={getAvatarUrl(user.avatarImage, user.name)} />
                   <AvatarFallback className="rounded-2xl font-black">{(user.name || 'U')[0]}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">

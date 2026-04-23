@@ -5,7 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutDashboard, ShoppingBag, Users, Zap,
-  Truck, Bell, Settings2, Brush, Music, ClipboardList
+  Truck, Bell, Settings2, Music, ClipboardList
 } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
@@ -16,7 +16,6 @@ import UserManagement from '@/components/admin/UserManagement';
 import LogoManagement from '@/components/admin/LogoManagement';
 import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
-import ArtistDashboard from '@/components/admin/ArtistDashboard';
 import MusicManager from '@/components/admin/MusicManager';
 import OrdersManagement from '@/components/admin/OrdersManagement';
 import { useApp } from '@/context/AppContext';
@@ -75,7 +74,6 @@ const Admin = () => {
             <TabTrigger value="shop"      icon={<ShoppingBag size={15} />}     label="Boutique" />
             <TabTrigger value="delivery"  icon={<Truck size={15} />}           label="Livraison" />
             <TabTrigger value="users"     icon={<Users size={15} />}           label="Utilisateurs" badge={reportedCount} badgeColor="orange" />
-            <TabTrigger value="artist"    icon={<Brush size={15} />}           label="Artiste" />
             <TabTrigger value="notifs"    icon={<Bell size={15} />}            label="Notifs" />
             <TabTrigger value="appearance" icon={<Settings2 size={15} />}     label="Apparence" />
             <TabTrigger value="music"     icon={<Music size={15} />}           label="Musique" />
@@ -104,10 +102,6 @@ const Admin = () => {
               <UserManagement />
               <PostModeration />
             </div>
-          </TabsContent>
-
-          <TabsContent value="artist" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ArtistDashboard />
           </TabsContent>
 
           <TabsContent value="notifs" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

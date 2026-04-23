@@ -15,6 +15,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import ImageCropper from '@/components/ImageCropper';
 import SEO from '@/components/SEO';
+import { getAvatarUrl } from '@/utils/avatar';
 
 const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
   return new Promise((resolve) => {
@@ -129,7 +130,7 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
           <div className="flex items-center gap-3">
             <div className="p-[2.5px] rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500">
               <Avatar className="w-10 h-10 border-2 border-black rounded-[14px]">
-                <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`} />
+                <AvatarImage src={getAvatarUrl(user.avatar, user.handle)} />
                 <AvatarFallback className="bg-gray-800 text-white font-black">{user.name[0]}</AvatarFallback>
               </Avatar>
             </div>
@@ -238,7 +239,7 @@ const StoriesBar = ({ users, stories, currentUser, primaryColor, onStoryClick, o
           <div className="p-[3px] rounded-[26px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 animate-gradient-xy">
             <div className="p-[2px] rounded-[23px] bg-white dark:bg-[hsl(224,20%,7%)]">
               <Avatar className="w-14 h-14 rounded-[21px] border border-gray-100 dark:border-white/5">
-                <AvatarImage src={currentUser.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.handle}`} className="object-cover" />
+                <AvatarImage src={getAvatarUrl(currentUser.avatarImage, currentUser.handle)} className="object-cover" />
                 <AvatarFallback className="font-black">{currentUser.name?.[0]}</AvatarFallback>
               </Avatar>
             </div>
@@ -261,7 +262,7 @@ const StoriesBar = ({ users, stories, currentUser, primaryColor, onStoryClick, o
             <div className="p-[2px] rounded-[23px] bg-white dark:bg-[hsl(224,20%,7%)]">
               <div className="w-14 h-14 rounded-[21px] overflow-hidden border border-gray-100 dark:border-white/5">
                 <img
-                  src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
+                  src={getAvatarUrl(u.avatarImage, u.handle)}
                   alt={u.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -482,11 +483,11 @@ const Feed = () => {
               setViewingUser({
                 name: user.name,
                 handle: user.handle,
-                avatar: user.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`
+                avatar: getAvatarUrl(user.avatarImage, user.handle)
               });
             } else {
               const found = users.find(u => u.handle === handle);
-              if (found) setViewingUser(found);
+              if (found) setViewingUser({ ...found, avatar: getAvatarUrl(found.avatarImage, found.handle) });
             }
           }}
         />
