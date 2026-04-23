@@ -232,9 +232,15 @@ const Feed = () => {
   const [croppingImage, setCroppingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
+  const { posts, loadMore, hasMore, isLoading, removePost, updatePostLikes } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleToggleLike = async (postId: number) => {
+    const isLiked = likedPosts.includes(postId);
+    await toggleLike(postId);
+    updatePostLikes(postId, isLiked ? -1 : 1);
+  };
 
   const fetchStories = useCallback(async () => {
     try {
@@ -305,7 +311,7 @@ const Feed = () => {
   }, [handleObserver]);
 
   const handleDoubleTap = (postId: number) => {
-    if (!likedPosts.includes(postId)) toggleLike(postId);
+    if (!likedPosts.includes(postId)) handleToggleLike(postId);
     setShowHeart(postId);
     setTimeout(() => setShowHeart(null), 800);
   };
@@ -547,7 +553,7 @@ const Feed = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => toggleLike(post.id)}
+                      onClick={() => handleToggleLike(post.id)}
                       className={cn("flex items-center gap-1.5 transition-all tap-scale", isLiked ? "scale-110" : "text-gray-400 dark:text-gray-600 hover:text-gray-600")}
                       style={{ color: isLiked ? primaryColor : undefined }}
                       aria-label={isLiked ? "Retirer le like" : "Aimer ce post"}

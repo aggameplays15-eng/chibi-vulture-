@@ -30,7 +30,8 @@ export const useInfinitePosts = () => {
     handle: raw.user_handle || raw.handle || '@user',
     avatar: raw.user_avatar || raw.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${raw.user_handle}`,
     time: raw.time || new Date((raw as unknown as { created_at: string }).created_at).toLocaleDateString('fr-FR'),
-    likes: raw.likes || 0,
+    likes: Number((raw as any).likes_count || raw.likes || 0),
+    comments_count: Number((raw as any).comments_count || 0),
   });
 
   const loadMore = useCallback(async () => {
@@ -67,9 +68,13 @@ export const useInfinitePosts = () => {
     setHasMore(true);
   }, []);
 
-  const removePost = useCallback((id: number) => {
-    setPosts(prev => prev.filter(p => p.id !== id));
+  const updatePostLikes = useCallback((postId: number, increment: number) => {
+    setPosts(prev => prev.map(p => 
+      p.id === postId 
+        ? { ...p, likes: Math.max(0, p.likes + increment) } 
+        : p
+    ));
   }, []);
 
-  return { posts, loadMore, hasMore, isLoading, reset, removePost };
+  return { posts, loadMore, hasMore, isLoading, reset, removePost, updatePostLikes };
 };

@@ -66,6 +66,22 @@ const Profile = () => {
   const myLikedPosts = posts.filter(p => likedPosts.includes(p.id));
   const myPosts = userPosts;
 
+  const handleShare = async () => {
+    const url = `${window.location.origin}/profile/${encodeURIComponent(user.handle)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Profil de ${user.name}`,
+          text: `Découvre mes créations sur Chibi Vulture !`,
+          url: url
+        });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      showSuccess("Lien du profil copié ! 🔗");
+    }
+  };
+
   return (
     <MainLayout>
       {/* Settings button */}
@@ -147,6 +163,7 @@ const Profile = () => {
             variant="outline"
             className="flex-1 rounded-2xl font-bold h-11 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
             style={{ color: primaryColor, borderColor: `${primaryColor}30` }}
+            onClick={handleShare}
           >
             Partager
           </Button>

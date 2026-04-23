@@ -118,15 +118,34 @@ const PublicProfile = () => {
               <div><p className="font-black text-lg">{followingCount}</p><p className="text-[10px] text-gray-400 uppercase font-bold">Following</p></div>
             </div>
 
-            {!user.isGuest && (
+            <div className="flex gap-3">
+              {!user.isGuest && (
+                <Button
+                  onClick={() => toggleFollow(profile.handle)}
+                  className="flex-1 rounded-2xl font-bold text-white"
+                  style={{ backgroundColor: isFollowing ? '#9ca3af' : primaryColor }}
+                >
+                  {isFollowing ? 'Ne plus suivre' : 'Suivre'}
+                </Button>
+              )}
               <Button
-                onClick={() => toggleFollow(profile.handle)}
-                className="w-full rounded-2xl font-bold text-white"
-                style={{ backgroundColor: isFollowing ? '#9ca3af' : primaryColor }}
+                variant="outline"
+                className="flex-1 rounded-2xl font-bold h-11 border-gray-100 text-gray-500"
+                onClick={async () => {
+                  const url = `${window.location.origin}/profile/${encodeURIComponent(profile.handle)}`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: `Profil de ${profile.name}`, url });
+                    } catch {}
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                    showSuccess("Lien copié ! 🔗");
+                  }
+                }}
               >
-                {isFollowing ? 'Ne plus suivre' : 'Suivre'}
+                Partager
               </Button>
-            )}
+            </div>
           </div>
 
           <div className="px-4 pb-24">
