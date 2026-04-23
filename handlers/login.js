@@ -9,8 +9,12 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method !== 'POST') return res.status(405).end();
+  
+  let { email, password } = req.body || {};
+  if (email) email = String(email).toLowerCase().trim();
 
-  const { email, password } = req.body || {};
+
+
 
   if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });

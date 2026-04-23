@@ -156,8 +156,8 @@ module.exports = async (req, res) => {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const { rows } = await db.query(
-        'INSERT INTO users (name, handle, email, bio, avatar_color, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status',
-        [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword]
+        'INSERT INTO users (name, handle, email, bio, avatar_color, password, is_approved) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status',
+        [name.trim(), handle.toLowerCase(), email.toLowerCase().trim(), bio || '', avatarColor || '#94a3b8', hashedPassword, true]
       );
       const user = rows[0];
       // Email de bienvenue au nouveau membre (fire & forget)

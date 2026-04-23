@@ -32,8 +32,8 @@ module.exports = async (req, res) => {
 
   // Vérification email en timing-safe (anti timing attack)
   const emailOk = crypto.timingSafeEqual(
-    Buffer.from(String(email).toLowerCase().padEnd(100)),
-    Buffer.from(String(ADMIN_EMAIL).toLowerCase().padEnd(100))
+    Buffer.from(String(email || '').toLowerCase().trim().padEnd(100)),
+    Buffer.from(String(ADMIN_EMAIL || '').toLowerCase().trim().padEnd(100))
   );
 
   // Vérification mot de passe — bcrypt hash uniquement
