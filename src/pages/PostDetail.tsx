@@ -24,7 +24,7 @@ interface Comment {
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, likedPosts, toggleLike, posts, primaryColor } = useApp();
+  const { user, likedPosts, toggleLike, posts, primaryColor, deletePost } = useApp();
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +45,7 @@ const PostDetail = () => {
 
   const handleDeletePost = async () => {
     try {
-      await apiService.deletePost(postId);
+      await deletePost(postId);
       showSuccess("Post supprimé. 🗑️");
       navigate('/feed');
     } catch {
@@ -55,7 +55,7 @@ const PostDetail = () => {
 
   const handleDeleteComment = async (commentId: number, commentHandle: string) => {
     if (user.handle !== commentHandle) return;
-    const token = sessionStorage.getItem('cv_token');
+    const token = localStorage.getItem('cv_token');
     try {
       const res = await fetch(`/api/comments?id=${commentId}`, {
         method: 'DELETE',
@@ -72,7 +72,7 @@ const PostDetail = () => {
     if (!comment.trim() || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const token = sessionStorage.getItem('cv_token');
+      const token = localStorage.getItem('cv_token');
       const res = await fetch('/api/comments', {
         method: 'POST',
         headers: {
@@ -83,14 +83,21 @@ const PostDetail = () => {
       });
       if (!res.ok) throw new Error();
       const newComment = await res.json();
+      const normalizedComment = { 
+        ...newComment, 
+        user_name: user.name, 
+        user_avatar: user.avatarImage,
+        user_handle: user.handle
+      };
+
       if (replyingTo) {
         setComments(prev => prev.map(c =>
           c.id === replyingTo.id
-            ? { ...c, replies: [...(c.replies || []), { ...newComment, user_name: user.name, user_avatar: user.avatarImage }] }
+            ? { ...c, replies: [...(c.replies || []), normalizedComment] }
             : c
         ));
       } else {
-        setComments(prev => [...prev, { ...newComment, user_name: user.name, user_avatar: user.avatarImage, replies: [] }]);
+        setComments(prev => [...prev, { ...normalizedComment, replies: [] }]);
       }
       setComment("");
       setReplyingTo(null);

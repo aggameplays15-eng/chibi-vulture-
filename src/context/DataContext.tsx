@@ -103,7 +103,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         const [realProducts, realPosts, realOrders] = await Promise.allSettled(fetches);
 
         if (realProducts.status === 'fulfilled' && realProducts.value) setProducts(realProducts.value as Product[]);
-        if (realPosts.status === 'fulfilled' && realPosts.value) setPosts(realPosts.value as Post[]);
+        if (realPosts.status === 'fulfilled' && realPosts.value) {
+          const list = realPosts.value as any[];
+          setPosts(list.map(normalizePost));
+        }
         if (realOrders.status === 'fulfilled' && realOrders.value) setOrders(realOrders.value as Order[]);
       } catch (err) {
         console.error("Backend fetch error:", err);
@@ -141,17 +144,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) { console.error(err); }
   }, []);
 
-  const addPost = useCallback((post: Post) => {
-    const normalizedPost = {
-      ...post,
-      user: post.user || post.user_name || 'Artiste',
-      handle: post.handle || post.user_handle || '@user',
-      avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
-      time: post.time || "À l'instant",
-      likes: post.likes || 0
-    };
-    setPosts(prev => [normalizedPost, ...prev]);
-  }, []);
+  const normalizePost = useCallback((post: any): Post => ({
+    ...post,
+    user: post.user || post.user_name || 'Artiste',
+    handle: post.handle || post.user_handle || '@user',
+    avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
+    time: post.time || (post.created_at ? new Date(post.created_at).toLocaleDateString('fr-FR') : "À l'instant"),
+    likes: post.likes || 0
+  }), []);
+
+  const addPost = useCallback((post: any) => {
+    setPosts(prev => [normalizePost(post), ...prev]);
+  }, [normalizePost]);
   
   const toggleLike = useCallback(async (postId: number) => {
     if (user.isGuest || !user.isAuthenticated) return;

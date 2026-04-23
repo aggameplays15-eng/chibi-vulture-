@@ -29,16 +29,27 @@ const Profile = () => {
   const [postCount, setPostCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(user.following?.length || 0);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user.handle || !user.isAuthenticated) return;
     const fetchCounts = async () => {
       try {
-        const [userPosts, followData] = await Promise.all([
+        const [postsData, followData] = await Promise.all([
           apiService.getUserPostCount(user.handle),
           apiService.getFollowCounts(user.handle),
         ]);
-        if (Array.isArray(userPosts)) setPostCount(userPosts.length);
+        if (Array.isArray(postsData)) {
+          // Normalize posts
+          const normalized = postsData.map(p => ({
+            ...p,
+            handle: p.handle || p.user_handle || '@user',
+            image: p.image,
+            id: p.id
+          }));
+          setUserPosts(normalized);
+          setPostCount(normalized.length);
+        }
         if (followData) {
           setFollowersCount(followData.followersCount ?? 0);
           setFollowingCount(followData.followingCount ?? user.following?.length ?? 0);
@@ -53,7 +64,7 @@ const Profile = () => {
   const myFavPosts = posts.filter(p => favoritePosts.includes(p.id));
   const myFavProducts = products.filter(p => favoriteProducts.includes(p.id));
   const myLikedPosts = posts.filter(p => likedPosts.includes(p.id));
-  const myPosts = posts.filter(p => p.handle === user.handle);
+  const myPosts = userPosts;
 
   return (
     <MainLayout>
