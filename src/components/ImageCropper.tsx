@@ -1,8 +1,9 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import React, { useState, useRef, useCallback } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { Button } from './ui/button';
-import { X, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, Check, RotateCw, Grid } from 'lucide-react';
 import { Slider } from './ui/slider';
+import { cn } from '@/lib/utils';
 
 interface ImageCropperProps {
   image: string;
@@ -12,14 +13,21 @@ interface ImageCropperProps {
   circular?: boolean;
 }
 
-const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = false }: ImageCropperProps) => {
+const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCropperProps) => {
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [showGrid, setShowGrid] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   
-  // Motion values for drag
   const x = useMotionValue(0);
   const y = useMotionValue(0);
+
+  const rotate = useSpring(rotation, { stiffness: 200, damping: 25 });
+
+  const handleRotate = () => {
+    setRotation(prev => prev + 90);
+  };
 
   const handleCrop = useCallback(async () => {
     if (!imgRef.current || !containerRef.current) return;
@@ -28,67 +36,70 @@ const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = fal
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
     
-    // The mask size (it's responsive, so we measure it)
     const maskSize = rect.width > rect.height ? rect.height * 0.8 : rect.width * 0.8;
     const maskX = (rect.width - maskSize) / 2;
     const maskY = (rect.height - maskSize) / 2;
 
     const canvas = document.createElement('canvas');
-    canvas.width = maskSize * 2; // High DPI
-    canvas.height = maskSize * 2;
+    canvas.width = 1000; // Resolution fixe haute qualité
+    canvas.height = 1000;
     const ctx = canvas.getContext('2d');
 
     if (!ctx) return;
 
-    // We calculate the position of the image relative to the mask
-    // Image current dimensions
-    const curWidth = img.clientWidth * zoom;
-    const curHeight = img.clientHeight * zoom;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Image position relative to center
-    const imgX = x.get() + (rect.width - img.clientWidth * zoom) / 2;
-    const imgY = y.get() + (rect.height - img.clientHeight * zoom) / 2;
+    // Position au centre du canvas pour la rotation
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.scale(zoom, zoom);
 
-    // Position relative to mask start
-    const relX = (maskX - imgX) / zoom;
-    const relY = (maskY - imgY) / zoom;
-    const relSize = maskSize / zoom;
+    // Calcul de la position relative
+    const imgX = x.get() / zoom;
+    const imgY = y.get() / zoom;
 
-    // Draw on canvas
+    // Dessin de l'image
+    const drawWidth = img.naturalWidth;
+    const drawHeight = img.naturalHeight;
+    
+    // On compense l'échelle et la position pour correspondre à ce que l'utilisateur voit dans le masque
+    const scaleFactor = (maskSize / 1000); // Rapport entre le masque UI et le canvas final
+    
     ctx.drawImage(
       img,
-      (relX / img.clientWidth) * img.naturalWidth,
-      (relY / img.clientHeight) * img.naturalHeight,
-      (relSize / img.clientWidth) * img.naturalWidth,
-      (relSize / img.clientHeight) * img.naturalHeight,
-      0, 0, canvas.width, canvas.height
+      -drawWidth / 2 + (imgX / scaleFactor),
+      -drawHeight / 2 + (imgY / scaleFactor),
+      drawWidth,
+      drawHeight
     );
 
-    onCrop(canvas.toDataURL('image/jpeg', 0.9));
-  }, [onCrop, x, y, zoom]);
+    onCrop(canvas.toDataURL('image/jpeg', 0.95));
+  }, [onCrop, x, y, zoom, rotation]);
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-[200] bg-black/98 flex flex-col items-center justify-center p-4 backdrop-blur-xl">
       <div className="w-full max-w-md flex flex-col gap-6">
         <div className="flex items-center justify-between px-2">
-          <h3 className="text-white font-black uppercase tracking-widest text-sm">Ajuster l'image</h3>
-          <button onClick={onCancel} className="text-white/40 hover:text-white transition-colors">
-            <X size={24} />
+          <div className="flex flex-col">
+            <h3 className="text-white font-black uppercase tracking-widest text-xs">Cadrage & Style</h3>
+            <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest">Ajustez pour un rendu parfait</p>
+          </div>
+          <button onClick={onCancel} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-white/40 hover:text-white transition-colors">
+            <X size={20} />
           </button>
         </div>
 
         <div 
           ref={containerRef}
-          className="relative aspect-square w-full bg-black overflow-hidden rounded-[40px] border border-white/5 shadow-2xl touch-none"
+          className="relative aspect-square w-full bg-[#0a0a0a] overflow-hidden rounded-[48px] border border-white/5 shadow-2xl touch-none group"
         >
           {/* Draggable Image */}
           <motion.img
             ref={imgRef}
             src={image}
-            style={{ x, y, scale: zoom }}
+            style={{ x, y, scale: zoom, rotate }}
             drag
-            dragConstraints={containerRef}
-            dragElastic={0.1}
+            dragElastic={0.2}
             className="absolute cursor-move select-none"
             onDragStart={(e) => e.preventDefault()}
           />
@@ -96,45 +107,81 @@ const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = fal
           {/* Mask Overlay */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
              <div 
-              className={`w-[80%] aspect-square border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] z-10 ${circular ? 'rounded-full' : 'rounded-2xl'}`}
-            />
+              className={cn(
+                "w-[80%] aspect-square border-2 border-white/40 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] z-10 relative overflow-hidden",
+                circular ? 'rounded-full' : 'rounded-3xl'
+              )}
+            >
+              {/* Composition Grid */}
+              {showGrid && (
+                <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30">
+                  <div className="border-r border-b border-white" />
+                  <div className="border-r border-b border-white" />
+                  <div className="border-b border-white" />
+                  <div className="border-r border-b border-white" />
+                  <div className="border-r border-b border-white" />
+                  <div className="border-b border-white" />
+                  <div className="border-r border-white" />
+                  <div className="border-r border-white" />
+                  <div />
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="absolute top-4 left-4 right-4 flex justify-center pointer-events-none">
-            <p className="bg-black/40 backdrop-blur-md text-white/60 text-[10px] font-bold py-1.5 px-3 rounded-full uppercase tracking-wider border border-white/5">
-              Glissez pour déplacer • Pincez pour zoomer
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+            <p className="bg-black/60 backdrop-blur-xl text-white/70 text-[9px] font-black py-2 px-4 rounded-full uppercase tracking-[0.2em] border border-white/10 shadow-2xl transition-opacity group-active:opacity-0">
+              Déplacez • Zoomez • Pivotez
             </p>
           </div>
         </div>
 
-        <div className="space-y-6 px-4">
-          <div className="flex items-center gap-4">
-            <ZoomOut size={18} className="text-white/40" />
+        <div className="space-y-6 px-2">
+          <div className="flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5">
+            <ZoomOut size={16} className="text-white/20" />
             <Slider
               value={[zoom]}
-              min={1}
-              max={3}
+              min={0.5}
+              max={4}
               step={0.01}
               onValueChange={([v]) => setZoom(v)}
               className="flex-1"
             />
-            <ZoomIn size={18} className="text-white/40" />
+            <ZoomIn size={16} className="text-white/20" />
+            
+            <div className="w-px h-6 bg-white/10 mx-2" />
+            
+            <button 
+              onClick={handleRotate}
+              className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              <RotateCw size={18} />
+            </button>
+            
+            <button 
+              onClick={() => setShowGrid(!showGrid)}
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-2xl transition-colors",
+                showGrid ? "bg-white text-black" : "bg-white/5 text-white/40"
+              )}
+            >
+              <Grid size={18} />
+            </button>
           </div>
 
           <div className="flex gap-4">
             <Button 
               variant="ghost" 
-              className="flex-1 h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/5"
+              className="flex-1 h-16 rounded-[28px] bg-white/5 hover:bg-white/10 text-white font-black transition-all border border-white/5 uppercase tracking-widest text-xs"
               onClick={onCancel}
             >
               Annuler
             </Button>
             <Button 
-              className="flex-1 h-14 rounded-2xl font-bold bg-white text-black hover:bg-white/90 shadow-xl"
+              className="flex-1 h-16 rounded-[28px] font-black bg-white text-black hover:bg-white/90 shadow-2xl shadow-white/10 uppercase tracking-widest text-xs"
               onClick={handleCrop}
             >
-              <Check size={20} className="mr-2" />
-              Confirmer
+              Terminer
             </Button>
           </div>
         </div>
@@ -142,5 +189,7 @@ const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = fal
     </div>
   );
 };
+
+export default ImageCropper;
 
 export default ImageCropper;
