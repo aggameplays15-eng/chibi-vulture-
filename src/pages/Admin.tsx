@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  LayoutDashboard, ShoppingBag, ShieldCheck, Users, Zap,
+  LayoutDashboard, ShoppingBag, Users, Zap,
   Truck, Bell, Settings2, Brush, Music, ClipboardList
 } from 'lucide-react';
 import AdminStats from '@/components/admin/AdminStats';
@@ -13,7 +13,6 @@ import AdminActivityLog from '@/components/admin/AdminActivityLog';
 import ShopManagement from '@/components/admin/ShopManagement';
 import PostModeration from '@/components/admin/PostModeration';
 import UserManagement from '@/components/admin/UserManagement';
-import PendingApprovals from '@/components/admin/PendingApprovals';
 import LogoManagement from '@/components/admin/LogoManagement';
 import PushNotificationManager from '@/components/admin/PushNotificationManager';
 import DeliveryManagement from '@/components/admin/DeliveryManagement';
@@ -30,7 +29,6 @@ const Admin = () => {
   const safePosts  = Array.isArray(posts)  ? posts  : [];
   const safeOrders = Array.isArray(orders) ? orders : [];
 
-  const pendingCount  = safeUsers.filter(u => !u.isApproved && u.role !== 'Admin').length;
   const reportedCount = safePosts.filter(p => (p.reports || 0) > 0).length;
   const pendingOrders = safeOrders.filter(o => o.status === 'En attente').length;
 
@@ -76,8 +74,7 @@ const Admin = () => {
             <TabTrigger value="orders"    icon={<ClipboardList size={15} />}   label="Commandes" badge={pendingOrders} />
             <TabTrigger value="shop"      icon={<ShoppingBag size={15} />}     label="Boutique" />
             <TabTrigger value="delivery"  icon={<Truck size={15} />}           label="Livraison" />
-            <TabTrigger value="mod"       icon={<ShieldCheck size={15} />}     label="Modération" badge={pendingCount + reportedCount} badgeColor="orange" />
-            <TabTrigger value="users"     icon={<Users size={15} />}           label="Utilisateurs" />
+            <TabTrigger value="users"     icon={<Users size={15} />}           label="Utilisateurs" badge={reportedCount} badgeColor="orange" />
             <TabTrigger value="artist"    icon={<Brush size={15} />}           label="Artiste" />
             <TabTrigger value="notifs"    icon={<Bell size={15} />}            label="Notifs" />
             <TabTrigger value="appearance" icon={<Settings2 size={15} />}     label="Apparence" />
@@ -102,15 +99,11 @@ const Admin = () => {
             <DeliveryManagement />
           </TabsContent>
 
-          <TabsContent value="mod" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <TabsContent value="users" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-8">
-              <PendingApprovals />
+              <UserManagement />
               <PostModeration />
             </div>
-          </TabsContent>
-
-          <TabsContent value="users" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <UserManagement />
           </TabsContent>
 
           <TabsContent value="artist" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">

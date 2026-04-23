@@ -21,7 +21,6 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import PendingApproval from "./pages/PendingApproval";
 
 // Lazy — pages secondaires (réduit le bundle initial)
 const Feed            = lazy(() => import("./pages/Feed"));
@@ -65,11 +64,6 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
   if (user.isGuest && !isPublicPage) return <Navigate to="/login" />;
   if (requireAdmin && user.role !== "Admin") return <Navigate to="/goated" />;
 
-  // Utilisateur connecté mais pas encore approuvé → page d'attente
-  if (user.isAuthenticated && !user.isGuest && !user.isApproved && user.role !== 'Admin') {
-    return <Navigate to="/pending-approval" />;
-  }
-
   return <>{children}</>;
 };
 
@@ -102,7 +96,6 @@ const App = () => {
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/pending-approval" element={<PendingApproval />} />
                   <Route path="/goated" element={<AdminLogin />} />
                   
                   <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
