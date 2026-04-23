@@ -58,11 +58,11 @@ const BLOCKED_UA_PATTERNS = [
 
 // ─── 2. PAYLOAD MALVEILLANT ─────────────────────────────────
 const MALICIOUS_PATTERNS = [
-  // SQL Injection
-  /(\bUNION\b.*\bSELECT\b|\bSELECT\b.*\bFROM\b|\bDROP\b.*\bTABLE\b|\bINSERT\b.*\bINTO\b|\bDELETE\b.*\bFROM\b)/i,
-  /(\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?|\bAND\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,
-  /(--|\/\*|\*\/|xp_|sp_|exec\s*\(|execute\s*\()/i,
-  /(\bCAST\b\s*\(|\bCONVERT\b\s*\(|\bCHAR\b\s*\(|\bCONCAT\b\s*\()/i,
+  // SQL Injection (plus spécifique pour éviter les faux positifs dans le texte normal)
+  /(\bUNION\s+ALL\s+SELECT\b|\bDROP\s+TABLE\b|\bTRUNCATE\s+TABLE\b|\bDELETE\s+FROM\s+.*\s+WHERE\b)/i,
+  /(\w+['"]\s+OR\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,
+  /(--|\/\*|\*\/|xp_cmdshell|exec\s*\(|execute\s*\()/i,
+
   // XSS
   /(<script[\s>]|<\/script>|javascript:|vbscript:|on\w+\s*=)/i,
   /(document\.cookie|document\.write|window\.location|eval\s*\(|setTimeout\s*\(|setInterval\s*\()/i,
@@ -232,20 +232,34 @@ async function detectFuzzing(ip) {
 }
 
 // ─── 7. MIDDLEWARE PRINCIPAL ─────────────────────────────────
+const jwt = require('jsonwebtoken');
+const SECRET = process.env.JWT_SECRET;
+
 async function securityMiddleware(req, res) {
   const ip = getClientIp(req);
   const ua = getUA(req);
   const path = req.url || '';
   const method = req.method || 'GET';
 
-  // 7a. Vérifier ban IP
+  // Tentative de récupération du rôle admin via le token (pour bypasser les blocages)
+  let isAdmin = false;
+  try {
+    const authHeader = req.headers['authorization'];
+    if (authHeader?.startsWith('Bearer ')) {
+      const decoded = jwt.verify(authHeader.slice(7), SECRET);
+      if (decoded?.role === 'Admin') isAdmin = true;
+    }
+  } catch { /* ignored */ }
+
+  // 7a. Vérifier ban IP (Bypass possible pour l'IP de l'admin si nécessaire, mais risqué)
   const bannedUntil = await isIpBanned(ip);
-  if (bannedUntil) {
+  if (bannedUntil && !isAdmin) {
     const retryAfter = Math.ceil((new Date(bannedUntil) - Date.now()) / 1000);
     res.setHeader('Retry-After', String(Math.max(0, retryAfter)));
     res.status(403).json({ error: 'Access denied' });
     return true;
   }
+
 
   // 7b. Honeypot — ban immédiat 24h
   const isHoneypot = HONEYPOT_PATHS.some(p => path.toLowerCase().startsWith(p.toLowerCase()));
@@ -271,7 +285,7 @@ async function securityMiddleware(req, res) {
     JSON.stringify(req.query || {}),
   ].join(' ');
 
-  const isMalicious = MALICIOUS_PATTERNS.some(p => p.test(toScan));
+  const isMalicious = !isAdmin && MALICIOUS_PATTERNS.some(p => p.test(toScan));
   if (isMalicious) {
     await logThreat(ip, 'MALICIOUS_PAYLOAD', `Suspicious payload on ${path}`, req);
     await banIp(ip, 'Malicious payload detected', 2 * 60 * 60 * 1000);
@@ -287,13 +301,18 @@ async function securityMiddleware(req, res) {
     return true;
   }
 
-  // 7f. Taille de body excessive
+  // 7f. Taille de body excessive (10MB pour les admins, 1MB pour les autres)
   const contentLength = parseInt(req.headers['content-length'] || '0', 10);
-  if (contentLength > 1 * 1024 * 1024) {
+  const limit = isAdmin ? 10 * 1024 * 1024 : 1 * 1024 * 1024;
+  if (contentLength > limit) {
     await logThreat(ip, 'LARGE_PAYLOAD', `Content-Length: ${contentLength}`, req);
     res.status(413).json({ error: 'Payload too large' });
     return true;
   }
+
+  // 7g. Bypass DoS pour les admins
+  if (isAdmin) return false;
+
 
   // 7g. Détection flood (DoS burst)
   const isFlooding = await detectFlood(ip);
