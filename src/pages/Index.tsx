@@ -15,17 +15,22 @@ const FEATURES = [
 
 // ─── 3D Floating Logo ────────────────────────────────────────────────────────
 // ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
+// ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
 const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
+  const lastX = useRef(0);
+  const lastY = useRef(0);
+  const velocityX = useRef(0);
+  const velocityY = useRef(0);
 
   // Rotation values
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
 
-  // Springs for smoothness and inertia
-  const springX = useSpring(rotateX, { stiffness: 40, damping: 20 });
-  const springY = useSpring(rotateY, { stiffness: 40, damping: 20 });
+  // Springs for smoothness
+  const springX = useSpring(rotateX, { stiffness: 60, damping: 25, mass: 0.5 });
+  const springY = useSpring(rotateY, { stiffness: 60, damping: 25, mass: 0.5 });
 
   // Idle float
   const floatY = useMotionValue(0);
@@ -37,18 +42,30 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
     const tick = () => {
       t += 0.015;
       floatY.set(Math.sin(t) * 12);
-      // Continuous slow rotation when not dragging
+
       if (!isDragging.current) {
-        rotateY.set(rotateY.get() + 0.15);
+        // Apply friction to velocity
+        velocityX.current *= 0.95;
+        velocityY.current *= 0.95;
+
+        // Base auto-rotation (becomes dominant when velocity is low)
+        const autoRotate = 0.2;
+        rotateY.set(rotateY.get() + velocityX.current + autoRotate);
+        rotateX.set(rotateX.get() + velocityY.current);
       }
+
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [floatY, rotateY]);
+  }, [floatY, rotateY, rotateX]);
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     isDragging.current = true;
+    lastX.current = e.clientX;
+    lastY.current = e.clientY;
+    velocityX.current = 0;
+    velocityY.current = 0;
   };
 
   const handlePointerUp = () => {
@@ -56,40 +73,47 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.buttons !== 1) { // 1 is left click
-      isDragging.current = false;
-      return;
-    }
-    isDragging.current = true;
-    const sensitivity = 0.6;
-    rotateY.set(rotateY.get() + e.movementX * sensitivity);
-    rotateX.set(rotateX.get() - e.movementY * sensitivity);
+    if (!isDragging.current) return;
+    
+    const deltaX = e.clientX - lastX.current;
+    const deltaY = e.clientY - lastY.current;
+    
+    const sensitivity = 0.5;
+    rotateY.set(rotateY.get() + deltaX * sensitivity);
+    rotateX.set(rotateX.get() - deltaY * sensitivity);
+    
+    // Store velocity for inertia
+    velocityX.current = deltaX * sensitivity;
+    velocityY.current = -deltaY * sensitivity;
+    
+    lastX.current = e.clientX;
+    lastY.current = e.clientY;
   };
 
   return (
     <div
       ref={containerRef}
       className="relative flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
-      style={{ perspective: '1200px', width: 280, height: 280 }}
+      style={{ perspective: '1500px', width: 300, height: 300 }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* Ombre au sol dynamique améliorée */}
+      {/* Dynamic floor shadow */}
       <motion.div
-        className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
+        className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
-          width: 160,
-          height: 30,
+          width: 180,
+          height: 34,
           background: `radial-gradient(ellipse, ${primaryColor}40 0%, transparent 75%)`,
-          filter: 'blur(16px)',
-          opacity: useTransform(floatSpring, [-12, 12], [0.6, 0.3]),
-          scale: useTransform(floatSpring, [-12, 12], [0.9, 1.1]),
+          filter: 'blur(18px)',
+          opacity: useTransform(floatSpring, [-12, 12], [0.5, 0.2]),
+          scale: useTransform(floatSpring, [-12, 12], [0.85, 1.15]),
         }}
       />
 
-      {/* Logo flottant avec rotation libre */}
+      {/* Floating 3D Logo Container */}
       <motion.div
         style={{
           rotateX: springX,
@@ -97,34 +121,51 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
           y: floatSpring,
           transformStyle: 'preserve-3d',
         }}
-        className="relative select-none"
+        className="relative w-full h-full flex items-center justify-center select-none"
       >
-        {/* Glow effect that stays in place to highlight 3D depth */}
+        {/* Central Glow / Core */}
         <div 
-          className="absolute inset-0 blur-3xl opacity-20 pointer-events-none"
-          style={{ backgroundColor: primaryColor, transform: 'translateZ(-20px)' }}
+          className="absolute inset-0 blur-[50px] opacity-25 pointer-events-none"
+          style={{ backgroundColor: primaryColor, transform: 'translateZ(0px)' }}
         />
         
+        {/* FRONT FACE */}
         <img
           src={logoUrl}
-          alt="Chibi Vulture"
+          alt="Chibi Vulture Front"
           draggable={false}
           style={{
-            width: 220,
-            height: 220,
+            width: 230,
+            height: 230,
             objectFit: 'contain',
-            filter: `drop-shadow(0 20px 40px rgba(0,0,0,0.2))`,
-            transform: 'translateZ(20px)', // Adds parallax depth
+            filter: `drop-shadow(0 20px 40px rgba(0,0,0,0.3))`,
+            transform: 'translateZ(2px)', // Front offset
+            backfaceVisibility: 'hidden',
           }}
         />
 
-        {/* Highlight overlay for "shimmer" effect during rotation */}
-        <motion.div 
-          className="absolute inset-0 pointer-events-none rounded-full overflow-hidden"
+        {/* BACK FACE (Reversed and slightly darker) */}
+        <img
+          src={logoUrl}
+          alt="Chibi Vulture Back"
+          draggable={false}
           style={{
-            background: `linear-gradient(135deg, transparent 40%, white 50%, transparent 60%)`,
-            opacity: 0.1,
-            transform: 'translateZ(25px)',
+            width: 230,
+            height: 230,
+            objectFit: 'contain',
+            filter: `brightness(0.6) grayscale(0.2) drop-shadow(0 20px 40px rgba(0,0,0,0.3))`,
+            transform: 'translateZ(-2px) rotateY(180deg)', // Back offset + Flip
+            backfaceVisibility: 'hidden',
+          }}
+        />
+
+        {/* Dynamic Highlight (Shimmer) */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none rounded-full"
+          style={{
+            background: `linear-gradient(135deg, transparent 30%, white 50%, transparent 70%)`,
+            opacity: 0.15,
+            transform: 'translateZ(30px)',
             mixBlendMode: 'overlay',
           }}
         />
