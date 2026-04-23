@@ -47,6 +47,7 @@ const logoutHandler = require('../handlers/logout');
 const manifestHandler = require('../handlers/manifest');
 const forgotPasswordHandler = require('../handlers/forgot-password');
 const resetPasswordHandler = require('../handlers/reset-password');
+const storiesHandler = require('../handlers/stories');
 
 // Route mapping
 const routes = {
@@ -75,6 +76,7 @@ const routes = {
   '/api/manifest.json': manifestHandler,
   '/api/forgot-password': forgotPasswordHandler,
   '/api/reset-password': resetPasswordHandler,
+  '/api/stories': storiesHandler,
 };
 
 module.exports = async (req, res) => {
