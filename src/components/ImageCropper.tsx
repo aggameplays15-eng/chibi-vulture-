@@ -35,62 +35,53 @@ const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = fal
     const img = imgRef.current;
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
-    
-    // Taille du masque basée sur le container
+
+    // Taille du masque en pixels UI (même logique que le masque visuel)
     const maxMaskSize = Math.min(rect.width, rect.height) * 0.8;
-    
-    // Dimensions du canvas selon l'aspect ratio
-    let canvasWidth: number;
-    let canvasHeight: number;
     let maskWidth: number;
     let maskHeight: number;
-    
+
     if (aspectRatio >= 1) {
-      // Paysage ou carré
       maskWidth = maxMaskSize;
       maskHeight = maxMaskSize / aspectRatio;
-      canvasWidth = 1000;
-      canvasHeight = 1000 / aspectRatio;
     } else {
-      // Portrait (ex: 9/16 pour stories)
       maskHeight = maxMaskSize;
       maskWidth = maxMaskSize * aspectRatio;
-      canvasHeight = 1000;
-      canvasWidth = 1000 * aspectRatio;
     }
 
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(canvasWidth);
-    canvas.height = Math.round(canvasHeight);
-    const ctx = canvas.getContext('2d');
+    // Résolution du canvas de sortie (proportionnelle au ratio)
+    const BASE = 1000;
+    const canvasWidth  = aspectRatio >= 1 ? BASE : Math.round(BASE * aspectRatio);
+    const canvasHeight = aspectRatio >= 1 ? Math.round(BASE / aspectRatio) : BASE;
 
+    const canvas = document.createElement('canvas');
+    canvas.width  = canvasWidth;
+    canvas.height = canvasHeight;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Position au centre du canvas pour la rotation
-    ctx.translate(canvas.width / 2, canvas.height / 2);
+    // Facteur de conversion pixels-UI → pixels-canvas
+    const uiToCanvasX = canvasWidth  / maskWidth;
+    const uiToCanvasY = canvasHeight / maskHeight;
+
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    // Centre du canvas, rotation, zoom
+    ctx.translate(canvasWidth / 2, canvasHeight / 2);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(zoom, zoom);
 
-    // Calcul de la position relative
-    const imgX = x.get() / zoom;
-    const imgY = y.get() / zoom;
+    // Déplacement UI converti en espace canvas (sans diviser par zoom car
+    // ctx.scale l'applique déjà aux coordonnées de drawImage)
+    const offsetX = x.get() * uiToCanvasX;
+    const offsetY = y.get() * uiToCanvasY;
 
-    // Dessin de l'image
-    const drawWidth = img.naturalWidth;
-    const drawHeight = img.naturalHeight;
-    
-    // Scale factor: rapport entre le masque UI et le canvas final
-    const scaleFactorX = maskWidth / canvas.width;
-    const scaleFactorY = maskHeight / canvas.height;
-    
     ctx.drawImage(
       img,
-      -drawWidth / 2 + (imgX / scaleFactorX),
-      -drawHeight / 2 + (imgY / scaleFactorY),
-      drawWidth,
-      drawHeight
+      -img.naturalWidth  / 2 + offsetX,
+      -img.naturalHeight / 2 + offsetY,
+      img.naturalWidth,
+      img.naturalHeight
     );
 
     onCrop(canvas.toDataURL('image/jpeg', 0.95));
@@ -119,7 +110,8 @@ const ImageCropper = ({ image, onCrop, onCancel, aspectRatio = 1, circular = fal
             src={image}
             style={{ x, y, scale: zoom, rotate }}
             drag
-            dragElastic={0.2}
+            dragConstraints={containerRef}
+            dragElastic={0.1}
             className="absolute cursor-move select-none"
             onDragStart={(e) => e.preventDefault()}
           />

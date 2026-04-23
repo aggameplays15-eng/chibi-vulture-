@@ -17,7 +17,7 @@ import ImageCropper from '@/components/ImageCropper';
 import SEO from '@/components/SEO';
 import { getAvatarUrl } from '@/utils/avatar';
 
-const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
+const compressImage = (base64: string, maxWidth = 800, maxHeight = 1422): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.src = base64;
@@ -25,17 +25,19 @@ const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-      
-      if (width > maxWidth) {
-        height = (maxWidth / width) * height;
-        width = maxWidth;
-      }
-      
+
+      // Réduire en respectant le ratio (contrainte largeur ET hauteur)
+      const ratioW = width > maxWidth ? maxWidth / width : 1;
+      const ratioH = height > maxHeight ? maxHeight / height : 1;
+      const ratio = Math.min(ratioW, ratioH);
+      width  = Math.round(width  * ratio);
+      height = Math.round(height * ratio);
+
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.8)); // 0.8 quality
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
     };
   });
 };
