@@ -191,5 +191,3 @@ const ImageCropper = ({ image, onCrop, onCancel, circular = false }: ImageCroppe
 };
 
 export default ImageCropper;
-
-export default ImageCropper;
