@@ -93,7 +93,6 @@ const App = () => (
                   <Route path="/pending-approval" element={<PendingApproval />} />
                   <Route path="/goated" element={<AdminLogin />} />
                   
-                  <Route path="/onboarding" element={<ProtectedRoute><CharacterCreation /></ProtectedRoute>} />
                   <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                   <Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
                   <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />

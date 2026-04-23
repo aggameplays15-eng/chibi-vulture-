@@ -98,8 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       apiService.setToken(data.token);
       const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] };
       setUser(loggedUser);
-      // Déclencher l'onboarding si le profil est vide (pas de bio)
-      return { needsOnboarding: !data.user.bio };
+      return {};
     } catch (err) {
       console.error("Login failed:", err);
       throw err;
@@ -116,10 +115,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         apiService.setToken(data.token);
         const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: [] };
         setUser(loggedUser);
-        return { needsOnboarding: !data.user.bio };
       }
       
-      return { needsOnboarding: true };
+      return {};
     } catch (err) {
       console.error("Signup failed:", err);
       throw err;

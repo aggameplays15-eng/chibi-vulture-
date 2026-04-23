@@ -24,9 +24,9 @@ const Login = () => {
     }
     setIsLoading(true);
     try {
-      const result = await login({ email, password });
+      await login({ email, password });
       showSuccess("Connexion réussie ! ✨");
-      navigate(result?.needsOnboarding ? '/onboarding' : '/feed');
+      navigate('/feed');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Identifiants incorrects.";
       showError(message);

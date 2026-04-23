@@ -24,7 +24,7 @@ const Signup = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const result = await signup({
+      await signup({
         name,
         handle: handle.startsWith('@') ? handle : `@${handle}`,
         email,
@@ -34,7 +34,7 @@ const Signup = () => {
       });
       
       showSuccess("Bienvenue ! Ton compte est prêt. ✨");
-      navigate(result?.needsOnboarding ? '/onboarding' : '/feed');
+      navigate('/feed');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       if (message.includes('already exists') || message.includes('409')) {
