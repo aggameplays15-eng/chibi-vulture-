@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, Bell, Search } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Bell, Search, ShieldCheck } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import MobileMenu from './MobileMenu';
 import { useApp } from '@/context/AppContext';
@@ -160,6 +160,17 @@ const SmartHeader = () => {
           
           <div className="w-px h-5 bg-gray-100 dark:bg-white/8 mx-1" />
           
+          {user.role === 'Admin' && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="w-10 h-10 rounded-full text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10"
+              onClick={() => navigate('/goated-panel')}
+            >
+              <ShieldCheck size={20} strokeWidth={2.5} />
+            </Button>
+          )}
+
           <MobileMenu />
         </div>
       </motion.header>

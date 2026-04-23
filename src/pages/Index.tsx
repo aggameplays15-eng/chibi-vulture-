@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, UserPlus, Eye, Zap, ShoppingBag, Users } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -13,49 +13,33 @@ const FEATURES = [
   { icon: Users, label: "Communaute" },
 ];
 
-const Particle = ({ color, index, total }) => {
-  const duration = 12 + Math.random() * 8;
-  const radius = 170 + Math.random() * 60;
-  return (
-    <motion.div
-      animate={{ rotate: [0, 360], scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
-      transition={{ rotate: { duration, repeat: Infinity, ease: "linear" }, scale: { duration: duration / 3, repeat: Infinity, ease: "easeInOut" }, opacity: { duration: duration / 2, repeat: Infinity, ease: "easeInOut" } }}
-      className="absolute pointer-events-none"
-      style={{ width: radius * 2, height: radius * 2 }}
-    >
-      <div className="w-1.5 h-1.5 rounded-full blur-[2px]" style={{ backgroundColor: color, boxShadow: "0 0 15px " + color, transform: "translate(" + radius + "px, 0)" }} />
-    </motion.div>
-  );
-};
-
 const BookLogo = ({ logoUrl }) => {
   const [isDragging, setIsDragging] = useState(false);
   
   const rotateX = useMotionValue(15);
   const rotateY = useMotionValue(-20);
   
-  const springX = useSpring(rotateX, { stiffness: 60, damping: 25 });
-  const springY = useSpring(rotateY, { stiffness: 60, damping: 25 });
+  // Increased stiffness and damping for a more premium, responsive feel
+  const springX = useSpring(rotateX, { stiffness: 120, damping: 30 });
+  const springY = useSpring(rotateY, { stiffness: 120, damping: 30 });
 
-  // Floating animation when not dragging
-  useEffect(() => {
+  // Use animation frame for perfectly fluid rotation
+  useAnimationFrame((time, delta) => {
     if (isDragging) return;
     
-    const interval = setInterval(() => {
-      rotateY.set(rotateY.get() + 0.4);
-      rotateX.set(15 + Math.sin(Date.now() / 1000) * 10);
-    }, 16);
-    
-    return () => clearInterval(interval);
-  }, [isDragging, rotateX, rotateY]);
+    // Constant rotation speed (approx 0.4 degrees per frame at 60fps)
+    rotateY.set(rotateY.get() + delta * 0.025);
+    // Subtle vertical oscillation
+    rotateX.set(12 + Math.sin(time / 1000) * 6);
+  });
 
   const onPan = (e, info) => {
-    rotateY.set(rotateY.get() + info.delta.x * 0.5);
-    rotateX.set(rotateX.get() - info.delta.y * 0.5);
+    rotateY.set(rotateY.get() + info.delta.x * 0.4);
+    rotateX.set(rotateX.get() - info.delta.y * 0.4);
   };
 
   return (
-    <div className="relative perspective-[1500px] cursor-grab active:cursor-grabbing touch-none select-none">
+    <div className="relative perspective-[1200px] cursor-grab active:cursor-grabbing touch-none select-none">
       <motion.div
         onPanStart={() => setIsDragging(true)}
         onPanEnd={() => setIsDragging(false)}
@@ -65,40 +49,26 @@ const BookLogo = ({ logoUrl }) => {
           rotateY: springY, 
           transformStyle: "preserve-3d" 
         }}
-        className="relative w-[280px] h-[280px] flex items-center justify-center transition-shadow"
+        className="relative w-[280px] h-[280px] flex items-center justify-center"
       >
-        {/* Layered thickness effect (10 layers for depth) */}
-        {[...Array(10)].map((_, i) => (
-          <motion.img
-            key={i}
-            src={logoUrl}
-            alt=""
-            className="absolute w-full h-full object-contain pointer-events-none"
-            style={{ 
-              transform: `translateZ(${i - 5}px)`,
-              opacity: i === 9 || i === 0 ? 1 : 0.2,
-              filter: i < 9 ? `brightness(${0.5 + i * 0.05}) blur(0.5px)` : "none",
-              zIndex: i
-            }}
-          />
-        ))}
-        
-        {/* Glow effect inside */}
-        <div 
-          className="absolute inset-4 rounded-full blur-[40px] opacity-20 pointer-events-none"
-          style={{ backgroundColor: "#EC4899", transform: "translateZ(-10px)" }}
+        {/* Single high-quality logo with clean depth-simulating shadow */}
+        <motion.img
+          src={logoUrl}
+          alt="Chibi Vulture Logo"
+          className="w-full h-full object-contain pointer-events-none drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
+          style={{ transform: "translateZ(20px)" }}
         />
       </motion.div>
 
-      {/* Dynamic Shadow */}
+      {/* Simplified subtle floor shadow */}
       <motion.div
         style={{ 
-          opacity: 0.15,
+          opacity: 0.1,
           scale: 0.8,
           rotateX: 90,
-          transform: "translateY(160px) translateZ(-50px)",
+          transform: "translateY(160px) translateZ(-40px)",
         }}
-        className="absolute inset-0 w-[240px] h-[40px] left-1/2 -translate-x-1/2 rounded-[100%] blur-2xl bg-black/40"
+        className="absolute inset-0 w-[220px] h-[20px] left-1/2 -translate-x-1/2 rounded-full blur-2xl bg-black"
       />
     </div>
   );
@@ -106,13 +76,13 @@ const BookLogo = ({ logoUrl }) => {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, homeLogoUrl, primaryColor, setGuestMode } = useApp();
+  const { user, homeLogoUrl, primaryColor, setGuestMode, isLoading } = useApp();
 
   React.useEffect(() => {
-    if (user?.isAuthenticated && !user?.isGuest) {
+    if (!isLoading && user?.isAuthenticated && !user?.isGuest) {
       navigate('/feed', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isLoading, navigate]);
 
   const handleGuest = () => { setGuestMode(); navigate("/feed"); };
   
@@ -125,13 +95,6 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }} 
           className="flex flex-col items-center gap-8 relative"
         >
-          {/* Decorative Particles */}
-          <div className="absolute inset-0 flex items-center justify-center -z-10">
-            {[...Array(6)].map((_, i) => (
-              <Particle key={i} color={primaryColor} index={i} total={6} />
-            ))}
-          </div>
-          
           <BookLogo logoUrl={homeLogoUrl} />
           
           <div className="space-y-2">

@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [users, isLoading]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isLoading) {
       if (token) localStorage.setItem('cv_token', token);
       else localStorage.removeItem('cv_token');
     }
