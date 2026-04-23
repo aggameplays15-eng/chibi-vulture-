@@ -345,47 +345,60 @@ export const apiService = {
     return safeJson(response);
   },
 
-getOrderTracking: async (orderId: string) => {
-  const response = await fetchWithAuth(`/api/orders/${orderId}/tracking`);
-  if (!response.ok) throw new Error('Failed to get order tracking');
-  return safeJson(response);
-},
+  getOrderTracking: async (orderId: string) => {
+    const response = await fetchWithAuth(`/api/orders/${orderId}/tracking`);
+    if (!response.ok) throw new Error('Failed to get order tracking');
+    return safeJson(response);
+  },
 
-getArtistStats: async (artistId: number, period: 'week' | 'month' | 'year' = 'month') => {
-  const response = await fetchWithAuth(`/api/artist-stats?artist_id=${artistId}&period=${period}`);
-  if (!response.ok) throw new Error('Failed to get artist stats');
-  return safeJson(response);
-},
+  getArtistStats: async (artistId: number, period: 'week' | 'month' | 'year' = 'month') => {
+    const response = await fetchWithAuth(`/api/artist-stats?artist_id=${artistId}&period=${period}`);
+    if (!response.ok) throw new Error('Failed to get artist stats');
+    return safeJson(response);
+  },
 
-getProductCategories: async () => {
-  const response = await fetch('/api/product-categories');
-  if (!response.ok) throw new Error('Failed to get product categories');
-  return safeJson(response);
-},
+  getProductCategories: async () => {
+    const response = await fetch('/api/product-categories');
+    if (!response.ok) throw new Error('Failed to get product categories');
+    return safeJson(response);
+  },
 
-createProductCategory: async (category: { name: string; description?: string; icon?: string; color?: string }) => {
-  const response = await fetchWithAuth('/api/product-categories', {
-    method: 'POST',
-    body: JSON.stringify(category),
-  });
-  if (!response.ok) throw new Error('Failed to create category');
-  return safeJson(response);
-},
+  createProductCategory: async (category: { name: string; description?: string; icon?: string; color?: string }) => {
+    const response = await fetchWithAuth('/api/product-categories', {
+      method: 'POST',
+      body: JSON.stringify(category),
+    });
+    if (!response.ok) throw new Error('Failed to create category');
+    return safeJson(response);
+  },
 
-updateDeliveryTracking: async (data: {
-  order_id: number;
-  status: string;
-  description: string;
-  location?: string;
-  carrier?: string;
-  tracking_number?: string;
-}) => {
-  const response = await fetchWithAuth('/api/delivery-tracking', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error('Failed to update delivery tracking');
-  return safeJson(response);
-},
+  updateDeliveryTracking: async (data: {
+    order_id: number;
+    status: string;
+    description: string;
+    location?: string;
+    carrier?: string;
+    tracking_number?: string;
+  }) => {
+    const response = await fetchWithAuth('/api/delivery-tracking', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to update delivery tracking');
+    return safeJson(response);
+  },
 
+  getStories: async () => {
+    const response = await fetchWithAuth('/api/stories');
+    return safeJson(response);
+  },
+
+  addStory: async (image: string) => {
+    const response = await fetchWithAuth('/api/stories', {
+      method: 'POST',
+      body: JSON.stringify({ image }),
+    });
+    if (!response.ok) throw new Error('Failed to add story');
+    return safeJson(response);
+  },
 };

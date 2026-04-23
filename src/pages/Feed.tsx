@@ -15,26 +15,30 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 // Stories bar component
-const StoriesBar = ({ users, primaryColor, onStoryClick }: {
-  users: { id: number; name: string; handle: string; avatarImage?: string | null }[];
+const StoriesBar = ({ users, stories, primaryColor, onStoryClick, onAddStory }: {
+  users: any[];
+  stories: any[];
   primaryColor: string;
   onStoryClick: (handle: string) => void;
+  onAddStory: () => void;
 }) => {
-  const displayUsers = users.slice(0, 10);
+  // Les utilisateurs qui ont des stories actives
+  const usersWithStories = users.filter(u => stories.some(s => s.user_handle === u.handle));
 
   return (
     <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
       {/* Add story button */}
       <div className="flex flex-col items-center gap-2 min-w-[60px]">
         <div
-          className="w-14 h-14 rounded-[20px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale"
+          onClick={onAddStory}
+          className="w-14 h-14 rounded-[20px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale group hover:border-pink-300 transition-colors"
         >
-          <Plus size={20} className="text-gray-400 dark:text-gray-600" />
+          <Plus size={20} className="text-gray-400 group-hover:text-pink-500 transition-colors" />
         </div>
         <span className="text-[9px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Toi</span>
       </div>
 
-      {displayUsers.map((u, i) => (
+      {usersWithStories.map((u, i) => (
         <motion.div
           key={u.id}
           initial={{ opacity: 0, scale: 0.8 }}
@@ -68,8 +72,38 @@ const Feed = () => {
   const navigate = useNavigate();
   const { likedPosts, favoritePosts, toggleLike, toggleFavoritePost, toggleFollow, user, primaryColor, users, deletePost } = useApp();
   const [showHeart, setShowHeart] = useState<number | null>(null);
+  const [stories, setStories] = useState<any[]>([]);
   const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchStories = useCallback(async () => {
+    try {
+      const data = await apiService.getStories();
+      if (Array.isArray(data)) setStories(data);
+    } catch (err) { console.error(err); }
+  }, []);
+
+  useEffect(() => {
+    fetchStories();
+  }, [fetchStories]);
+
+  const handleAddStory = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        await apiService.addStory(reader.result as string);
+        showSuccess("Story publiée ! ✨");
+        fetchStories();
+      } catch {
+        showError("Impossible de publier la story.");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleDeletePost = async (postId: number) => {
     try {
@@ -110,6 +144,15 @@ const Feed = () => {
 
   return (
     <MainLayout>
+      {/* Hidden file input for stories */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*"
+        onChange={handleAddStory}
+      />
+
       {/* Header */}
       <header className="px-6 pt-12 pb-4 flex justify-between items-end">
         <div className="space-y-1">
@@ -131,15 +174,18 @@ const Feed = () => {
       </header>
 
       {/* Stories */}
-      {approvedUsers.length > 0 && (
-        <div className="mb-6">
-          <StoriesBar
-            users={approvedUsers}
-            primaryColor={primaryColor}
-            onStoryClick={(handle) => navigate(`/profile/${encodeURIComponent(handle)}`)}
-          />
-        </div>
-      )}
+      <div className="mb-6">
+        <StoriesBar
+          users={users}
+          stories={stories}
+          primaryColor={primaryColor}
+          onAddStory={() => fileInputRef.current?.click()}
+          onStoryClick={(handle) => {
+            // Pour l'instant, redirige vers le profil, mais on pourrait ouvrir un viewer
+            navigate(`/profile/${encodeURIComponent(handle)}`);
+          }}
+        />
+      </div>
 
       <div className="px-4 space-y-6 pb-28">
         {/* Skeleton */}
