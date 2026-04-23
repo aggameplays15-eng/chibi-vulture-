@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 import { showSuccess } from '@/utils/toast';
+import SEO from '@/components/SEO';
 
 interface PublicUser {
   id: number;
@@ -99,6 +100,12 @@ const PublicProfile = () => {
         </div>
       ) : (
         <>
+          <SEO 
+            title={`Profil de ${profile.name}`} 
+            description={profile.bio || `Découvrez l'art de ${profile.name} sur Chibi Vulture.`}
+            image={profile.avatar_image || undefined}
+            type="profile"
+          />
           <div className="px-6 pb-6 text-center space-y-4">
             <div className="relative inline-block">
               <div className="absolute inset-0 rounded-full blur-lg opacity-40 animate-pulse" style={{ backgroundColor: profile.avatar_color }} />

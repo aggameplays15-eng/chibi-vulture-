@@ -48,6 +48,7 @@ const manifestHandler = require('../handlers/manifest');
 const forgotPasswordHandler = require('../handlers/forgot-password');
 const resetPasswordHandler = require('../handlers/reset-password');
 const storiesHandler = require('../handlers/stories');
+const sitemapHandler = require('../handlers/sitemap');
 
 // Route mapping
 const routes = {
@@ -77,6 +78,7 @@ const routes = {
   '/api/forgot-password': forgotPasswordHandler,
   '/api/reset-password': resetPasswordHandler,
   '/api/stories': storiesHandler,
+  '/api/sitemap.js': sitemapHandler,
 };
 
 module.exports = async (req, res) => {

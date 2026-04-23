@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { DataProvider } from "./context/DataContext";
@@ -83,6 +84,7 @@ const App = () => {
   }, []);
 
   return (
+  <HelmetProvider>
   <ThemeProvider attribute="class" defaultTheme="light" storageKey="cv_theme">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -143,6 +145,7 @@ const App = () => {
     </AuthProvider>
   </QueryClientProvider>
   </ThemeProvider>
+  </HelmetProvider>
   );
 };
 

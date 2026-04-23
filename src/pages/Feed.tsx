@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import ImageCropper from '@/components/ImageCropper';
+import SEO from '@/components/SEO';
 
 const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
   return new Promise((resolve) => {
@@ -373,6 +374,7 @@ const Feed = () => {
 
   return (
     <MainLayout>
+      <SEO title="Flux d'Art" description="Découvrez les dernières créations de la communauté Chibi Vulture." />
       {/* Hidden file input for stories */}
       <input 
         type="file" 

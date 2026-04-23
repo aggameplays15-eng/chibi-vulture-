@@ -8,6 +8,10 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap.js"
+    },
+    {
       "source": "/((?!api|.*\\.js|.*\\.css|.*\\.json|.*\\.png|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.ico|.*\\.woff|.*\\.woff2|.*\\.ttf|.*\\.eot).*)",
       "destination": "/index.html"
     }

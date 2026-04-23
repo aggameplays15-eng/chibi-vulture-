@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useApp } from '@/context/AppContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { apiService } from '@/services/api';
+import SEO from '@/components/SEO';
 
 interface Comment {
   id: number;
@@ -132,6 +133,12 @@ const PostDetail = () => {
 
   return (
     <MainLayout>
+      <SEO 
+        title={`Post de ${post.user}`} 
+        description={post.caption || `Découvrez cette publication de ${post.user} sur Chibi Vulture.`}
+        image={post.image}
+        type="article"
+      />
       <header className="p-4 flex items-center gap-3 border-b border-pink-50 bg-white/80 backdrop-blur-md sticky top-0 z-20">
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => {
           if (window.history.length <= 2) {
