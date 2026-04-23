@@ -29,50 +29,76 @@ const Particle = ({ color, index, total }) => {
 };
 
 const BookLogo = ({ logoUrl, primaryColor }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  // Ressorts pour une rotation fluide et physique
+  const rotateX = useSpring(useTransform(y, [-200, 200], [60, -60]), { stiffness: 100, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-200, 200], [-60, 60]), { stiffness: 100, damping: 30 });
+
   return (
-    <div className="relative group cursor-pointer">
-      {/* Halo lumineux dynamique */}
+    <div className="relative perspective-[1500px] cursor-grab active:cursor-grabbing touch-none">
+      {/* Halo de fond qui suit subtilement */}
       <motion.div
-        animate={{ 
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.6, 0.3],
-          rotate: [0, 360]
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-[-40px] rounded-full blur-[60px]"
-        style={{ 
-          background: `radial-gradient(circle, ${primaryColor}40 0%, transparent 70%)` 
-        }}
+        style={{ x: useTransform(x, [-200, 200], [-20, 20]), y: useTransform(y, [-200, 200], [-20, 20]) }}
+        className="absolute inset-[-60px] rounded-full blur-[80px] opacity-30 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${primaryColor} 0%, transparent 70%)` }}
       />
-      
-      {/* Rotation 360 Fluide */}
+
       <motion.div
-        animate={{ rotateY: 360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        style={{ transformStyle: "preserve-3d", perspective: 1000 }}
-        className="relative z-10"
+        drag
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.1}
+        onDrag={(e, info) => {
+          x.set(info.offset.x);
+          y.set(info.offset.y);
+        }}
+        onDragEnd={() => {
+          x.set(0);
+          y.set(0);
+        }}
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        className="relative w-[300px] h-[300px] flex items-center justify-center"
       >
+        {/* Face Avant */}
         <motion.img 
           src={logoUrl} 
-          alt="Logo"
-          className="w-[280px] md:w-[320px] h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
-          style={{ backfaceVisibility: "visible" }}
+          alt="Logo Front"
+          className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)]"
+          style={{ backfaceVisibility: "hidden", zIndex: 2 }}
         />
         
-        {/* Reflet de balayage (Shimmer) */}
+        {/* Face Arrière (Reflétée) */}
+        <motion.img 
+          src={logoUrl} 
+          alt="Logo Back"
+          className="absolute w-full h-full object-contain opacity-80"
+          style={{ 
+            backfaceVisibility: "hidden", 
+            transform: "rotateY(180deg)", 
+            zIndex: 1,
+            filter: "brightness(0.8) grayscale(0.2)"
+          }}
+        />
+
+        {/* Effet de brillance interactif */}
         <motion.div 
-          animate={{ x: ['-100%', '200%'] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] pointer-events-none"
+          style={{ 
+            x: useTransform(rotateY, [-60, 60], [-100, 100]),
+            opacity: useTransform(rotateY, [-60, 0, 60], [0, 0.3, 0])
+          }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] pointer-events-none z-10"
         />
       </motion.div>
 
-      {/* Ombre portée douce */}
+      {/* Ombre portée dynamique */}
       <motion.div
-        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[-40px] left-1/2 -translate-x-1/2 w-[180px] h-[20px] rounded-full blur-xl"
-        style={{ background: 'rgba(0,0,0,0.1)' }}
+        style={{ 
+          scale: useTransform(y, [-200, 200], [1.2, 0.8]),
+          opacity: useTransform(y, [-200, 200], [0.2, 0.5])
+        }}
+        className="absolute bottom-[-50px] left-1/2 -translate-x-1/2 w-[200px] h-[25px] rounded-full blur-2xl"
+        style={{ background: 'rgba(0,0,0,0.15)' }}
       />
     </div>
   );
@@ -92,11 +118,36 @@ const Index = () => {
   
   return (
     <div className="h-screen h-[100dvh] bg-[#FAFAFA] dark:bg-[hsl(224,20%,7%)] flex flex-col items-center justify-center p-6 relative overflow-hidden select-none">
-      {/* Fond décoratif premium */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 pointer-events-none" style={{ backgroundColor: primaryColor }} />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" style={{ backgroundColor: '#8B5CF6' }} />
+      {/* Particules flottantes premium */}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{
+            y: [0, -100, 0],
+            x: [0, Math.random() * 50 - 25, 0],
+            opacity: [0.1, 0.3, 0.1],
+            scale: [1, 1.5, 1]
+          }}
+          transition={{
+            duration: 10 + Math.random() * 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 2
+          }}
+          className="absolute w-2 h-2 rounded-full blur-[2px] pointer-events-none"
+          style={{
+            backgroundColor: primaryColor,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+        />
+      ))}
 
-      <div className="relative z-10 text-center space-y-8 md:space-y-12 max-w-sm w-full flex flex-col items-center">
+      {/* Fond décoratif enrichi */}
+      <div className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full blur-[140px] opacity-25 pointer-events-none animate-pulse" style={{ backgroundColor: primaryColor }} />
+      <div className="absolute bottom-[-15%] left-[-15%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-15 pointer-events-none" style={{ backgroundColor: '#8B5CF6' }} />
+
+      <div className="relative z-10 text-center space-y-8 md:space-y-14 max-w-sm w-full flex flex-col items-center">
         
         {/* Logo Section */}
         <motion.div 
