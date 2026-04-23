@@ -89,7 +89,7 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-black flex flex-col overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-black flex flex-col overflow-hidden"
     >
       {/* Blurred Background */}
       <div className="absolute inset-0 z-0">
@@ -170,15 +170,17 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
   );
 };
 
-const StoriesBar = ({ users, stories, primaryColor, onStoryClick, onAddStory }: {
+const StoriesBar = ({ users, stories, currentUser, primaryColor, onStoryClick, onAddStory }: {
   users: any[];
   stories: any[];
+  currentUser: any;
   primaryColor: string;
   onStoryClick: (handle: string) => void;
   onAddStory: () => void;
 }) => {
-  // Les utilisateurs qui ont des stories actives
+  // Les utilisateurs qui ont des stories actives (incluant moi)
   const usersWithStories = users.filter(u => stories.some(s => s.user_handle === u.handle));
+  const iHaveStories = stories.some(s => s.user_handle === currentUser.handle);
 
   return (
     <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
@@ -190,10 +192,26 @@ const StoriesBar = ({ users, stories, primaryColor, onStoryClick, onAddStory }: 
         >
           <Plus size={20} className="text-gray-400 group-hover:text-pink-500 transition-colors" />
         </div>
-        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Toi</span>
+        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Ajouter</span>
       </div>
 
-      {usersWithStories.map((u, i) => (
+      {/* Ma story (si j'en ai) */}
+      {iHaveStories && (
+        <div 
+          className="flex flex-col items-center gap-2 min-w-[60px] cursor-pointer"
+          onClick={() => onStoryClick(currentUser.handle)}
+        >
+          <div className="p-[2.5px] rounded-[22px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+            <Avatar className="w-[50px] h-[50px] rounded-[20px] border-2 border-white dark:border-[hsl(224,20%,9%)]">
+              <AvatarImage src={currentUser.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.handle}`} />
+              <AvatarFallback>{currentUser.name?.[0]}</AvatarFallback>
+            </Avatar>
+          </div>
+          <span className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-wide">Moi</span>
+        </div>
+      )}
+
+      {usersWithStories.filter(u => u.handle !== currentUser.handle).map((u, i) => (
         <motion.div
           key={u.id}
           initial={{ opacity: 0, scale: 0.8 }}
@@ -419,11 +437,20 @@ const Feed = () => {
         <StoriesBar
           users={users}
           stories={stories}
+          currentUser={user}
           primaryColor={primaryColor}
           onAddStory={() => fileInputRef.current?.click()}
           onStoryClick={(handle) => {
-            const found = users.find(u => u.handle === handle);
-            if (found) setViewingUser(found);
+            if (handle === user.handle) {
+              setViewingUser({
+                name: user.name,
+                handle: user.handle,
+                avatar: user.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`
+              });
+            } else {
+              const found = users.find(u => u.handle === handle);
+              if (found) setViewingUser(found);
+            }
           }}
         />
       </div>
