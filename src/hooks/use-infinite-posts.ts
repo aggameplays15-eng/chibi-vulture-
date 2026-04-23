@@ -68,6 +68,10 @@ export const useInfinitePosts = () => {
     setHasMore(true);
   }, []);
 
+  const removePost = useCallback((id: number) => {
+    setPosts(prev => prev.filter(p => p.id !== id));
+  }, []);
+
   const updatePostLikes = useCallback((postId: number, increment: number) => {
     setPosts(prev => prev.map(p => 
       p.id === postId 
