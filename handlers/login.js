@@ -36,6 +36,33 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // 1. Vérification si c'est l'Admin Principal (.env)
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+
+    if (ADMIN_EMAIL && email === ADMIN_EMAIL.toLowerCase().trim()) {
+      const isMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+      if (isMatch) {
+        const adminUser = {
+          id: 0,
+          email: ADMIN_EMAIL,
+          name: 'Admin',
+          handle: '@admin',
+          role: 'Admin',
+          isApproved: true,
+          status: 'Actif',
+          bio: 'Administrator',
+          avatarColor: '#DC2626'
+        };
+        const token = auth.signToken(adminUser);
+        return res.status(200).json({
+          token,
+          user: { ...adminUser, avatar_color: adminUser.avatarColor }
+        });
+      }
+    }
+
+    // 2. Sinon, recherche dans la base de données (Membres)
     const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
     if (rows.length === 0) {
       await logAuthFailure(req);
@@ -72,7 +99,8 @@ module.exports = async (req, res) => {
         role: user.role,
         avatarColor: user.avatar_color,
         avatarImage: user.avatar_image,
-        bio: user.bio
+        bio: user.bio,
+        isApproved: user.is_approved
       }
     });
 

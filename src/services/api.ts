@@ -2,7 +2,7 @@
 
 import type { PostData, ProductData, OrderData, UserData, MessageData, LoginCredentials, FetchOptions } from '@/types/api';
 
-let authToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem('cv_token') : null;
+let authToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('cv_token') : null;
 
 const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   const headers: Record<string, string> = {
@@ -19,8 +19,8 @@ const fetchWithAuth = async (url: string, options: FetchOptions = {}) => {
   if (response.status === 401) {
     authToken = null;
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('cv_token');
-      sessionStorage.removeItem('cv_user');
+      localStorage.removeItem('cv_token');
+      localStorage.removeItem('cv_user');
     }
   }
 
@@ -42,10 +42,10 @@ export const apiService = {
   setToken: (token: string | null) => {
     authToken = token;
     if (typeof window !== 'undefined') {
-      if (token) sessionStorage.setItem('cv_token', token);
+      if (token) localStorage.setItem('cv_token', token);
       else {
-        sessionStorage.removeItem('cv_token');
-        sessionStorage.removeItem('cv_user');
+        localStorage.removeItem('cv_token');
+        localStorage.removeItem('cv_user');
       }
     }
   },
@@ -244,8 +244,8 @@ export const apiService = {
     } catch { /* silent — on déconnecte quand même */ }
     authToken = null;
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('cv_token');
-      sessionStorage.removeItem('cv_user');
+      localStorage.removeItem('cv_token');
+      localStorage.removeItem('cv_user');
     }
   },
 

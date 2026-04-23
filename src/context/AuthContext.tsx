@@ -47,13 +47,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const load = async () => {
-      const savedUser = sessionStorage.getItem('cv_user');
+      const savedUser = localStorage.getItem('cv_user');
       if (savedUser) setUser(JSON.parse(savedUser) as UserProfile);
 
-      const savedUsers = sessionStorage.getItem('cv_users_list');
+      const savedUsers = localStorage.getItem('cv_users_list');
       if (savedUsers) setUsers(JSON.parse(savedUsers) as UserProfile[]);
 
-      const savedToken = sessionStorage.getItem('cv_token');
+      const savedToken = localStorage.getItem('cv_token');
       if (savedToken) {
         setToken(savedToken);
         apiService.setToken(savedToken);
@@ -77,17 +77,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!isLoading) sessionStorage.setItem('cv_user', JSON.stringify(user));
+    if (!isLoading) localStorage.setItem('cv_user', JSON.stringify(user));
   }, [user, isLoading]);
 
   useEffect(() => {
-    if (!isLoading) sessionStorage.setItem('cv_users_list', JSON.stringify(users));
+    if (!isLoading) localStorage.setItem('cv_users_list', JSON.stringify(users));
   }, [users, isLoading]);
 
   useEffect(() => {
-    if (!isLoading) {
-      if (token) sessionStorage.setItem('cv_token', token);
-      else sessionStorage.removeItem('cv_token');
+    if (typeof window !== 'undefined') {
+      if (token) localStorage.setItem('cv_token', token);
+      else localStorage.removeItem('cv_token');
     }
   }, [token, isLoading]);
 

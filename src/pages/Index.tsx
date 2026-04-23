@@ -39,14 +39,14 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
   const rotateY = useMotionValue(0);
   const perspective = useMotionValue(2200);
   
-  const springX = useSpring(rotateX, { stiffness: 45, damping: 35, mass: 1.2 });
-  const springY = useSpring(rotateY, { stiffness: 45, damping: 35, mass: 1.2 });
+  const springX = useSpring(rotateX, { stiffness: 50, damping: 40, mass: 1.5 });
+  const springY = useSpring(rotateY, { stiffness: 50, damping: 40, mass: 1.5 });
   const springPersp = useSpring(perspective, { stiffness: 40, damping: 30 });
   
   const floatY = useMotionValue(0);
-  const floatSpring = useSpring(floatY, { stiffness: 25, damping: 20 });
+  const floatSpring = useSpring(floatY, { stiffness: 20, damping: 25 });
   
-  const slices = 100; // Maximum precision
+  const slices = 64; // Équilibre parfait entre qualité et stabilité
   const thickness = 50;
 
   React.useEffect(() => {
@@ -54,21 +54,25 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
     let t = 0;
     
     const tick = () => {
-      t += 0.004; // Plus lent et gracieux
-      floatY.set(Math.sin(t) * 12);
+      t += 0.003; // Flottement plus lent et stable
+      floatY.set(Math.sin(t) * 10);
       
       if (!isDragging.current) {
-        // Friction plus douce pour un glissement plus long
-        velocityX.current *= 0.97;
-        velocityY.current *= 0.97;
+        // Friction plus ferme pour stopper les dérives
+        velocityX.current *= 0.94;
+        velocityY.current *= 0.94;
         
-        const baseSpin = 0.05; 
+        // Arrêt total si la vitesse est infime
+        if (Math.abs(velocityX.current) < 0.001) velocityX.current = 0;
+        if (Math.abs(velocityY.current) < 0.001) velocityY.current = 0;
+        
+        const baseSpin = 0.04; 
         rotateY.set(rotateY.get() + velocityX.current + baseSpin);
         
-        // Retour à la position de repos plus organique
+        // Retour à la position de repos plus ferme
         const idleX = -12;
         const currentX = rotateX.get();
-        rotateX.set(currentX + (idleX - currentX) * 0.015 + velocityY.current);
+        rotateX.set(currentX + (idleX - currentX) * 0.03 + velocityY.current);
       }
       
       frame = requestAnimationFrame(tick);
@@ -82,9 +86,9 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
     isDragging.current = true;
     lastX.current = e.clientX;
     lastY.current = e.clientY;
-    // On garde une partie de la vélocité pour une transition fluide
-    velocityX.current *= 0.5;
-    velocityY.current *= 0.5;
+    // On réduit la vélocité résiduelle pour éviter le "saut" au clic
+    velocityX.current *= 0.2;
+    velocityY.current *= 0.2;
   };
 
   const handlePointerUp = () => {
@@ -96,8 +100,8 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
     const deltaX = e.clientX - lastX.current;
     const deltaY = e.clientY - lastY.current;
     
-    // Sensibilité accrue pour une sensation de légèreté
-    const sensitivity = 0.35;
+    // Sensibilité équilibrée
+    const sensitivity = 0.3;
     rotateY.set(rotateY.get() + deltaX * sensitivity);
     rotateX.set(rotateX.get() - deltaY * sensitivity);
     
@@ -112,7 +116,7 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
   const lighting = useTransform(springY, (y) => {
     const angle = (Number(y) % 360 + 360) % 360;
     const intensity = Math.abs(Math.cos((angle * Math.PI) / 180));
-    const brightness = 0.9 + (intensity * 0.2); // Range 0.9 à 1.1 (100% de moyenne)
+    const brightness = 0.92 + (intensity * 0.16); // Plus stable, moins de variations brutales
     return `brightness(${brightness})`;
   });
 
@@ -133,7 +137,7 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
           height: 30, 
           background: "rgba(0,0,0,0.25)", 
           filter: "blur(20px)", 
-          opacity: useTransform(floatSpring, [-10, 10], [0.6, 0.3]), 
+          opacity: useTransform(floatSpring, [-10, 10], [0.5, 0.25]), 
           scaleX: useTransform(springX, [-30, 30], [1.1, 0.9]),
           rotateX: 85, 
           z: -500 
@@ -170,7 +174,7 @@ const BookLogo = ({ logoUrl, primaryColor }) => {
                 objectFit: "contain", 
                 transform: `translateZ(${zPos}px) scale(${bevelScale}) ${isBack ? "rotateY(180deg)" : ""}`, 
                 filter: isFace 
-                  ? lighting // Utilise le transform calculé (0.85 à 1.1) pour un rendu naturel
+                  ? lighting // Utilise le transform calculé pour un rendu naturel
                   : `brightness(${edgeBrightness}) contrast(1.2) blur(${Math.abs(zPos) * 0.02}px)`, 
                 pointerEvents: "none", 
                 backfaceVisibility: isFace ? "hidden" : "visible", 

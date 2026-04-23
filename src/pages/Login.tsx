@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, setGuestMode, primaryColor } = useApp();
+  const { login, setGuestMode, primaryColor, headerLogoUrl } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

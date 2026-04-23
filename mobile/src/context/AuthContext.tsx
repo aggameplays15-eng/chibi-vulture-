@@ -56,7 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const data = await apiService.login({ email, password });
-      setUser(data.user);
+      if (data.token) {
+        await apiService.setToken(data.token);
+        setUser(data.user);
+        await AsyncStorage.setItem('cv_token', data.token);
+        await AsyncStorage.setItem('cv_user', JSON.stringify(data.user));
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
