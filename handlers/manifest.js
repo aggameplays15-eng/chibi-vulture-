@@ -10,15 +10,16 @@ module.exports = async (req, res) => {
       "SELECT key, value FROM app_settings WHERE key IN ('app_name', 'app_logo', 'pwa_icon', 'primary_color', 'app_description')"
     );
     settings = rows.reduce((acc, row) => { acc[row.key] = row.value; return acc; }, {});
-  } catch {
-    // Fallback silencieux
+  } catch (error) {
+    // Fallback silencieux en cas d'erreur DB
+    console.error('Manifest DB error (using fallback):', error.message);
   }
 
   const appName    = settings.app_name    || 'Chibi Vulture';
   const shortName  = appName.length > 12 ? appName.substring(0, 12) : appName;
   const themeColor = settings.primary_color || '#EC4899';
   const pwaIcon    = settings.pwa_icon || settings.app_logo || null;
-  const description = settings.app_description || 'Le réseau social artistique';
+  const description = settings.app_description || 'Premium Art Community - Partagez votre art, découvrez des artistes, achetez des produits uniques';
 
   const icons = [];
 
@@ -39,8 +40,8 @@ module.exports = async (req, res) => {
     // Fallback icônes statiques
     icons.push(
       { src: '/favicon.ico',    sizes: '48x48',  type: 'image/x-icon' },
-      { src: '/favicon.svg',    sizes: 'any',    type: 'image/svg+xml', purpose: 'any' },
-      { src: '/logo.svg',       sizes: 'any',    type: 'image/svg+xml', purpose: 'maskable any' }
+      { src: '/favicon.svg',    sizes: '48x48 72x72 96x96', type: 'image/svg+xml', purpose: 'any' },
+      { src: '/logo.svg',       sizes: '128x128 192x192 256x256 512x512', type: 'image/svg+xml', purpose: 'any maskable' }
     );
   }
 

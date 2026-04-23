@@ -10,7 +10,7 @@ const pool = new Pool({
   },
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000, // Increased for Vercel cold starts
 });
 
 module.exports = {
@@ -27,9 +27,13 @@ module.exports = {
     } catch (error) {
       // En prod, log minimal sans données sensibles
       if (isProd) {
-        console.error('DB error:', error.code, error.constraint);
+        console.error('DB error:', error.code, error.message);
       } else {
         console.error('Database query error:', error);
+      }
+      // Check for connection errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
+        console.error('Database connection failed - check DATABASE_URL');
       }
       throw error;
     }
