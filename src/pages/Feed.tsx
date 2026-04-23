@@ -13,6 +13,7 @@ import { apiService } from '@/services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import ImageCropper from '@/components/ImageCropper';
 
 const compressImage = (base64: string, maxWidth = 800): Promise<string> => {
   return new Promise((resolve) => {
@@ -176,6 +177,7 @@ const Feed = () => {
   const [showHeart, setShowHeart] = useState<number | null>(null);
   const [stories, setStories] = useState<any[]>([]);
   const [viewingUser, setViewingUser] = useState<any | null>(null);
+  const [croppingImage, setCroppingImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
@@ -199,10 +201,11 @@ const Feed = () => {
     
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const compressed = await compressImage(reader.result as string);
-      setPreviewImage(compressed);
+      setCroppingImage(reader.result as string);
     };
     reader.readAsDataURL(file);
+    // Reset input
+    e.target.value = '';
   };
 
   const confirmUploadStory = async () => {
@@ -267,6 +270,22 @@ const Feed = () => {
         accept="image/*"
         onChange={handleAddStory}
       />
+
+      {/* Image Cropper Modal */}
+      <AnimatePresence>
+        {croppingImage && (
+          <ImageCropper 
+            image={croppingImage}
+            aspectRatio={9/16}
+            onCancel={() => setCroppingImage(null)}
+            onCrop={async (cropped) => {
+              const compressed = await compressImage(cropped);
+              setPreviewImage(compressed);
+              setCroppingImage(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Story Preview Modal */}
       <AnimatePresence>

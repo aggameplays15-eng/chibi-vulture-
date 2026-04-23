@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { showSuccess, showError } from "@/utils/toast";
 import { useApp } from '@/context/AppContext';
+import ImageCropper from '@/components/ImageCropper';
+import { AnimatePresence } from 'framer-motion';
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -20,15 +22,17 @@ const EditProfile = () => {
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio);
   const [avatar, setAvatar] = useState(user.avatarImage || "");
+  const [croppingImage, setCroppingImage] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatar(reader.result as string);
+        setCroppingImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+      e.target.value = '';
     }
   };
 
@@ -54,6 +58,20 @@ const EditProfile = () => {
         </Button>
         <h1 className="text-2xl font-black text-gray-800">MODIFIER PROFIL</h1>
       </header>
+
+      <AnimatePresence>
+        {croppingImage && (
+          <ImageCropper
+            image={croppingImage}
+            circular={true}
+            onCancel={() => setCroppingImage(null)}
+            onCrop={(cropped) => {
+              setAvatar(cropped);
+              setCroppingImage(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="px-6 space-y-8 pb-10">
         <input 

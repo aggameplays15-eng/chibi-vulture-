@@ -11,12 +11,15 @@ import { showSuccess, showError } from "@/utils/toast";
 import { cn } from '@/lib/utils';
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
+import ImageCropper from '@/components/ImageCropper';
+import { AnimatePresence } from 'framer-motion';
 
 const CreatePost = () => {
   const navigate = useNavigate();
   const { user, addPost } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
+  const [croppingImage, setCroppingImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [caption, setCaption] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -31,7 +34,7 @@ const CreatePost = () => {
       return;
     }
     const reader = new FileReader();
-    reader.onloadend = () => setImage(reader.result as string);
+    reader.onloadend = () => setCroppingImage(reader.result as string);
     reader.readAsDataURL(file);
   }, []);
 
@@ -79,6 +82,20 @@ const CreatePost = () => {
           <X size={24} />
         </Button>
       </header>
+
+      <AnimatePresence>
+        {croppingImage && (
+          <ImageCropper
+            image={croppingImage}
+            aspectRatio={1}
+            onCancel={() => setCroppingImage(null)}
+            onCrop={(cropped) => {
+              setImage(cropped);
+              setCroppingImage(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="px-6 space-y-6 pb-10">
         <input
