@@ -17,15 +17,9 @@ const PwaInstallPrompt = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed or dismissed
-    if (localStorage.getItem('pwa_dismissed')) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show after 30s delay so it doesn't interrupt first visit
-      setTimeout(() => setShow(true), 30000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);

@@ -72,7 +72,17 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
   return <>{children}</>;
 };
 
-const App = () => (
+const App = () => {
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      (window as any).deferredPrompt = e;
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  return (
   <ThemeProvider attribute="class" defaultTheme="light" storageKey="cv_theme">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -125,7 +135,6 @@ const App = () => (
                 </Routes>
                 </Suspense>
                 <MusicPlayer />
-                <PwaInstallPrompt />
               </BrowserRouter>
             </TooltipProvider>
           </AppSettingsProvider>

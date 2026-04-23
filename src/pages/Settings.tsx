@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { ChevronLeft, User, Bell, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Moon, Sun } from 'lucide-react';
+import { ChevronLeft, User, Bell, Shield, CreditCard, HelpCircle, LogOut, ChevronRight, Moon, Sun, Download } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useApp } from '@/context/AppContext';
@@ -31,6 +31,17 @@ const Settings = () => {
     { icon: CreditCard,  label: "Mes commandes",  color: "text-green-500",  bg: "bg-green-50",  path: "/orders" },
     { icon: HelpCircle,  label: "Aide & Support", color: "text-orange-500", bg: "bg-orange-50", path: "/support" },
   ];
+
+  const canInstall = !!(window as any).deferredPrompt;
+
+  const handleInstall = async () => {
+    const prompt = (window as any).deferredPrompt;
+    if (prompt) {
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      if (outcome === 'accepted') (window as any).deferredPrompt = null;
+    }
+  };
 
   return (
     <MainLayout>
@@ -67,6 +78,24 @@ const Settings = () => {
               )}
             </div>
           ))}
+
+          {canInstall && (
+            <div
+              onClick={handleInstall}
+              className="flex items-center justify-between p-4 bg-white rounded-3xl border border-pink-100 shadow-sm hover:bg-pink-50 transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-pink-50 text-pink-500 p-3 rounded-2xl">
+                  <Download size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-gray-700">Installer l'application</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">Accès rapide sur l'écran d'accueil</span>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-gray-300 group-hover:text-pink-500 transition-colors" />
+            </div>
+          )}
         </div>
 
         <div className="pt-4">
