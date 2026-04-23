@@ -42,14 +42,21 @@ const UserManagement = () => {
 
   const filtered = useMemo(() => {
     return baseUsers.filter(u => {
+      const name = (u.name || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const handle = (u.handle || '').toLowerCase();
+      const status = u.status || 'Actif';
+      
       const matchSearch = !search ||
-        u.name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase()) ||
-        u.handle?.toLowerCase().includes(search.toLowerCase());
+        name.includes(search.toLowerCase()) ||
+        email.includes(search.toLowerCase()) ||
+        handle.includes(search.toLowerCase());
+        
       const matchStatus =
         filterStatus === 'Tous' ? true :
         filterStatus === 'En attente' ? !u.isApproved && u.role !== 'Admin' :
-        u.status === filterStatus;
+        status === filterStatus;
+        
       return matchSearch && matchStatus;
     });
   }, [baseUsers, search, filterStatus]);
@@ -158,8 +165,8 @@ const UserManagement = () => {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar className="h-12 w-12 border-2 border-white shadow-sm rounded-2xl">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} />
-                  <AvatarFallback>{user.name[0]}</AvatarFallback>
+                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || user.id}`} />
+                  <AvatarFallback>{(user.name || 'U')[0]}</AvatarFallback>
                 </Avatar>
                 {user.role === "Admin" && (
                   <div className="absolute -top-1 -right-1 bg-purple-500 text-white p-1 rounded-full border-2 border-white">

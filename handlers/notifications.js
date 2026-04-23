@@ -67,8 +67,27 @@ module.exports = async (req, res) => {
         LIMIT 20
       `, [user.handle]);
 
+      // Annonces globales de l'admin
+      const { rows: announcements } = await db.query(`
+        SELECT
+          id,
+          'announcement' as type,
+          'Admin' as actor_handle,
+          'Système' as actor_name,
+          icon as actor_avatar,
+          NULL as post_id,
+          NULL as post_image,
+          title as comment_text,
+          body as extra_text,
+          url,
+          created_at
+        FROM announcements
+        ORDER BY created_at DESC
+        LIMIT 5
+      `);
+
       // Merge et trier par date
-      const all = [...likeNotifs, ...followNotifs, ...commentNotifs]
+      const all = [...likeNotifs, ...followNotifs, ...commentNotifs, ...announcements]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 30);
 

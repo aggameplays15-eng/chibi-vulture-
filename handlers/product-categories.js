@@ -11,6 +11,21 @@ module.exports = async (req, res) => {
 
   if (req.method === 'GET') {
     try {
+      // Vérifier si des catégories existent
+      const { rows: countCheck } = await db.query('SELECT COUNT(*) FROM product_categories');
+      if (parseInt(countCheck[0].count) === 0) {
+        // Seeding initial
+        await db.query(`
+          INSERT INTO product_categories (name, description, icon, color, sort_order) VALUES
+          ('Art Digital', 'Œuvres numériques et créations digitales', 'Palette', '#8B5CF6', 1),
+          ('Merch', 'Produits dérivés et goodies', 'ShoppingBag', '#EC4899', 2),
+          ('Accessoires', 'Accessoires et objets personnalisés', 'Sparkles', '#F59E0B', 3),
+          ('Vêtements', 'T-shirts, hoodies et vêtements personnalisés', 'Shirt', '#3B82F6', 4),
+          ('Livres', 'Livres, comics et publications', 'Book', '#10B981', 5),
+          ('Limited', 'Éditions limitées et exclusives', 'Star', '#EF4444', 0)
+        `);
+      }
+
       // Real database query for all active categories
       const query = `
         SELECT 

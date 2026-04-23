@@ -20,6 +20,12 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Save as global announcement in DB for in-app display
+    await db.query(
+      'INSERT INTO announcements (title, body, url, icon) VALUES ($1, $2, $3, $4)',
+      [title, body, url, icon]
+    );
+
     // Get all push subscriptions
     const { rows: subscriptions } = await db.query(
       'SELECT user_handle, subscription FROM push_subscriptions'

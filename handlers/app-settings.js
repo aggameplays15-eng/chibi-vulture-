@@ -67,13 +67,13 @@ module.exports = async (req, res) => {
         { key: 'primary_color',   value: primary_color },
       ].filter(s => s.value !== undefined);
 
-      for (const { key, value } of settings) {
-        await db.query(`
+      await Promise.all(settings.map(({ key, value }) => 
+        db.query(`
           INSERT INTO app_settings (key, value, updated_at)
           VALUES ($1, $2, NOW())
           ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()
-        `, [key, value]);
-      }
+        `, [key, value])
+      ));
 
 
       res.status(200).json({ success: true, message: 'Settings updated' });

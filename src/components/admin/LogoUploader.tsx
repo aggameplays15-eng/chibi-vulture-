@@ -16,22 +16,58 @@ const LogoUploader = ({ currentLogo, onLogoChange, maxSizeMb = 2 }: LogoUploader
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = useCallback((file: File) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max size 512px for logos
+          const MAX_SIZE = 512;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Use JPEG for better compression, or PNG if transparent
+          const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          resolve(canvas.toDataURL(type, 0.8));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const processFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       showError("Fichier invalide. Utilise une image (JPG, PNG, SVG, WEBP).");
       return;
     }
-    if (file.size > maxSizeMb * 1024 * 1024) {
-      showError(`Logo trop lourd (max ${maxSizeMb}Mo)`);
-      return;
+    
+    try {
+      const compressedDataUrl = await compressImage(file);
+      setPreview(compressedDataUrl);
+    } catch (error) {
+      showError("Erreur lors du traitement de l'image.");
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setPreview(dataUrl);
-    };
-    reader.readAsDataURL(file);
-  }, [maxSizeMb]);
+  }, []);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

@@ -1,12 +1,11 @@
-// CORS handler — restricts origins in production
-const ALLOWED_ORIGINS = (process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL]
-  : []
-).concat([
-  'https://chibi-vulture.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-]);
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,
+  'https://chibi-vulture.vercel.app'
+].filter(Boolean);
+
+if (process.env.NODE_ENV !== 'production') {
+  ALLOWED_ORIGINS.push('http://localhost:5173', 'http://localhost:3000');
+}
 
 // Routes publiques qui n'ont pas besoin d'un origin navigateur
 const PUBLIC_PATHS = ['/api/manifest.json'];

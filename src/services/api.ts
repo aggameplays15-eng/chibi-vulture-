@@ -302,12 +302,23 @@ export const apiService = {
     return safeJson(response);
   },
 
-  updateAppSettings: async (settings: { app_name?: string; app_logo?: string; pwa_icon?: string; app_description?: string; primary_color?: string }) => {
+  updateAppSettings: async (settings: { 
+    app_name?: string; 
+    app_logo?: string; 
+    app_logo_header?: string; 
+    app_logo_home?: string; 
+    pwa_icon?: string; 
+    app_description?: string; 
+    primary_color?: string 
+  }) => {
     const response = await fetchWithAuth('/api/app-settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
     });
-    if (!response.ok) throw new Error('Failed to update app settings');
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Failed to update app settings');
+    }
     return safeJson(response);
   },
 

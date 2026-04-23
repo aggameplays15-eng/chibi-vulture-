@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
 
   if (req.method === 'GET') {
     try {
-      const { rows } = await db.query('SELECT * FROM products ORDER BY id DESC');
+      const { rows } = await db.query('SELECT * FROM products ORDER BY is_featured DESC, id DESC');
       res.status(200).json(rows);
     } catch (error) {
       console.error(error);
@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
     if (!image || typeof image !== 'string') {
       return res.status(400).json({ error: 'Image required' });
     }
+    // Bloquer SVG — vecteur XSS (JS embarqué dans SVG)
     if (image.startsWith('data:image/svg')) {
       return res.status(400).json({ error: 'SVG images are not allowed' });
     }

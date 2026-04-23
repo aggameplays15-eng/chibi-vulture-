@@ -10,13 +10,15 @@ import { apiService } from '@/services/api';
 
 interface Notification {
   id: number;
-  type: 'like' | 'follow' | 'comment';
+  type: 'like' | 'follow' | 'comment' | 'announcement';
   actor_handle: string;
   actor_name: string;
   actor_avatar: string | null;
   post_id: number | null;
   post_image: string | null;
   comment_text?: string;
+  extra_text?: string;
+  url?: string;
   created_at: string;
 }
 
@@ -24,6 +26,7 @@ const typeConfig = {
   like:    { icon: Heart,         color: 'text-pink-500',   bg: 'bg-pink-50',   label: 'a aimé ton post' },
   follow:  { icon: UserPlus,      color: 'text-blue-500',   bg: 'bg-blue-50',   label: 'a commencé à te suivre' },
   comment: { icon: MessageCircle, color: 'text-purple-500', bg: 'bg-purple-50', label: 'a commenté' },
+  announcement: { icon: Bell,      color: 'text-amber-500',  bg: 'bg-amber-50',  label: 'Annonce officielle' },
 };
 
 const timeAgo = (dateStr: string) => {
@@ -91,9 +94,12 @@ const Notifications = () => {
         {notifs.map((notif) => {
           const cfg = typeConfig[notif.type] ?? typeConfig.like;
           const Icon = cfg.icon;
-          const text = notif.type === 'comment' && notif.comment_text
-            ? `a commenté : "${notif.comment_text.slice(0, 40)}${notif.comment_text.length > 40 ? '…' : ''}"`
-            : cfg.label;
+          let text = cfg.label;
+          if (notif.type === 'comment' && notif.comment_text) {
+            text = `a commenté : "${notif.comment_text.slice(0, 40)}${notif.comment_text.length > 40 ? '…' : ''}"`;
+          } else if (notif.type === 'announcement') {
+            text = notif.comment_text || cfg.label; // title
+          }
 
           return (
             <div
@@ -115,9 +121,12 @@ const Notifications = () => {
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
-                  <span className="font-black text-gray-800">{notif.actor_name}</span>{' '}
+                  <span className="font-black text-gray-800">{notif.type === 'announcement' ? 'Annonce' : notif.actor_name}</span>{' '}
                   <span className="text-gray-500">{text}</span>
                 </p>
+                {notif.type === 'announcement' && notif.extra_text && (
+                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notif.extra_text}</p>
+                )}
                 <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">{timeAgo(notif.created_at)}</p>
               </div>
 

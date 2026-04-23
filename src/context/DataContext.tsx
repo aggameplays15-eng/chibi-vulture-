@@ -102,7 +102,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
         const [realProducts, realPosts, realOrders] = await Promise.allSettled(fetches);
 
-        if (realProducts.status === 'fulfilled' && realProducts.value) setProducts(realProducts.value as Product[]);
+        if (realProducts.status === 'fulfilled' && realProducts.value) {
+          const list = (realProducts.value as any[]).map(p => ({
+            ...p,
+            featured: p.is_featured ?? p.featured ?? false
+          }));
+          setProducts(list);
+        }
         if (realPosts.status === 'fulfilled' && realPosts.value) {
           const list = realPosts.value as any[];
           setPosts(list.map(normalizePost));
@@ -186,7 +192,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
     try {
       const result = await apiService.addProduct(p);
-      const newProduct = result ?? { ...p, id: Date.now() };
+      const newProduct = result 
+        ? { ...result, featured: result.is_featured ?? result.featured ?? false } 
+        : { ...p, id: Date.now() };
       setProducts(prev => [...prev, newProduct]);
     } catch (err) {
       console.error('Failed to add product:', err);
@@ -197,7 +205,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const updateProduct = useCallback(async (id: number, p: Omit<Product, 'id'>) => {
     try {
       const result = await apiService.updateProduct(id, p);
-      const updated = result ?? { ...p, id };
+      const updated = result 
+        ? { ...result, featured: result.is_featured ?? result.featured ?? false } 
+        : { ...p, id };
       setProducts(prev => prev.map(prod => prod.id === id ? updated : prod));
     } catch (err) {
       console.error('Failed to update product:', err);

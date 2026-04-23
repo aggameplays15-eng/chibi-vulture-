@@ -44,6 +44,12 @@ module.exports = async (req, res) => {
     if (req.query.mine) {
       const user = await auth.verify(req);
       if (!user) return res.status(401).json({ error: 'Auth required' });
+      
+      // Sécurité : les invités ne peuvent pas lister leurs commandes (pour éviter les collisions de données)
+      if (user.handle === '@guest') {
+        return res.status(403).json({ error: 'Guest order history is not available for security reasons.' });
+      }
+
       try {
         const { rows } = await db.query(
           'SELECT id, total, status, created_at, shipping_address FROM orders WHERE user_handle = $1 ORDER BY created_at DESC',

@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     ...u,
     avatarImage: u.avatar_image || u.avatarImage,
     isApproved: u.is_approved ?? u.isApproved ?? false,
+    status: u.status || 'Actif',
     following: u.following || [],
     isAuthenticated: u.isAuthenticated ?? false,
     isGuest: u.isGuest ?? false

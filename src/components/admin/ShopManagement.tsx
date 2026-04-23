@@ -44,7 +44,7 @@ const ShopManagement = () => {
   const loadCategories = async () => {
     try {
       const cats = await apiService.getProductCategories();
-      setCategories(cats);
+      setCategories(cats || []);
     } catch (error) {
       console.error('Failed to load categories:', error);
       setCategories([]);
