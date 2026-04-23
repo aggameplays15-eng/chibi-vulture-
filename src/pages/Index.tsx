@@ -16,6 +16,7 @@ const FEATURES = [
 // ─── 3D Floating Logo ────────────────────────────────────────────────────────
 // ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
 // ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
+// ─── High-Fidelity 360 Extruded Logo ──────────────────────────────────────────
 const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -23,43 +24,50 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
   const lastY = useRef(0);
   const velocityX = useRef(0);
   const velocityY = useRef(0);
-
-  // Rotation values
-  const rotateX = useMotionValue(0);
+ 
+  // Base rotation
+  const rotateX = useMotionValue(-10);
   const rotateY = useMotionValue(0);
-
-  // Springs for smoothness
-  const springX = useSpring(rotateX, { stiffness: 60, damping: 25, mass: 0.5 });
-  const springY = useSpring(rotateY, { stiffness: 60, damping: 25, mass: 0.5 });
-
-  // Idle float
+ 
+  // Springs for heavy, premium physics
+  const springX = useSpring(rotateX, { stiffness: 40, damping: 20, mass: 1 });
+  const springY = useSpring(rotateY, { stiffness: 40, damping: 20, mass: 1 });
+ 
+  // Floating animation
   const floatY = useMotionValue(0);
-  const floatSpring = useSpring(floatY, { stiffness: 60, damping: 12 });
-
+  const floatSpring = useSpring(floatY, { stiffness: 30, damping: 15 });
+ 
+  // Slices count for extrusion (thickness)
+  const slices = 15;
+  const thickness = 18; // total depth in pixels
+ 
   React.useEffect(() => {
     let frame: number;
     let t = 0;
     const tick = () => {
-      t += 0.015;
-      floatY.set(Math.sin(t) * 12);
-
+      t += 0.012;
+      floatY.set(Math.sin(t) * 15);
+ 
       if (!isDragging.current) {
-        // Apply friction to velocity
-        velocityX.current *= 0.95;
-        velocityY.current *= 0.95;
-
-        // Base auto-rotation (becomes dominant when velocity is low)
-        const autoRotate = 0.2;
-        rotateY.set(rotateY.get() + velocityX.current + autoRotate);
-        rotateX.set(rotateX.get() + velocityY.current);
+        // High-friction inertia
+        velocityX.current *= 0.96;
+        velocityY.current *= 0.96;
+ 
+        // Constant elegant auto-rotation
+        const autoY = 0.15 + (Math.sin(t * 0.5) * 0.05);
+        rotateY.set(rotateY.get() + velocityX.current + autoY);
+        
+        // Auto-center X rotation with a bit of sway
+        const targetX = -10 + (Math.cos(t * 0.7) * 5);
+        rotateX.set(rotateX.get() + (targetX - rotateX.get()) * 0.02 + velocityY.current);
       }
-
+ 
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [floatY, rotateY, rotateX]);
-
+ 
   const handlePointerDown = (e: React.PointerEvent) => {
     isDragging.current = true;
     lastX.current = e.clientX;
@@ -67,22 +75,21 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
     velocityX.current = 0;
     velocityY.current = 0;
   };
-
+ 
   const handlePointerUp = () => {
     isDragging.current = false;
   };
-
+ 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current) return;
     
     const deltaX = e.clientX - lastX.current;
     const deltaY = e.clientY - lastY.current;
     
-    const sensitivity = 0.5;
+    const sensitivity = 0.6;
     rotateY.set(rotateY.get() + deltaX * sensitivity);
     rotateX.set(rotateX.get() - deltaY * sensitivity);
     
-    // Store velocity for inertia
     velocityX.current = deltaX * sensitivity;
     velocityY.current = -deltaY * sensitivity;
     
@@ -90,30 +97,42 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
     lastY.current = e.clientY;
   };
 
+  // Lighting Math based on rotation
+  const shimmerOpacity = useTransform(springY, (y) => {
+    const angle = (y % 360 + 360) % 360;
+    // Shine when facing roughly front (0, 360) or back (180)
+    const factor = Math.abs(Math.cos((angle * Math.PI) / 180));
+    return factor * 0.4;
+  });
+
+  const glossTranslateX = useTransform(springY, [-180, 180], [100, -100], { clamp: false });
+ 
   return (
     <div
       ref={containerRef}
       className="relative flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
-      style={{ perspective: '1500px', width: 300, height: 300 }}
+      style={{ perspective: '2000px', width: 320, height: 320 }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      {/* Dynamic floor shadow */}
+      {/* Dynamic floor shadow - Reactive to rotation */}
       <motion.div
-        className="absolute bottom-[-24px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
+        className="absolute bottom-[-40px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
-          width: 180,
-          height: 34,
-          background: `radial-gradient(ellipse, ${primaryColor}40 0%, transparent 75%)`,
-          filter: 'blur(18px)',
-          opacity: useTransform(floatSpring, [-12, 12], [0.5, 0.2]),
-          scale: useTransform(floatSpring, [-12, 12], [0.85, 1.15]),
+          width: 200,
+          height: 40,
+          background: `radial-gradient(ellipse, ${primaryColor}50 0%, transparent 80%)`,
+          filter: 'blur(25px)',
+          opacity: useTransform(floatSpring, [-15, 15], [0.6, 0.2]),
+          scale: useTransform(floatSpring, [-15, 15], [0.9, 1.2]),
+          rotateX: 80,
+          z: -100
         }}
       />
-
-      {/* Floating 3D Logo Container */}
+ 
+      {/* 3D Extruded Container */}
       <motion.div
         style={{
           rotateX: springX,
@@ -123,56 +142,76 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
         }}
         className="relative w-full h-full flex items-center justify-center select-none"
       >
-        {/* Central Glow / Core */}
-        <div 
-          className="absolute inset-0 blur-[50px] opacity-25 pointer-events-none"
-          style={{ backgroundColor: primaryColor, transform: 'translateZ(0px)' }}
-        />
-        
-        {/* FRONT FACE */}
-        <img
-          src={logoUrl}
-          alt="Chibi Vulture Front"
-          draggable={false}
-          style={{
-            width: 230,
-            height: 230,
-            objectFit: 'contain',
-            filter: `drop-shadow(0 20px 40px rgba(0,0,0,0.3))`,
-            transform: 'translateZ(2px)', // Front offset
-            backfaceVisibility: 'hidden',
-          }}
-        />
-
-        {/* BACK FACE (Reversed and slightly darker) */}
-        <img
-          src={logoUrl}
-          alt="Chibi Vulture Back"
-          draggable={false}
-          style={{
-            width: 230,
-            height: 230,
-            objectFit: 'contain',
-            filter: `brightness(0.6) grayscale(0.2) drop-shadow(0 20px 40px rgba(0,0,0,0.3))`,
-            transform: 'translateZ(-2px) rotateY(180deg)', // Back offset + Flip
-            backfaceVisibility: 'hidden',
-          }}
-        />
-
-        {/* Dynamic Highlight (Shimmer) */}
+        {/* Core Volumetric Glow */}
         <motion.div 
-          className="absolute inset-0 pointer-events-none rounded-full"
+          className="absolute inset-0 blur-[60px] pointer-events-none rounded-full"
+          style={{ 
+            backgroundColor: primaryColor, 
+            transform: 'translateZ(0px)',
+            opacity: useTransform(floatSpring, [-15, 15], [0.15, 0.3])
+          }}
+        />
+
+        {/* EXTRUSION LAYERS (The "Magic" Math) */}
+        {Array.from({ length: slices }).map((_, i) => {
+          const zOffset = (i - slices / 2) * (thickness / slices);
+          const isOuter = i === 0 || i === slices - 1;
+          const brightness = isOuter ? 1 : 0.7 + (Math.sin((i / slices) * Math.PI) * 0.3);
+          
+          return (
+            <img
+              key={i}
+              src={logoUrl}
+              alt=""
+              draggable={false}
+              style={{
+                position: 'absolute',
+                width: 240,
+                height: 240,
+                objectFit: 'contain',
+                // Stack layers on Z axis
+                transform: `translateZ(${zOffset}px) ${i === slices - 1 ? 'rotateY(180deg)' : ''}`,
+                // Darken inner layers for edge occlusion/depth
+                filter: `brightness(${brightness}) ${!isOuter ? 'blur(0.5px)' : ''} drop-shadow(0 ${isOuter ? 10 : 0}px 20px rgba(0,0,0,0.2))`,
+                pointerEvents: 'none',
+                // Flip back face
+                backfaceVisibility: isOuter ? 'hidden' : 'visible',
+              }}
+            />
+          );
+        })}
+
+        {/* Dynamic Light Glint (The Algorithmic Shimmer) */}
+        <motion.div 
+          className="absolute w-[300px] h-[300px] pointer-events-none overflow-hidden"
+          style={{ transform: 'translateZ(10px)' }}
+        >
+          <motion.div
+            className="w-full h-full"
+            style={{
+              background: `linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%)`,
+              opacity: shimmerOpacity,
+              x: glossTranslateX,
+              mixBlendMode: 'overlay',
+            }}
+          />
+        </motion.div>
+
+        {/* Side Edge Filling (Fake Mesh) */}
+        <div 
+          className="absolute w-[240px] h-[240px] opacity-20 pointer-events-none"
           style={{
-            background: `linear-gradient(135deg, transparent 30%, white 50%, transparent 70%)`,
-            opacity: 0.15,
-            transform: 'translateZ(30px)',
-            mixBlendMode: 'overlay',
+            border: `10px solid ${primaryColor}`,
+            borderRadius: '50%',
+            filter: 'blur(30px)',
+            transform: 'translateZ(0px)',
           }}
         />
       </motion.div>
     </div>
   );
 };
+
 
 
 const Index = () => {
