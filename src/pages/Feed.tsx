@@ -6,7 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Bell, Bookmark, Sparkles, Loader2, Trash2, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PostSkeleton, StorySkeleton } from "@/components/ui/Skeleton";
 import { useApp } from '@/context/AppContext';
 import { useInfinitePosts } from '@/hooks/use-infinite-posts';
 import { apiService } from '@/services/api';
@@ -659,6 +659,20 @@ const Feed = () => {
                     aria-pressed={isFav}
                   >
                     <Bookmark size={22} strokeWidth={2.5} fill={isFav ? "currentColor" : "none"} aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await apiService.reportPost(post.id);
+                        showSuccess("Merci du signalement, notre équipe va vérifier ce contenu. 🛡️");
+                      } catch (err) {
+                        showError("Erreur lors du signalement.");
+                      }
+                    }}
+                    className="text-gray-300 dark:text-gray-700 hover:text-red-400 transition-colors"
+                    aria-label="Signaler ce post"
+                  >
+                    <MoreHorizontal size={22} strokeWidth={2.5} />
                   </button>
                 </div>
 

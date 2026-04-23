@@ -61,6 +61,20 @@ module.exports = async (req, res) => {
       console.error(error);
       res.status(500).json({ error: 'Failed to delete post' });
     }
+  } else if (req.method === 'PATCH') {
+    const user = await auth.verify(req);
+    if (!user) return res.status(401).json({ error: 'Auth required' });
+
+    const { id, action } = req.body;
+    if (!id || action !== 'report') return res.status(400).json({ error: 'Invalid request' });
+
+    try {
+      await db.query('UPDATE posts SET reports = COALESCE(reports, 0) + 1 WHERE id = $1', [Number(id)]);
+      res.status(200).json({ status: 'Reported' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to report post' });
+    }
   } else if (req.method === 'GET') {
     try {
       const { handle } = req.query;

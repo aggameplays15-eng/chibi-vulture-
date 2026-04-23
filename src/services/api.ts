@@ -69,6 +69,15 @@ export const apiService = {
     if (!response.ok) throw new Error('Failed to delete post');
   },
 
+  reportPost: async (id: number) => {
+    const response = await fetchWithAuth('/api/posts', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, action: 'report' }),
+    });
+    if (!response.ok) throw new Error('Failed to report post');
+    return safeJson(response);
+  },
+
   getProducts: async () => {
     const response = await fetchWithAuth('/api/products');
     return safeJson(response);
