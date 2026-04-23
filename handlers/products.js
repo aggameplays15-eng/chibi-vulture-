@@ -11,11 +11,11 @@ async function ensureProductSchema() {
       "ALTER TABLE products " +
       "ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Art Digital', " +
       "ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false, " +
-      "ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0"
+      "ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0, " +
+      "ADD COLUMN IF NOT EXISTS description TEXT"
     );
     schemaChecked = true;
   } catch {
-    // Fail silently — colonnes existent déjà
     schemaChecked = true;
   }
 }
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
     const user = await auth.verify(req);
     if (!user || user.role !== 'Admin') return res.status(403).json({ error: 'Admin only' });
 
-    const { name, price, image, category, stock, featured } = req.body;
+    const { name, price, image, category, stock, featured, description } = req.body;
 
     if (!name || typeof name !== 'string' || name.length > 200)
       return res.status(400).json({ error: 'Invalid product name' });
@@ -48,16 +48,15 @@ module.exports = async (req, res) => {
     if (image.startsWith('data:image/svg'))
       return res.status(400).json({ error: 'SVG images are not allowed' });
     const isBase64 = image.startsWith('data:image/');
-    const maxImgSize = isBase64 ? 7 * 1024 * 1024 : 2000;
-    if (image.length > maxImgSize)
+    if (image.length > (isBase64 ? 7 * 1024 * 1024 : 2000))
       return res.status(400).json({ error: 'Image too large (max 5MB)' });
-    if (!category || typeof category !== 'string' || category.length > 50)
+    if (!category || typeof category !== 'string' || category.length > 100)
       return res.status(400).json({ error: 'Invalid category' });
 
     try {
       const { rows } = await db.query(
-        'INSERT INTO products (name, price, image, category, stock, is_featured) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [name, price, image, category, stock || 0, featured || false]
+        'INSERT INTO products (name, price, image, category, stock, is_featured, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+        [name, price, image, category, stock || 0, featured || false, description || null]
       );
       res.status(201).json(rows[0]);
     } catch (error) {
@@ -72,29 +71,29 @@ module.exports = async (req, res) => {
     const { id } = req.query;
     if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
 
-    const { name, price, image, category, stock, featured } = req.body;
+    const { name, price, image, category, stock, featured, description } = req.body;
     const setClauses = [];
     const values = [];
 
-    // BUG FIX: push value first, then use values.length for the correct $N placeholder
-    if (name !== undefined) { values.push(name); setClauses.push(`name = $${values.length}`); }
-    if (price !== undefined) { values.push(price); setClauses.push(`price = $${values.length}`); }
+    if (name !== undefined)        { values.push(name);        setClauses.push('name = $'        + values.length); }
+    if (price !== undefined)       { values.push(price);       setClauses.push('price = $'       + values.length); }
     if (image !== undefined) {
       if (image.startsWith('data:image/svg')) return res.status(400).json({ error: 'SVG images are not allowed' });
-      values.push(image); setClauses.push(`image = $${values.length}`);
+      values.push(image); setClauses.push('image = $' + values.length);
     }
-    if (category !== undefined) { values.push(category); setClauses.push(`category = $${values.length}`); }
-    if (stock !== undefined) { values.push(stock); setClauses.push(`stock = $${values.length}`); }
-    if (featured !== undefined) { values.push(featured); setClauses.push(`is_featured = $${values.length}`); }
+    if (category !== undefined)    { values.push(category);    setClauses.push('category = $'    + values.length); }
+    if (stock !== undefined)       { values.push(stock);       setClauses.push('stock = $'       + values.length); }
+    if (featured !== undefined)    { values.push(featured);    setClauses.push('is_featured = $' + values.length); }
+    if (description !== undefined) { values.push(description); setClauses.push('description = $' + values.length); }
 
     if (setClauses.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     values.push(Number(id));
-    const idPlaceholder = `$${values.length}`;
+    const idPlaceholder = '$' + values.length;
 
     try {
       const { rows } = await db.query(
-        `UPDATE products SET ${setClauses.join(', ')} WHERE id = ${idPlaceholder} RETURNING *`,
+        'UPDATE products SET ' + setClauses.join(', ') + ' WHERE id = ' + idPlaceholder + ' RETURNING *',
         values
       );
       if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
