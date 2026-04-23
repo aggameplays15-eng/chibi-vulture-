@@ -49,6 +49,7 @@ const forgotPasswordHandler = require('../handlers/forgot-password');
 const resetPasswordHandler = require('../handlers/reset-password');
 const storiesHandler = require('../handlers/stories');
 const sitemapHandler = require('../handlers/sitemap');
+const securityLogsHandler = require('../handlers/security-logs');
 
 // Route mapping
 const routes = {
