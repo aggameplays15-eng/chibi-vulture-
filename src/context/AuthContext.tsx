@@ -45,13 +45,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   });
   const [users, setUsers] = useState<UserProfile[]>([]);
 
+  const normalizeUser = useCallback((u: any): UserProfile => ({
+    ...u,
+    avatarImage: u.avatar_image || u.avatarImage,
+    isApproved: u.is_approved ?? u.isApproved ?? false,
+    following: u.following || [],
+    isAuthenticated: u.isAuthenticated ?? false,
+    isGuest: u.isGuest ?? false
+  }), []);
+
   useEffect(() => {
     const load = async () => {
       const savedUser = localStorage.getItem('cv_user');
-      if (savedUser) setUser(JSON.parse(savedUser) as UserProfile);
+      if (savedUser) setUser(normalizeUser(JSON.parse(savedUser)));
 
       const savedUsers = localStorage.getItem('cv_users_list');
-      if (savedUsers) setUsers(JSON.parse(savedUsers) as UserProfile[]);
+      if (savedUsers) {
+        const list = JSON.parse(savedUsers) as UserProfile[];
+        setUsers(list.map(normalizeUser));
+      }
 
       const savedToken = localStorage.getItem('cv_token');
       if (savedToken) {
@@ -62,12 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const realUsers = await apiService.getUsers();
         if (realUsers && Array.isArray(realUsers)) {
-          const normalized = realUsers.map((u: any) => ({
-            ...u,
-            avatarImage: u.avatar_image || u.avatarImage,
-            isApproved: u.is_approved ?? u.isApproved
-          }));
-          setUsers(normalized as UserProfile[]);
+          setUsers(realUsers.map(normalizeUser));
         }
       } catch (err) {
         console.error("Failed to fetch users:", err);
@@ -98,7 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await apiService.login(credentials);
       setToken(data.token);
       apiService.setToken(data.token);
-      const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: data.user.following || [] };
+      const loggedUser = normalizeUser({ ...data.user, isAuthenticated: true, isGuest: false });
       setUser(loggedUser);
       return {};
     } catch (err) {
@@ -115,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.token) {
         setToken(data.token);
         apiService.setToken(data.token);
-        const loggedUser = { ...data.user, isAuthenticated: true, isGuest: false, following: [] };
+        const loggedUser = normalizeUser({ ...data.user, isAuthenticated: true, isGuest: false });
         setUser(loggedUser);
       }
       
@@ -131,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await apiService.adminLogin(credentials);
       setToken(data.token);
       apiService.setToken(data.token);
-      const adminUser = { ...data.user, isAuthenticated: true, isGuest: false, following: [] };
+      const adminUser = normalizeUser({ ...data.user, isAuthenticated: true, isGuest: false });
       setUser(adminUser);
     } catch (err) {
       console.error("Admin login failed:", err);
@@ -156,12 +163,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (user.id) {
         const response = await apiService.updateUser({ id: user.id, ...data });
-        // Normalize snake_case from DB to camelCase for state
-        const normalizedData = {
-          ...data,
-          avatarImage: data.avatar_image || data.avatarImage
-        };
-        setUser(prev => ({ ...prev, ...normalizedData }));
+        const normalizedData = normalizeUser({ ...user, ...data });
+        setUser(normalizedData);
         // Update in the global users list too
         setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...normalizedData } : u));
       }
