@@ -15,10 +15,25 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/placeholder.svg",
-      "sizes": "any",
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96",
       "type": "image/svg+xml",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "128x128 192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/splash/splash.svg",
+      "sizes": "375x812",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Splash Screen"
     }
   ],
   "shortcuts": [
