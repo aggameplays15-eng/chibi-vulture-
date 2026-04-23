@@ -71,6 +71,17 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const { user } = useAuth();
 
+  // BUG FIX: normalizePost défini AVANT le useEffect qui l'utilise
+  const normalizePost = useCallback((post: any): Post => ({
+    ...post,
+    user: post.user || post.user_name || 'Artiste',
+    handle: post.handle || post.user_handle || '@user',
+    avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
+    time: post.time || (post.created_at ? new Date(post.created_at).toLocaleDateString('fr-FR') : "À l'instant"),
+    likes: Number(post.likes_count || post.likes || 0),
+    comments_count: Number(post.comments_count || 0)
+  }), []);
+
   useEffect(() => {
     if (!user.id) {
       setLikedPosts([]);
@@ -87,7 +98,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         if (val) setter(JSON.parse(val) as T);
         else setter([] as unknown as T);
       };
-      
+
       loadLocal('cv_likes', setLikedPosts);
       loadLocal('cv_fav_posts', setFavoritePosts);
       loadLocal('cv_fav_prods', setFavoriteProducts);
@@ -110,19 +121,20 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
           setProducts(list);
         }
         if (realPosts.status === 'fulfilled' && realPosts.value) {
-          const list = realPosts.value as any[];
-          setPosts(list.map(normalizePost));
+          setPosts((realPosts.value as any[]).map(normalizePost));
         }
-        if (realOrders.status === 'fulfilled' && realOrders.value) setOrders(realOrders.value as Order[]);
+        if (realOrders.status === 'fulfilled' && realOrders.value) {
+          setOrders(realOrders.value as Order[]);
+        }
       } catch (err) {
         console.error("Backend fetch error:", err);
       }
-      
+
       setIsLoading(false);
     };
-    
+
     load();
-  }, [user.id, user.role]);
+  }, [user.id, user.role, normalizePost]);
 
   useEffect(() => {
     if (user.id) localStorage.setItem(`cv_likes_${user.id}`, JSON.stringify(likedPosts));
@@ -138,45 +150,26 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const deleteProduct = useCallback(async (id: number) => {
     setProducts(prev => prev.filter(p => p.id !== id));
-    try {
-      await apiService.deleteProduct(id);
-    } catch (err) { console.error(err); }
+    try { await apiService.deleteProduct(id); } catch (err) { console.error(err); }
   }, []);
 
   const deletePost = useCallback(async (id: number) => {
     setPosts(prev => prev.filter(p => p.id !== id));
-    try {
-      await apiService.deletePost(id);
-    } catch (err) { console.error(err); }
+    try { await apiService.deletePost(id); } catch (err) { console.error(err); }
   }, []);
-
-  const normalizePost = useCallback((post: any): Post => ({
-    ...post,
-    user: post.user || post.user_name || 'Artiste',
-    handle: post.handle || post.user_handle || '@user',
-    avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
-    time: post.time || (post.created_at ? new Date(post.created_at).toLocaleDateString('fr-FR') : "À l'instant"),
-    likes: Number(post.likes_count || post.likes || 0),
-    comments_count: Number(post.comments_count || 0)
-  }), []);
 
   const addPost = useCallback((post: any) => {
     setPosts(prev => [normalizePost(post), ...prev]);
   }, [normalizePost]);
-  
+
   const toggleLike = useCallback(async (postId: number) => {
     if (user.isGuest || !user.isAuthenticated) return;
     try {
       const alreadyLiked = likedPosts.includes(postId);
       await apiService.toggleLike(postId, user.handle);
-      
       setLikedPosts(prev => alreadyLiked ? prev.filter(id => id !== postId) : [...prev, postId]);
-      
-      // Update local count in posts list
-      setPosts(prev => prev.map(p => 
-        p.id === postId 
-          ? { ...p, likes: Math.max(0, p.likes + (alreadyLiked ? -1 : 1)) } 
-          : p
+      setPosts(prev => prev.map(p =>
+        p.id === postId ? { ...p, likes: Math.max(0, p.likes + (alreadyLiked ? -1 : 1)) } : p
       ));
     } catch (err) { console.error(err); }
   }, [user.isGuest, user.isAuthenticated, user.handle, likedPosts]);
@@ -192,8 +185,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
     try {
       const result = await apiService.addProduct(p);
-      const newProduct = result 
-        ? { ...result, featured: result.is_featured ?? result.featured ?? false } 
+      const newProduct = result
+        ? { ...result, featured: result.is_featured ?? result.featured ?? false }
         : { ...p, id: Date.now() };
       setProducts(prev => [...prev, newProduct]);
     } catch (err) {
@@ -205,8 +198,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const updateProduct = useCallback(async (id: number, p: Omit<Product, 'id'>) => {
     try {
       const result = await apiService.updateProduct(id, p);
-      const updated = result 
-        ? { ...result, featured: result.is_featured ?? result.featured ?? false } 
+      const updated = result
+        ? { ...result, featured: result.is_featured ?? result.featured ?? false }
         : { ...p, id };
       setProducts(prev => prev.map(prod => prod.id === id ? updated : prod));
     } catch (err) {
@@ -223,7 +216,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       date: new Date().toLocaleDateString(),
       status: 'En attente'
     };
-    
+
     try {
       const result = await apiService.createOrder({
         id: localId,

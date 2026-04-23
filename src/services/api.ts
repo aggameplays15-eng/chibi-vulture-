@@ -239,6 +239,45 @@ export const apiService = {
     return safeJson(response);
   },
 
+  signup: async (userData: {
+    name: string;
+    handle: string;
+    email: string;
+    bio?: string;
+    avatarColor?: string;
+    password: string;
+  }) => {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Erreur lors de la création du compte');
+    }
+    return safeJson(response);
+  },
+
+  signup: async (userData: {
+    name: string;
+    handle: string;
+    email: string;
+    bio?: string;
+    avatarColor?: string;
+    password: string;
+  }) => {
+    const response = await fetchWithAuth('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || 'Erreur lors de la création du compte');
+    }
+    return safeJson(response);
+  },
+
   login: async (credentials: LoginCredentials) => {
     const response = await fetch('/api/login', {
       method: 'POST',

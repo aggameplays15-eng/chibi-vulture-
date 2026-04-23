@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL,
-  'https://chibi-vulture.vercel.app'
+  'https://chibi-vulture.vercel.app',
+  'https://chibi-v-store-expo-main.vercel.app',
 ].filter(Boolean);
 
 if (process.env.NODE_ENV !== 'production') {
@@ -28,8 +29,11 @@ module.exports = {
     } else if (isAllowedOrigin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-      // Dev sans origin ou mobile → fallback safe
-      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+      // Dev sans origin ou app mobile → pas de header CORS restrictif
+      // (les requêtes sans Origin ne sont pas soumises à la politique CORS du navigateur)
+      if (process.env.NODE_ENV !== 'production') {
+        res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+      }
     }
 
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');

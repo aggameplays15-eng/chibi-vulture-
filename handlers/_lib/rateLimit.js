@@ -8,6 +8,8 @@ const RATE_LIMITS = {
   login:              { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 5,  burstWindowMs: 10 * 1000 },
   signup:             { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 4,  burstWindowMs: 30 * 1000 },
   'admin-login':      { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 5,  burstWindowMs: 10 * 1000 },
+  forgot:             { maxRequests: 5,   windowMs: 15 * 60 * 1000, burstMax: 3,  burstWindowMs: 60 * 1000 },
+  reset:              { maxRequests: 5,   windowMs: 15 * 60 * 1000, burstMax: 3,  burstWindowMs: 60 * 1000 },
   search:             { maxRequests: 30,  windowMs: 60 * 1000,       burstMax: 10, burstWindowMs: 5  * 1000 },
   default:            { maxRequests: 100, windowMs: 60 * 1000,       burstMax: 30, burstWindowMs: 5  * 1000 },
 };
@@ -138,17 +140,19 @@ async function rateLimit(req, type = 'default') {
     };
 
   } catch {
-    // FAIL CLOSED — si la DB est down, on bloque par sécurité (prod ET dev)
+    // FAIL OPEN — si la DB est down, on laisse passer pour ne pas bloquer tous les utilisateurs
+    // Un log d'alerte est émis pour investigation
+    console.error('[RateLimit] DB unavailable — failing open for type:', type);
     return {
-      allowed: false,
+      allowed: true,
       limit: config.maxRequests,
-      remaining: 0,
+      remaining: 1,
       resetInSeconds: 60,
+      burstExceeded: false,
       headers: {
         'X-RateLimit-Limit':     String(config.maxRequests),
-        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Remaining': '1',
         'X-RateLimit-Reset':     '60',
-        'Retry-After':           '60',
       }
     };
   }

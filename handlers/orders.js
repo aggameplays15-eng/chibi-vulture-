@@ -79,12 +79,14 @@ module.exports = async (req, res) => {
     if (!user) {
       try {
         await db.query(
-          `INSERT INTO users (name, handle, email, password, role, is_approved) 
-           VALUES ('Invité', '@guest', 'guest@chibivulture.com', 'guest', 'Member', true) 
-           ON CONFLICT (handle) DO NOTHING`
+          "INSERT INTO users (name, handle, email, password, role, is_approved) " +
+          "VALUES ('Invité', '@guest', 'guest@chibivulture.com', 'guest', 'Member', true) " +
+          "ON CONFLICT (handle) DO NOTHING"
         );
-      } catch (err) {}
-      user = { handle: '@guest' };
+      } catch (err) {
+        console.error('[Orders] Failed to ensure guest user:', err.message);
+      }
+      user = { handle: '@guest', role: 'Member' };
     }
 
     const { customer_name, total, items } = req.body;
@@ -214,7 +216,7 @@ module.exports = async (req, res) => {
 
     const ALLOWED_STATUSES = ['En attente', 'Préparation', 'Expédié', 'Livré', 'Annulé'];
     if (!ALLOWED_STATUSES.includes(status)) {
-      return res.status(400).json({ error: `Invalid status. Allowed: ${ALLOWED_STATUSES.join(', ')}` });
+      return res.status(400).json({ error: 'Invalid status. Allowed: ' + ALLOWED_STATUSES.join(', ') });
     }
 
     try {

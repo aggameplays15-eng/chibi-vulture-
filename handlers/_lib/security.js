@@ -270,10 +270,12 @@ async function securityMiddleware(req, res) {
     return true;
   }
 
-  // 7c. User-Agent bloqué
+  // 7c. User-Agent bloqué (uniquement en production, et seulement si un Origin navigateur est présent)
+  // Les apps mobiles React Native/Expo n'ont pas d'Origin et peuvent avoir des UA non standards
+  const hasOrigin = !!req.headers['origin'];
   const isBlockedUA = BLOCKED_UA_PATTERNS.some(p => p.test(ua));
-  if (isBlockedUA && process.env.NODE_ENV === 'production') {
-    await logThreat(ip, 'BLOCKED_UA', `Blocked UA: ${ua}`, req);
+  if (isBlockedUA && process.env.NODE_ENV === 'production' && hasOrigin) {
+    await logThreat(ip, 'BLOCKED_UA', 'Blocked UA: ' + ua, req);
     res.status(403).json({ error: 'Access denied' });
     return true;
   }

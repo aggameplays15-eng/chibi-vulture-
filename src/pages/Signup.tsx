@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showSuccess, showError } from "@/utils/toast";
-
-import { apiService } from '@/services/api';
+import { useApp } from '@/context/AppContext';
 
 const Signup = () => {
   const navigate = useNavigate();

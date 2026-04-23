@@ -7,14 +7,10 @@ const { logAuthFailure } = require('./_lib/security');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
-
   if (req.method !== 'POST') return res.status(405).end();
-  
+
   let { email, password } = req.body || {};
   if (email) email = String(email).toLowerCase().trim();
-
-
-
 
   if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
@@ -23,46 +19,21 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
-  // Rate limiting
   const limit = await rateLimit(req, 'login');
-  Object.entries(limit.headers).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
+  Object.entries(limit.headers).forEach(([key, value]) => res.setHeader(key, value));
   if (!limit.allowed) {
-    return res.status(429).json({
-      error: 'Too many login attempts. Please try again later.',
-      retryAfter: limit.resetInSeconds
-    });
+    return res.status(429).json({ error: 'Too many login attempts. Please try again later.', retryAfter: limit.resetInSeconds });
   }
 
   try {
-    // 1. Vérification si c'est l'Admin Principal (.env)
+    // Bloquer la connexion admin via ce endpoint — utiliser /api/admin-login
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-    const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
-
     if (ADMIN_EMAIL && email === ADMIN_EMAIL.toLowerCase().trim()) {
-      const isMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-      if (isMatch) {
-        const adminUser = {
-          id: 0,
-          email: ADMIN_EMAIL,
-          name: 'Admin',
-          handle: '@admin',
-          role: 'Admin',
-          isApproved: true,
-          status: 'Actif',
-          bio: 'Administrator',
-          avatarColor: '#DC2626'
-        };
-        const token = auth.signToken(adminUser);
-        return res.status(200).json({
-          token,
-          user: { ...adminUser, avatar_color: adminUser.avatarColor }
-        });
-      }
+      await logAuthFailure(req);
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // 2. Sinon, recherche dans la base de données (Membres)
+    // Recherche dans la base de données
     const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
     if (rows.length === 0) {
       await logAuthFailure(req);
@@ -71,9 +42,12 @@ module.exports = async (req, res) => {
 
     const user = rows[0];
 
-    // Compte supprimé
     if (user.status === 'Supprimé') {
       return res.status(403).json({ error: 'This account has been deleted. Please contact support.' });
+    }
+
+    if (user.status === 'Banni') {
+      return res.status(403).json({ error: 'This account has been suspended. Please contact support.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password || '');
@@ -82,12 +56,10 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Compte non approuvé
     if (!user.is_approved) {
       return res.status(403).json({ error: 'Account pending approval. Please contact an administrator.' });
     }
 
-    // Connexion directe
     const token = auth.signToken(user);
     return res.status(200).json({
       token,
@@ -106,8 +78,6 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
   }
 };

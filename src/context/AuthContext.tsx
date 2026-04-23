@@ -164,13 +164,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (user.id) {
         const response = await apiService.updateUser({ id: user.id, ...data });
-        const normalizedData = normalizeUser({ ...user, ...data });
-        setUser(normalizedData);
-        // Update in the global users list too
-        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...normalizedData } : u));
+        // Utiliser la réponse serveur comme source de vérité
+        const normalized = normalizeUser({ ...user, ...(response || data) });
+        setUser(normalized);
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...normalized } : u));
       }
     } catch (err) { console.error(err); }
-  }, [user.id]);
+  }, [user, normalizeUser]);
 
   const approveUser = useCallback(async (id: number) => {
     try {

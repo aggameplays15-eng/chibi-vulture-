@@ -4,7 +4,7 @@ const { handleCors } = require('./_lib/cors');
 const { rateLimit } = require('./_lib/rateLimit');
 const { sendEmail } = require('./_lib/email');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://chibivulture.com';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://chibi-vulture.vercel.app';
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;

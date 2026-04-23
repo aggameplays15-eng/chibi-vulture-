@@ -2,19 +2,30 @@ const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
 
+// Colonnes produit à ajouter si absentes — exécuté une seule fois, pas à chaque GET
+let schemaChecked = false;
+async function ensureProductSchema() {
+  if (schemaChecked) return;
+  try {
+    await db.query(
+      "ALTER TABLE products " +
+      "ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Art Digital', " +
+      "ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false, " +
+      "ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0"
+    );
+    schemaChecked = true;
+  } catch {
+    // Fail silently — colonnes existent déjà
+    schemaChecked = true;
+  }
+}
+
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method === 'GET') {
+    await ensureProductSchema();
     try {
-      // S'assurer que les colonnes nécessaires existent
-      await db.query(`
-        ALTER TABLE products 
-        ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Art Digital',
-        ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
-        ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0
-      `);
-      
       const { rows } = await db.query('SELECT * FROM products ORDER BY is_featured DESC, id DESC');
       res.status(200).json(rows);
     } catch (error) {
@@ -28,27 +39,20 @@ module.exports = async (req, res) => {
 
     const { name, price, image, category, stock, featured } = req.body;
 
-    if (!name || typeof name !== 'string' || name.length > 200) {
+    if (!name || typeof name !== 'string' || name.length > 200)
       return res.status(400).json({ error: 'Invalid product name' });
-    }
-    if (typeof price !== 'number' || price < 0) {
+    if (typeof price !== 'number' || price < 0)
       return res.status(400).json({ error: 'Invalid price' });
-    }
-    if (!image || typeof image !== 'string') {
+    if (!image || typeof image !== 'string')
       return res.status(400).json({ error: 'Image required' });
-    }
-    // Bloquer SVG — vecteur XSS (JS embarqué dans SVG)
-    if (image.startsWith('data:image/svg')) {
+    if (image.startsWith('data:image/svg'))
       return res.status(400).json({ error: 'SVG images are not allowed' });
-    }
     const isBase64 = image.startsWith('data:image/');
     const maxImgSize = isBase64 ? 7 * 1024 * 1024 : 2000;
-    if (image.length > maxImgSize) {
+    if (image.length > maxImgSize)
       return res.status(400).json({ error: 'Image too large (max 5MB)' });
-    }
-    if (!category || typeof category !== 'string' || category.length > 50) {
+    if (!category || typeof category !== 'string' || category.length > 50)
       return res.status(400).json({ error: 'Invalid category' });
-    }
 
     try {
       const { rows } = await db.query(
@@ -69,25 +73,28 @@ module.exports = async (req, res) => {
     if (!id || isNaN(Number(id))) return res.status(400).json({ error: 'Invalid id' });
 
     const { name, price, image, category, stock, featured } = req.body;
-    const fields = [];
+    const setClauses = [];
     const values = [];
 
-    if (name !== undefined) { fields.push(`name = $${fields.length + 1}`); values.push(name); }
-    if (price !== undefined) { fields.push(`price = $${fields.length + 1}`); values.push(price); }
+    // BUG FIX: push value first, then use values.length for the correct $N placeholder
+    if (name !== undefined) { values.push(name); setClauses.push(`name = $${values.length}`); }
+    if (price !== undefined) { values.push(price); setClauses.push(`price = $${values.length}`); }
     if (image !== undefined) {
       if (image.startsWith('data:image/svg')) return res.status(400).json({ error: 'SVG images are not allowed' });
-      fields.push(`image = $${fields.length + 1}`); values.push(image);
+      values.push(image); setClauses.push(`image = $${values.length}`);
     }
-    if (category !== undefined) { fields.push(`category = $${fields.length + 1}`); values.push(category); }
-    if (stock !== undefined) { fields.push(`stock = $${fields.length + 1}`); values.push(stock); }
-    if (featured !== undefined) { fields.push(`is_featured = $${fields.length + 1}`); values.push(featured); }
+    if (category !== undefined) { values.push(category); setClauses.push(`category = $${values.length}`); }
+    if (stock !== undefined) { values.push(stock); setClauses.push(`stock = $${values.length}`); }
+    if (featured !== undefined) { values.push(featured); setClauses.push(`is_featured = $${values.length}`); }
 
-    if (fields.length === 0) return res.status(400).json({ error: 'No fields to update' });
+    if (setClauses.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     values.push(Number(id));
+    const idPlaceholder = `$${values.length}`;
+
     try {
       const { rows } = await db.query(
-        `UPDATE products SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`,
+        `UPDATE products SET ${setClauses.join(', ')} WHERE id = ${idPlaceholder} RETURNING *`,
         values
       );
       if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });

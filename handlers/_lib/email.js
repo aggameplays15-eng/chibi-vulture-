@@ -26,7 +26,7 @@ function getTransporter() {
 // ─── Base template ──────────────────────────────────────────────────────────
 
 const APP_NAME = process.env.APP_NAME || 'Chibi Vulture';
-const APP_URL  = process.env.FRONTEND_URL || 'https://chibivulture.com';
+const APP_URL  = process.env.FRONTEND_URL || 'https://chibi-vulture.vercel.app';
 const PRIMARY  = '#EC4899';
 const DARK     = '#1a1a2e';
 
