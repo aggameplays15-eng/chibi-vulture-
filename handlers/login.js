@@ -10,6 +10,15 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') return res.status(405).end();
 
+  const { email, password } = req.body || {};
+
+  if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  if (!password || typeof password !== 'string' || password.length < 6 || password.length > 128) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
   // Rate limiting
   const limit = await rateLimit(req, 'login');
   Object.entries(limit.headers).forEach(([key, value]) => {
@@ -20,15 +29,6 @@ module.exports = async (req, res) => {
       error: 'Too many login attempts. Please try again later.',
       retryAfter: limit.resetInSeconds
     });
-  }
-
-  const { email, password } = req.body || {};
-
-  if (!email || typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
-  if (!password || typeof password !== 'string' || password.length < 6 || password.length > 128) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
   try {

@@ -32,8 +32,9 @@ const AdminLogin = () => {
       await adminLogin({ email, password });
       showSuccess("Bienvenue, Admin.");
       navigate('/goated-panel');
-    } catch {
-      showError("Accès refusé. Identifiants incorrects.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Accès refusé. Identifiants incorrects.";
+      showError(message);
     } finally {
       setIsLoading(false);
     }

@@ -40,7 +40,7 @@ const Signup = () => {
       if (message.includes('already exists') || message.includes('409')) {
         showError("Cet identifiant ou email est déjà utilisé.");
       } else {
-        showError("Erreur lors de la création du compte. Réessaie.");
+        showError(message || "Erreur lors de la création du compte. Réessaie.");
       }
     } finally {
       setIsSubmitting(false);

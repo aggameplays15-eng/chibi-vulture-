@@ -16,15 +16,15 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).end();
 
-  // Rate limiting strict — 3 tentatives / 15 min
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
+
+  // Rate limiting strict
   const limit = await rateLimit(req, 'admin-login');
   Object.entries(limit.headers).forEach(([k, v]) => res.setHeader(k, v));
   if (!limit.allowed) {
-    return res.status(429).json({ error: 'Too many attempts.', retryAfter: limit.resetInSeconds });
+    return res.status(429).json({ error: 'Too many attempts. Please try again later.', retryAfter: limit.resetInSeconds });
   }
-
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
 
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
     return res.status(500).json({ error: 'Admin credentials not configured' });

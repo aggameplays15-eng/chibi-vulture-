@@ -123,12 +123,6 @@ module.exports = async (req, res) => {
 
   // POST — inscription
   } else if (req.method === 'POST') {
-    const limit = await rateLimit(req, 'signup');
-    Object.entries(limit.headers).forEach(([key, value]) => res.setHeader(key, value));
-    if (!limit.allowed) {
-      return res.status(429).json({ error: 'Too many signup attempts. Please try again later.', retryAfter: limit.resetInSeconds });
-    }
-
     const { name, handle: rawHandle, email, avatarColor, password } = req.body;
     let { bio } = req.body;
     // Normaliser le handle — accepter avec ou sans @
@@ -152,6 +146,12 @@ module.exports = async (req, res) => {
 
     if (!bio || typeof bio !== 'string' || bio.length > 300)
       bio = (bio || '').toString().slice(0, 300);
+
+    const limit = await rateLimit(req, 'signup');
+    Object.entries(limit.headers).forEach(([key, value]) => res.setHeader(key, value));
+    if (!limit.allowed) {
+      return res.status(429).json({ error: 'Too many signup attempts. Please try again later.', retryAfter: limit.resetInSeconds });
+    }
 
     try {
       const hashedPassword = await bcrypt.hash(password, 10);

@@ -61,7 +61,7 @@ const MALICIOUS_PATTERNS = [
   // SQL Injection
   /(\bUNION\b.*\bSELECT\b|\bSELECT\b.*\bFROM\b|\bDROP\b.*\bTABLE\b|\bINSERT\b.*\bINTO\b|\bDELETE\b.*\bFROM\b)/i,
   /(\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?|\bAND\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,
-  /(--|#|\/\*|\*\/|xp_|sp_|exec\s*\(|execute\s*\()/i,
+  /(--|\/\*|\*\/|xp_|sp_|exec\s*\(|execute\s*\()/i,
   /(\bCAST\b\s*\(|\bCONVERT\b\s*\(|\bCHAR\b\s*\(|\bCONCAT\b\s*\()/i,
   // XSS
   /(<script[\s>]|<\/script>|javascript:|vbscript:|on\w+\s*=)/i,

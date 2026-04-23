@@ -5,9 +5,9 @@ const db = require('./db');
 
 // ─── LIMITES PAR TYPE ────────────────────────────────────────
 const RATE_LIMITS = {
-  login:              { maxRequests: 5,   windowMs: 15 * 60 * 1000, burstMax: 3,  burstWindowMs: 10 * 1000 },
-  signup:             { maxRequests: 3,   windowMs: 60 * 60 * 1000, burstMax: 2,  burstWindowMs: 30 * 1000 },
-  'admin-login':      { maxRequests: 3,   windowMs: 15 * 60 * 1000, burstMax: 2,  burstWindowMs: 10 * 1000 },
+  login:              { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 5,  burstWindowMs: 10 * 1000 },
+  signup:             { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 4,  burstWindowMs: 30 * 1000 },
+  'admin-login':      { maxRequests: 10,  windowMs: 15 * 60 * 1000, burstMax: 5,  burstWindowMs: 10 * 1000 },
   search:             { maxRequests: 30,  windowMs: 60 * 1000,       burstMax: 10, burstWindowMs: 5  * 1000 },
   default:            { maxRequests: 100, windowMs: 60 * 1000,       burstMax: 30, burstWindowMs: 5  * 1000 },
 };

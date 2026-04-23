@@ -14,18 +14,18 @@ const FEATURES = [
 ];
 
 // ─── 3D Floating Logo ────────────────────────────────────────────────────────
+// ─── 360 Libre Floating Logo ────────────────────────────────────────────────────────
 const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
 
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+  // Rotation values
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
 
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [28, -28]), {
-    stiffness: 180, damping: 22, mass: 0.6,
-  });
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [-22, 22]), {
-    stiffness: 180, damping: 22, mass: 0.6,
-  });
+  // Springs for smoothness and inertia
+  const springX = useSpring(rotateX, { stiffness: 40, damping: 20 });
+  const springY = useSpring(rotateY, { stiffness: 40, damping: 20 });
 
   // Idle float
   const floatY = useMotionValue(0);
@@ -35,79 +35,97 @@ const BookLogo = ({ logoUrl, primaryColor }: { logoUrl: string; primaryColor: st
     let frame: number;
     let t = 0;
     const tick = () => {
-      t += 0.018;
-      floatY.set(Math.sin(t) * 10);
+      t += 0.015;
+      floatY.set(Math.sin(t) * 12);
+      // Continuous slow rotation when not dragging
+      if (!isDragging.current) {
+        rotateY.set(rotateY.get() + 0.15);
+      }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [floatY]);
+  }, [floatY, rotateY]);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
-    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
-  }, [mouseX, mouseY]);
+  const handlePointerDown = () => {
+    isDragging.current = true;
+  };
 
-  const handlePointerLeave = useCallback(() => {
-    mouseX.set(0); mouseY.set(0);
-  }, [mouseX, mouseY]);
+  const handlePointerUp = () => {
+    isDragging.current = false;
+  };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const touch = e.touches[0];
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect || !touch) return;
-    mouseX.set((touch.clientX - rect.left) / rect.width - 0.5);
-    mouseY.set((touch.clientY - rect.top) / rect.height - 0.5);
-  }, [mouseX, mouseY]);
-
-  const handleTouchEnd = useCallback(() => {
-    mouseX.set(0); mouseY.set(0);
-  }, [mouseX, mouseY]);
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons !== 1) { // 1 is left click
+      isDragging.current = false;
+      return;
+    }
+    isDragging.current = true;
+    const sensitivity = 0.6;
+    rotateY.set(rotateY.get() + e.movementX * sensitivity);
+    rotateX.set(rotateX.get() - e.movementY * sensitivity);
+  };
 
   return (
     <div
       ref={containerRef}
-      className="relative flex items-center justify-center"
-      style={{ perspective: '900px', width: 220, height: 220 }}
+      className="relative flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
+      style={{ perspective: '1200px', width: 280, height: 280 }}
+      onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
-      {/* Ombre au sol dynamique */}
+      {/* Ombre au sol dynamique améliorée */}
       <motion.div
-        className="absolute bottom-[-16px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
+        className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none"
         style={{
-          width: 130,
-          height: 24,
-          background: `radial-gradient(ellipse, ${primaryColor}50 0%, transparent 70%)`,
-          filter: 'blur(14px)',
-          scaleX: useTransform(mouseX, [-0.5, 0.5], [0.75, 1.25]),
-          opacity: useTransform(mouseY, [-0.5, 0.5], [0.85, 0.35]),
+          width: 160,
+          height: 30,
+          background: `radial-gradient(ellipse, ${primaryColor}40 0%, transparent 75%)`,
+          filter: 'blur(16px)',
+          opacity: useTransform(floatSpring, [-12, 12], [0.6, 0.3]),
+          scale: useTransform(floatSpring, [-12, 12], [0.9, 1.1]),
         }}
       />
 
-      {/* Logo flottant */}
+      {/* Logo flottant avec rotation libre */}
       <motion.div
         style={{
-          rotateX,
-          rotateY,
+          rotateX: springX,
+          rotateY: springY,
           y: floatSpring,
           transformStyle: 'preserve-3d',
         }}
-        className="cursor-grab active:cursor-grabbing select-none"
+        className="relative select-none"
       >
+        {/* Glow effect that stays in place to highlight 3D depth */}
+        <div 
+          className="absolute inset-0 blur-3xl opacity-20 pointer-events-none"
+          style={{ backgroundColor: primaryColor, transform: 'translateZ(-20px)' }}
+        />
+        
         <img
           src={logoUrl}
           alt="Chibi Vulture"
           draggable={false}
           style={{
-            width: 190,
-            height: 190,
+            width: 220,
+            height: 220,
             objectFit: 'contain',
-            filter: `drop-shadow(0 24px 40px ${primaryColor}55) drop-shadow(0 8px 16px rgba(0,0,0,0.15))`,
+            filter: `drop-shadow(0 20px 40px rgba(0,0,0,0.2))`,
+            transform: 'translateZ(20px)', // Adds parallax depth
+          }}
+        />
+
+        {/* Highlight overlay for "shimmer" effect during rotation */}
+        <motion.div 
+          className="absolute inset-0 pointer-events-none rounded-full overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, transparent 40%, white 50%, transparent 60%)`,
+            opacity: 0.1,
+            transform: 'translateZ(25px)',
+            mixBlendMode: 'overlay',
           }}
         />
       </motion.div>

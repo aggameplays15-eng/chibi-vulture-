@@ -15,20 +15,21 @@ module.exports = {
   handleCors: (req, res) => {
     const origin = req.headers['origin'];
     const isProd = process.env.NODE_ENV === 'production';
-    const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+    const isMobileApp = !origin; // Les requêtes fetch depuis mobile n'ont souvent pas d'Origin
+    const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);
+    const isAllowed = isAllowedOrigin || isMobileApp;
     const path = req.url?.split('?')[0] || '';
     const isPublic = PUBLIC_PATHS.some(p => path.startsWith(p));
 
-    // En production : bloquer les requêtes sans origin valide (curl, Postman, etc.)
-    // sauf pour les routes publiques explicitement autorisées
+    // En production : bloquer les requêtes sans origin valide (sauf mobile et routes publiques)
     if (isProd && !isAllowed && !isPublic) {
       // Ne pas exposer les origines autorisées dans la réponse de rejet
       res.status(403).json({ error: 'Forbidden' });
       return true; // bloqué — pas de headers CORS sur les requêtes rejetées
-    } else if (isAllowed) {
+    } else if (isAllowedOrigin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
-      // Dev sans origin → autoriser localhost
+      // Dev sans origin ou mobile → fallback safe
       res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
     }
 
