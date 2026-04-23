@@ -46,13 +46,15 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
+    if (isPaused) return;
     const timer = setInterval(() => {
-      setProgress(p => Math.min(100, p + 2));
-    }, 100);
+      setProgress(p => Math.min(100, p + 1.5));
+    }, 60);
     return () => clearInterval(timer);
-  }, [currentIndex]);
+  }, [currentIndex, isPaused]);
 
   useEffect(() => {
     if (progress >= 100) {
@@ -67,12 +69,6 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
 
   const currentStory = stories[currentIndex];
 
-  useEffect(() => {
-    if (!stories || stories.length === 0) {
-      onClose();
-    }
-  }, [stories, onClose]);
-
   if (!stories || stories.length === 0 || !currentStory) return null;
 
   const formatTime = (dateStr: string) => {
@@ -86,30 +82,41 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] bg-black flex flex-col overflow-hidden"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      drag="y"
+      dragConstraints={{ top: 0, bottom: 0 }}
+      onDragEnd={(e, info) => {
+        if (info.offset.y > 150) onClose();
+      }}
+      className="fixed inset-0 z-[9999] bg-black flex flex-col overflow-hidden select-none"
     >
-      {/* Blurred Background */}
+      {/* Dynamic Background */}
       <div className="absolute inset-0 z-0">
-        <img 
+        <motion.img 
+          key={currentStory.id + '-bg'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }}
+          transition={{ duration: 0.8 }}
           src={currentStory.image} 
-          className="w-full h-full object-cover blur-[100px] opacity-50 scale-150" 
+          className="w-full h-full object-cover blur-[120px] scale-150" 
           alt="" 
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90" />
       </div>
 
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Top progress bars */}
-        <div className="flex gap-1.5 p-3 pt-4">
+      <div className="relative z-10 flex flex-col h-full max-w-lg mx-auto w-full">
+        {/* Progress Bars */}
+        <div className="flex gap-1.5 px-4 pt-6">
           {stories.map((_, i) => (
-            <div key={i} className="h-1 bg-white/20 flex-1 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-100 ease-linear"
-                style={{ 
-                  width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%' 
+            <div key={i} className="h-1 bg-white/10 flex-1 rounded-full overflow-hidden backdrop-blur-sm">
+              <motion.div 
+                className="h-full bg-white"
+                initial={false}
+                animate={{ 
+                  width: i < currentIndex ? '100%' : i === currentIndex ? `${progress}%` : '0%',
+                  opacity: i === currentIndex ? 1 : 0.4
                 }}
               />
             </div>
@@ -117,53 +124,78 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center justify-between px-4 py-6">
           <div className="flex items-center gap-3">
-            <div className="p-[2px] rounded-full bg-gradient-to-tr from-yellow-400 to-pink-500">
-              <Avatar className="w-9 h-9 border-2 border-black">
+            <div className="p-[2.5px] rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500">
+              <Avatar className="w-10 h-10 border-2 border-black rounded-[14px]">
                 <AvatarImage src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`} />
-                <AvatarFallback className="bg-gray-800 text-white">{user.name[0]}</AvatarFallback>
+                <AvatarFallback className="bg-gray-800 text-white font-black">{user.name[0]}</AvatarFallback>
               </Avatar>
             </div>
-            <div className="flex flex-col -space-y-0.5">
-              <span className="text-white font-black text-sm tracking-tight">{user.name}</span>
-              <span className="text-white/50 text-[10px] font-bold uppercase tracking-wider">
+            <div className="flex flex-col">
+              <span className="text-white font-black text-sm tracking-tight drop-shadow-md">{user.name}</span>
+              <span className="text-white/40 text-[9px] font-black uppercase tracking-widest">
                 {formatTime(currentStory.created_at)}
               </span>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
+            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-xl border border-white/10 active:scale-90"
           >
-            <Plus className="rotate-45" size={24} />
+            <Plus className="rotate-45" size={26} />
           </button>
         </div>
 
-        {/* Image Container */}
-        <div className="flex-1 relative flex items-center justify-center p-4 pb-20">
+        {/* Main Content */}
+        <div 
+          className="flex-1 relative flex items-center justify-center px-4 pb-24"
+          onMouseDown={() => setIsPaused(true)}
+          onMouseUp={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
           <AnimatePresence mode="wait">
-            <motion.img 
+            <motion.div
               key={currentStory.id}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 1.1, y: -20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              src={currentStory.image} 
-              alt="Story" 
-              className="max-h-full max-w-full rounded-[2.5rem] object-contain shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] border border-white/10"
-            />
+              initial={{ opacity: 0, scale: 0.92, rotateY: 15 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              exit={{ opacity: 0, scale: 1.05, rotateY: -15 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="relative w-full h-full flex items-center justify-center"
+            >
+              <img 
+                src={currentStory.image} 
+                alt="Story" 
+                className="max-h-full max-w-full rounded-[2.5rem] object-contain shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] border border-white/5"
+              />
+              <div className="absolute inset-0 rounded-[2.5rem] shadow-[inset_0_0_100px_rgba(0,0,0,0.4)] pointer-events-none" />
+            </motion.div>
           </AnimatePresence>
           
-          {/* Navigation tap areas */}
-          <div 
-            className="absolute inset-y-0 left-0 w-1/4 cursor-pointer" 
-            onClick={() => currentIndex > 0 && (setCurrentIndex(i => i - 1), setProgress(0))} 
-          />
-          <div 
-            className="absolute inset-y-0 right-0 w-3/4 cursor-pointer" 
-            onClick={() => currentIndex < stories.length - 1 ? (setCurrentIndex(i => i + 1), setProgress(0)) : onClose()} 
-          />
+          {/* Navigation zones */}
+          <div className="absolute inset-0 flex">
+            <div 
+              className="w-1/3 h-full cursor-pointer" 
+              onClick={(e) => { e.stopPropagation(); currentIndex > 0 && (setCurrentIndex(i => i - 1), setProgress(0)); }} 
+            />
+            <div 
+              className="flex-1 h-full cursor-pointer" 
+              onClick={(e) => { e.stopPropagation(); currentIndex < stories.length - 1 ? (setCurrentIndex(i => i + 1), setProgress(0)) : onClose(); }} 
+            />
+          </div>
+        </div>
+
+        {/* Bottom Hint */}
+        <div className="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none">
+          <motion.div 
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="flex flex-col items-center gap-1 opacity-30"
+          >
+            <div className="w-8 h-1 bg-white rounded-full" />
+            <span className="text-[8px] font-black text-white uppercase tracking-[0.3em]">Glisser pour fermer</span>
+          </motion.div>
         </div>
       </div>
     </motion.div>
@@ -178,61 +210,64 @@ const StoriesBar = ({ users, stories, currentUser, primaryColor, onStoryClick, o
   onStoryClick: (handle: string) => void;
   onAddStory: () => void;
 }) => {
-  // Les utilisateurs qui ont des stories actives (incluant moi)
   const usersWithStories = users.filter(u => stories.some(s => s.user_handle === u.handle));
   const iHaveStories = stories.some(s => s.user_handle === currentUser.handle);
 
   return (
-    <div className="flex gap-4 overflow-x-auto no-scrollbar px-6 pb-2">
-      {/* Add story button */}
-      <div className="flex flex-col items-center gap-2 min-w-[60px]">
+    <div className="flex gap-5 overflow-x-auto no-scrollbar px-6 py-4">
+      {/* Add Story */}
+      <div className="flex flex-col items-center gap-2.5 min-w-[65px]">
         <div
           onClick={onAddStory}
-          className="w-14 h-14 rounded-[20px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale group hover:border-pink-300 transition-colors"
+          className="w-16 h-16 rounded-[24px] flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 cursor-pointer tap-scale group hover:border-indigo-400 transition-all shadow-sm"
         >
-          <Plus size={20} className="text-gray-400 group-hover:text-pink-500 transition-colors" />
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/10 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+            <Plus size={20} className="text-gray-900 dark:text-white" />
+          </div>
         </div>
-        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-wide">Ajouter</span>
+        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Partager</span>
       </div>
 
-      {/* Ma story (si j'en ai) */}
+      {/* My Story */}
       {iHaveStories && (
         <div 
-          className="flex flex-col items-center gap-2 min-w-[60px] cursor-pointer"
+          className="flex flex-col items-center gap-2.5 min-w-[65px] cursor-pointer group"
           onClick={() => onStoryClick(currentUser.handle)}
         >
-          <div className="p-[2.5px] rounded-[22px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
-            <Avatar className="w-[50px] h-[50px] rounded-[20px] border-2 border-white dark:border-[hsl(224,20%,9%)]">
-              <AvatarImage src={currentUser.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.handle}`} />
-              <AvatarFallback>{currentUser.name?.[0]}</AvatarFallback>
-            </Avatar>
+          <div className="p-[3px] rounded-[26px] bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 animate-gradient-xy">
+            <div className="p-[2px] rounded-[23px] bg-white dark:bg-[hsl(224,20%,7%)]">
+              <Avatar className="w-14 h-14 rounded-[21px] border border-gray-100 dark:border-white/5">
+                <AvatarImage src={currentUser.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.handle}`} className="object-cover" />
+                <AvatarFallback className="font-black">{currentUser.name?.[0]}</AvatarFallback>
+              </Avatar>
+            </div>
           </div>
-          <span className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-wide">Moi</span>
+          <span className="text-[9px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Moi</span>
         </div>
       )}
 
+      {/* Others' Stories */}
       {usersWithStories.filter(u => u.handle !== currentUser.handle).map((u, i) => (
         <motion.div
           key={u.id}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: i * 0.04 }}
-          className="flex flex-col items-center gap-2 min-w-[60px] cursor-pointer"
+          initial={{ opacity: 0, scale: 0.8, x: 20 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ delay: i * 0.05, type: "spring", stiffness: 260, damping: 20 }}
+          className="flex flex-col items-center gap-2.5 min-w-[65px] cursor-pointer group"
           onClick={() => onStoryClick(u.handle)}
         >
-          <div
-            className="w-14 h-14 rounded-[20px] p-[2px] tap-scale"
-            style={{ background: `linear-gradient(135deg, ${primaryColor}, #8B5CF6)` }}
-          >
-            <div className="w-full h-full rounded-[18px] bg-white dark:bg-[hsl(224,20%,10%)] p-[2px]">
-              <img
-                src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
-                alt={u.name}
-                className="w-full h-full rounded-[16px] object-cover"
-              />
+          <div className="p-[3px] rounded-[26px] bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+            <div className="p-[2px] rounded-[23px] bg-white dark:bg-[hsl(224,20%,7%)]">
+              <div className="w-14 h-14 rounded-[21px] overflow-hidden border border-gray-100 dark:border-white/5">
+                <img
+                  src={u.avatarImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`}
+                  alt={u.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+              </div>
             </div>
           </div>
-          <span className="text-[9px] font-bold text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate w-full text-center">
+          <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate w-16 text-center">
             {u.handle.replace('@', '')}
           </span>
         </motion.div>
