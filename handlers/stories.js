@@ -1,30 +1,36 @@
 const db = require('./_lib/db');
 const auth = require('./_lib/auth');
 const { handleCors } = require('./_lib/cors');
+const { rateLimit } = require('./_lib/rateLimit');
 
 module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
-
-  // Initialisation de la table si elle n'existe pas
-  try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS stories (
-        id SERIAL PRIMARY KEY,
-        user_handle TEXT NOT NULL,
-        image TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-  } catch (e) {
-    console.error("Failed to ensure stories table:", e);
-  }
 
   if (req.method === 'POST') {
     const user = await auth.verify(req);
     if (!user) return res.status(401).json({ error: 'Auth required' });
 
+    // Rate limiting
+    const limit = await rateLimit(req, 'default');
+    Object.entries(limit.headers).forEach(([k, v]) => res.setHeader(k, v));
+    if (!limit.allowed) return res.status(429).json({ error: 'Too many requests' });
+
     const { image } = req.body;
-    if (!image) return res.status(400).json({ error: 'Image required' });
+
+    // Validation robuste de l'image
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image required' });
+    }
+    // Bloquer SVG — vecteur XSS (JS embarqué dans SVG)
+    if (image.startsWith('data:image/svg')) {
+      return res.status(400).json({ error: 'SVG images are not allowed' });
+    }
+    // Vérifier la taille (max ~5MB en base64)
+    const isBase64 = image.startsWith('data:image/');
+    const maxSize = isBase64 ? 7 * 1024 * 1024 : 2000;
+    if (image.length > maxSize) {
+      return res.status(400).json({ error: 'Image too large (max 5MB)' });
+    }
 
     try {
       // Vérifier la limite de 5 stories actives

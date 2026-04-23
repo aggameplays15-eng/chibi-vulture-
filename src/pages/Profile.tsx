@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
+import { showSuccess } from '@/utils/toast';
 import { motion } from 'framer-motion';
 
 const StatCard = ({ value, label, onClick }: { value: number; label: string; onClick?: () => void }) => (

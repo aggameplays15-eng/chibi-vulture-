@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApp } from '@/context/AppContext';
 import { apiService } from '@/services/api';
+import { showSuccess } from '@/utils/toast';
 
 interface PublicUser {
   id: number;
