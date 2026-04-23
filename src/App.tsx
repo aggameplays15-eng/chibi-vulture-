@@ -11,7 +11,7 @@ import { AppSettingsProvider } from "./context/AppSettingsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import MusicPlayer from "@/components/MusicPlayer";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 // Eager — pages critiques
 import Index from "./pages/Index";
@@ -143,6 +143,7 @@ const App = () => {
     </AuthProvider>
   </QueryClientProvider>
   </ThemeProvider>
-);
+  );
+};
 
 export default App;
