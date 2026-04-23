@@ -49,23 +49,31 @@ const StoryViewer = ({ stories, user, onClose, primaryColor }: {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          if (currentIndex < stories.length - 1) {
-            setCurrentIndex(i => i + 1);
-            return 0;
-          } else {
-            onClose();
-            return 100;
-          }
-        }
-        return p + 2; // ~5 seconds per story
-      });
+      setProgress(p => Math.min(100, p + 2));
     }, 100);
     return () => clearInterval(timer);
-  }, [currentIndex, stories.length, onClose]);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (progress >= 100) {
+      if (currentIndex < stories.length - 1) {
+        setCurrentIndex(i => i + 1);
+        setProgress(0);
+      } else {
+        onClose();
+      }
+    }
+  }, [progress, currentIndex, stories.length, onClose]);
 
   const currentStory = stories[currentIndex];
+
+  useEffect(() => {
+    if (!stories || stories.length === 0) {
+      onClose();
+    }
+  }, [stories, onClose]);
+
+  if (!stories || stories.length === 0 || !currentStory) return null;
 
   return (
     <motion.div
