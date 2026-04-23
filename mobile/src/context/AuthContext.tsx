@@ -105,16 +105,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem('cv_user', JSON.stringify(updated));
   };
 
+  const setGuestMode = () => {
+    setUser({
+      id: -1,
+      name: 'Visiteur',
+      handle: '@guest',
+      email: 'guest@chibivulture.com',
+      role: 'Guest',
+      isApproved: true,
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && user.id !== -1,
         login,
         signup,
         logout,
         updateUser,
+        setGuestMode,
       }}
     >
       {children}

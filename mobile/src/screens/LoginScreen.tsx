@@ -21,7 +21,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { user, login, setGuestMode } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -102,6 +102,23 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               Mot de passe oublié ?
             </Text>
           </TouchableOpacity>
+
+          {/* Bouton Invité Premium */}
+          {(!user || user.id === -1) && (
+            <View style={styles.guestContainer}>
+              <TouchableOpacity
+                style={styles.guestButton}
+                onPress={() => {
+                  setGuestMode();
+                  navigation.navigate('Main');
+                }}
+                disabled={isLoading}
+              >
+                <Text style={styles.guestButtonText}>EXPLORER SANS COMPTE</Text>
+              </TouchableOpacity>
+              <Text style={styles.guestHint}>Accès limité aux contenus publics</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -166,5 +183,32 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#EC4899',
     fontSize: 14,
+  },
+  guestContainer: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  guestButton: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FCE7F3',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    color: '#666',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  guestHint: {
+    fontSize: 10,
+    color: '#9ca3af',
+    fontWeight: 'bold',
+    marginTop: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

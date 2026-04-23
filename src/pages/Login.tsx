@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, setGuestMode, primaryColor, headerLogoUrl } = useApp();
+  const { user, login, setGuestMode, primaryColor, headerLogoUrl } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -164,15 +164,35 @@ const Login = () => {
           </p>
         </motion.form>
 
-        <Button
-          variant="ghost"
-          onClick={handleGuest}
-          data-testid="guest-button"
-          className="w-full h-12 rounded-2xl text-gray-400 dark:text-gray-600 font-semibold hover:bg-gray-50 dark:hover:bg-white/5 flex gap-2"
-        >
-          <Eye size={16} />
-          Explorer en invité
-        </Button>
+        {/* Bouton Invité Premium */}
+        {!user?.isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="relative group">
+              <div 
+                className="absolute -inset-0.5 rounded-[24px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"
+                style={{ backgroundColor: primaryColor }}
+              ></div>
+              <Button
+                variant="ghost"
+                onClick={handleGuest}
+                data-testid="guest-button"
+                className="relative w-full h-14 rounded-[22px] bg-white dark:bg-white/5 border-2 border-gray-100 dark:border-white/10 text-gray-600 dark:text-gray-300 font-black hover:bg-gray-50 dark:hover:bg-white/10 flex gap-3 transition-all scale-100 active:scale-95 shadow-sm"
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 dark:bg-white/10">
+                  <Eye size={18} style={{ color: primaryColor }} />
+                </div>
+                EXPLORER SANS COMPTE
+              </Button>
+            </div>
+            <p className="text-[10px] text-center text-gray-400 mt-3 font-bold uppercase tracking-widest">
+              Accès limité aux contenus publics
+            </p>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
