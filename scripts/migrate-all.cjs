@@ -55,6 +55,7 @@ async function migrate() {
       user_handle VARCHAR(50) NOT NULL REFERENCES users(handle) ON DELETE CASCADE,
       image TEXT NOT NULL,
       caption VARCHAR(500),
+      reports INTEGER DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -163,6 +164,9 @@ async function migrate() {
   await run(client, 'orders.actual_delivery',    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_delivery TIMESTAMP`);
   await run(client, 'orders.delivery_zone',      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_zone VARCHAR(100)`);
   await run(client, 'orders.delivery_price',     `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_price DECIMAL(10,2) DEFAULT 0`);
+
+  // posts
+  await run(client, 'posts.reports', `ALTER TABLE posts ADD COLUMN IF NOT EXISTS reports INTEGER DEFAULT 0`);
 
   // products
   await run(client, 'products.category',    `ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general'`);
