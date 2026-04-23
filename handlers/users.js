@@ -28,15 +28,20 @@ module.exports = async (req, res) => {
       }
     }
 
-    const admin = await auth.verify(req);
-    if (!admin || admin.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
+    const requester = await auth.verify(req);
+    const isAdmin = requester && requester.role === 'Admin';
 
     try {
-      // Exclure password et champs sensibles — jamais exposés même à l'admin
-      const { rows } = await db.query(
-        'SELECT id, name, handle, email, bio, avatar_color, role, is_approved, status, created_at FROM users WHERE status != $1 OR status IS NULL ORDER BY created_at DESC',
-        ['Supprimé']
-      );
+      let query;
+      if (isAdmin) {
+        // Admin sees everyone (except deleted)
+        query = 'SELECT id, name, handle, email, bio, avatar_color, avatar_image, role, is_approved, status, created_at FROM users WHERE status != $1 OR status IS NULL ORDER BY created_at DESC';
+      } else {
+        // Public sees only approved artists
+        query = 'SELECT id, name, handle, bio, avatar_color, avatar_image, role FROM users WHERE is_approved = true AND (status != $1 OR status IS NULL) ORDER BY created_at DESC';
+      }
+      
+      const { rows } = await db.query(query, ['Supprimé']);
       res.status(200).json(rows);
     } catch {
       res.status(500).json({ error: 'Failed to fetch users' });

@@ -59,16 +59,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         apiService.setToken(savedToken);
       }
 
-      const currentUser = savedUser ? JSON.parse(savedUser) : null;
-      const isAdmin = currentUser?.role === 'Admin';
-
-      if (isAdmin) {
-        try {
-          const realUsers = await apiService.getUsers();
-          if (realUsers) setUsers(realUsers as UserProfile[]);
-        } catch (err) {
-          console.error("Failed to fetch users:", err);
+      try {
+        const realUsers = await apiService.getUsers();
+        if (realUsers && Array.isArray(realUsers)) {
+          const normalized = realUsers.map((u: any) => ({
+            ...u,
+            avatarImage: u.avatar_image || u.avatarImage,
+            isApproved: u.is_approved ?? u.isApproved
+          }));
+          setUsers(normalized as UserProfile[]);
         }
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
       }
 
       setIsLoading(false);
@@ -160,6 +162,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           avatarImage: data.avatar_image || data.avatarImage
         };
         setUser(prev => ({ ...prev, ...normalizedData }));
+        // Update in the global users list too
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...normalizedData } : u));
       }
     } catch (err) { console.error(err); }
   }, [user.id]);
