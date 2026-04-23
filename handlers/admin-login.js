@@ -59,8 +59,6 @@ module.exports = async (req, res) => {
 
   const token = auth.signToken(adminUser);
 
-  console.log(`[Admin] Connexion réussie pour l'administrateur`);
-
   return res.status(200).json({
     token,
     role: 'Admin',

@@ -77,11 +77,16 @@ module.exports = async (req, res) => {
   } else if (req.method === 'POST') {
     let user = await auth.verify(req);
     if (!user) {
+      // Commande invité — s'assurer que le compte @guest existe (FK constraint)
+      // Mot de passe hashé pour éviter une connexion avec 'guest' en clair
       try {
+        const bcrypt = require('bcryptjs');
+        const guestHash = await bcrypt.hash('guest-account-not-loginable-' + process.env.JWT_SECRET?.slice(0, 8), 10);
         await db.query(
           "INSERT INTO users (name, handle, email, password, role, is_approved) " +
-          "VALUES ('Invité', '@guest', 'guest@chibivulture.com', 'guest', 'Member', true) " +
-          "ON CONFLICT (handle) DO NOTHING"
+          "VALUES ('Invité', '@guest', 'guest@chibivulture.com', $1, 'Member', true) " +
+          "ON CONFLICT (handle) DO NOTHING",
+          [guestHash]
         );
       } catch (err) {
         console.error('[Orders] Failed to ensure guest user:', err.message);

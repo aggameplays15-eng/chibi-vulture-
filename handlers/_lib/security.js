@@ -119,7 +119,12 @@ const DOS_BAN_DURATIONS = {
 // ─── 5. HELPERS ─────────────────────────────────────────────
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
+  if (forwarded) {
+    // Sur Vercel, le dernier IP est ajouté par l'infrastructure (le plus fiable)
+    // Le premier peut être forgé par le client
+    const ips = forwarded.split(',').map(s => s.trim()).filter(Boolean);
+    return ips[ips.length - 1] || 'unknown';
+  }
   return req.socket?.remoteAddress || 'unknown';
 }
 
@@ -131,8 +136,7 @@ async function logThreat(ip, type, detail, req) {
   try {
     await db.query(
       `INSERT INTO security_log (ip, threat_type, detail, path, method, user_agent, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       ON CONFLICT DO NOTHING`,
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
       [ip, type, detail.substring(0, 500), req.url || '', req.method || '', getUA(req).substring(0, 300)]
     );
   } catch {

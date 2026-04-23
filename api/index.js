@@ -4,8 +4,8 @@
 const { securityMiddleware, logNotFound } = require('../handlers/_lib/security');
 const { cleanupRateLimitLogs } = require('../handlers/_lib/rateLimit');
 
-// Nettoyage périodique (1 chance sur 50 par requête pour ne pas surcharger)
-if (Math.random() < 0.02) cleanupRateLimitLogs().catch(() => {});
+// Nettoyage périodique (1 chance sur 20 par requête)
+if (Math.random() < 0.05) cleanupRateLimitLogs().catch(() => {});
 
 // Timeout sur les handlers pour éviter les attaques Slowloris / connexions pendantes
 const HANDLER_TIMEOUT_MS = 15000;

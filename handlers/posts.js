@@ -104,7 +104,8 @@ module.exports = async (req, res) => {
           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likes_count,
           (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count
           FROM posts p 
-          LEFT JOIN users u ON p.user_handle = u.handle 
+          INNER JOIN users u ON p.user_handle = u.handle
+          WHERE (u.status IS NULL OR u.status NOT IN ('Banni', 'Supprimé'))
           ORDER BY p.created_at DESC
           LIMIT $1 OFFSET $2
         `;

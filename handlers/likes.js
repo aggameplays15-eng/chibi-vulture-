@@ -60,9 +60,17 @@ module.exports = async (req, res) => {
     }
 
   } else if (req.method === 'GET') {
+    // Auth requise — les likes sont des données privées
+    const requester = await auth.verify(req);
+    if (!requester) return res.status(401).json({ error: 'Auth required' });
+
     const { user_handle } = req.query;
     if (!user_handle || typeof user_handle !== 'string' || user_handle.length > 50) {
       return res.status(400).json({ error: 'Invalid user handle' });
+    }
+    // Un utilisateur ne peut voir que ses propres likes (sauf admin)
+    if (requester.handle !== user_handle && requester.role !== 'Admin') {
+      return res.status(403).json({ error: 'Access denied' });
     }
     try {
       const { rows } = await db.query('SELECT post_id FROM likes WHERE user_handle = $1', [user_handle]);

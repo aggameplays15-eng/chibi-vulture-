@@ -52,9 +52,18 @@ module.exports = async (req, res) => {
   // PUT - Admin only - Update app settings
   if (req.method === 'PUT') {
     const user = await auth.verify(req);
-    if (!user || user.role !== 'Admin') return res.status(401).json({ error: 'Admin access required' });
+    if (!user) return res.status(401).json({ error: 'Auth required' });
+    if (user.role !== 'Admin') return res.status(403).json({ error: 'Admin access required' });
 
     const { app_name, app_logo, app_logo_header, app_logo_home, pwa_icon, app_description, primary_color } = req.body;
+
+    // Limiter la taille des logos base64 (max 500KB)
+    const MAX_LOGO_SIZE = 500 * 1024;
+    for (const [key, val] of Object.entries({ app_logo, app_logo_header, app_logo_home, pwa_icon })) {
+      if (val && typeof val === 'string' && val.startsWith('data:') && val.length > MAX_LOGO_SIZE) {
+        return res.status(400).json({ error: `${key} trop volumineux (max 500KB)` });
+      }
+    }
     
     try {
       const settings = [

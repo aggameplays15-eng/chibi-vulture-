@@ -7,6 +7,10 @@ module.exports = async (req, res) => {
   if (handleCors(req, res)) return;
 
   if (req.method === 'GET') {
+    // Auth requise pour lire les commentaires
+    const viewer = await auth.verify(req);
+    if (!viewer) return res.status(401).json({ error: 'Auth required' });
+
     const { post_id } = req.query;
     if (!post_id || isNaN(Number(post_id))) {
       return res.status(400).json({ error: 'Invalid post_id' });

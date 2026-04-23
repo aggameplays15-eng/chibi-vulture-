@@ -24,7 +24,10 @@ const BAN_ESCALATION = [
 
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
+  if (forwarded) {
+    const ips = forwarded.split(',').map(s => s.trim()).filter(Boolean);
+    return ips[ips.length - 1] || 'unknown';
+  }
   return req.socket?.remoteAddress || 'unknown';
 }
 
@@ -158,11 +161,17 @@ async function rateLimit(req, type = 'default') {
   }
 }
 
-// Nettoyage périodique des vieilles entrées (à appeler depuis un cron ou au démarrage)
+// Nettoyage périodique — exécuté au plus une fois par heure par instance
+let lastCleanup = 0;
 async function cleanupRateLimitLogs() {
+  const now = Date.now();
+  if (now - lastCleanup < 60 * 60 * 1000) return; // max 1x/heure
+  lastCleanup = now;
   try {
     await db.query(`DELETE FROM rate_limit_log WHERE created_at < NOW() - INTERVAL '2 hours'`);
     await db.query(`DELETE FROM rate_limit_violations WHERE created_at < NOW() - INTERVAL '48 hours'`);
+    await db.query(`DELETE FROM security_log WHERE created_at < NOW() - INTERVAL '7 days'`);
+    await db.query(`DELETE FROM ip_bans WHERE expires_at < NOW()`);
   } catch {
     // Fail silently
   }
