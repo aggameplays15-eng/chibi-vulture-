@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
           COALESCE(COUNT(DISTINCT oi.product_id), 0) AS products_sold,
           (SELECT COUNT(*) FROM products WHERE artist_id = $1) AS active_products
         FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
+        JOIN orders o ON CAST(oi.order_id AS TEXT) = o.id
         JOIN products p ON oi.product_id = p.id
         WHERE p.artist_id = $1 AND o.created_at >= $2 AND o.created_at <= $3
       `;
@@ -61,7 +61,7 @@ module.exports = async (req, res) => {
           SUM(oi.quantity) AS sales,
           SUM(oi.price_at_purchase * oi.quantity) AS revenue
         FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
+        JOIN orders o ON CAST(oi.order_id AS TEXT) = o.id
         JOIN products p ON oi.product_id = p.id
         WHERE p.artist_id = $1 AND o.created_at >= $2 AND o.created_at <= $3
         GROUP BY p.id, p.name

@@ -12,9 +12,7 @@ module.exports = async (req, res) => {
       const user = await auth.verify(req);
       if (!user) return res.status(401).json({ error: 'Auth required' });
       try {
-        const orderId = Number(req.query.id);
-        if (isNaN(orderId)) return res.status(400).json({ error: 'Invalid id' });
-
+        const orderId = String(req.query.id);
         const { rows: orderRows } = await db.query(
           'SELECT id, total, status, created_at, shipping_address, phone, user_handle FROM orders WHERE id = $1',
           [orderId]
@@ -31,7 +29,7 @@ module.exports = async (req, res) => {
           `SELECT oi.product_id, oi.quantity, oi.price_at_purchase, p.name, p.image
            FROM order_items oi
            LEFT JOIN products p ON p.id = oi.product_id
-           WHERE oi.order_id = $1`,
+           WHERE CAST(oi.order_id AS TEXT) = $1`,
           [orderId]
         );
 
@@ -216,7 +214,7 @@ module.exports = async (req, res) => {
     try {
       const { rows } = await db.query(
         'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
-        [status, Number(id)]
+        [status, String(id)]
       );
       if (rows.length === 0) return res.status(404).json({ error: 'Order not found' });
 

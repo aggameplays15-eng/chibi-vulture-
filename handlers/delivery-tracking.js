@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
       const orderResult = await db.query(
         `SELECT id, user_handle, tracking_number, carrier, estimated_delivery, actual_delivery, status
          FROM orders WHERE id = $1`,
-        [Number(orderId)]
+        [String(orderId)]
       );
 
       if (!orderResult.rows[0]) {
@@ -41,9 +41,9 @@ module.exports = async (req, res) => {
       const eventsResult = await db.query(
         `SELECT status, description, location, carrier, tracking_number, created_at
          FROM delivery_tracking_events
-         WHERE order_id = $1
+         WHERE CAST(order_id AS TEXT) = $1
          ORDER BY created_at ASC`,
-        [Number(orderId)]
+        [String(orderId)]
       );
 
       res.status(200).json({
@@ -84,8 +84,8 @@ module.exports = async (req, res) => {
          ${tracking_number ? ', tracking_number = $3, carrier = $4' : ''}
          WHERE id = $2`,
         tracking_number
-          ? [status, order_id, tracking_number, carrier || null]
-          : [status, order_id]
+          ? [status, String(order_id), tracking_number, carrier || null]
+          : [status, String(order_id)]
       );
 
       // Email de mise à jour au client (fire & forget)
