@@ -26,13 +26,14 @@ const SmartHeader = () => {
   // Fetch unread notification count
   useEffect(() => {
     if (!user.isAuthenticated || user.isGuest) return;
+    let active = true;
     const fetchCount = () => {
       apiService.getNotifications()
-        .then((data: { id: number }[] | null) => { 
+        .then((data: { id: number }[] | null) => {
+          if (!active) return;
           if (Array.isArray(data)) {
             const count = Math.min(data.length, 99);
             setUnreadCount(count);
-            // Sync with PWA badge
             if ('setAppBadge' in navigator) {
               if (count > 0) {
                 (navigator as any).setAppBadge(count).catch(() => {});
@@ -40,13 +41,17 @@ const SmartHeader = () => {
                 (navigator as any).clearAppBadge().catch(() => {});
               }
             }
+          } else if (data === null) {
+            // null = réponse non-ok (401/403) — arrêter le polling
+            active = false;
+            clearInterval(interval);
           }
         })
         .catch(() => {});
     };
     fetchCount();
     const interval = setInterval(fetchCount, 60000);
-    return () => clearInterval(interval);
+    return () => { active = false; clearInterval(interval); };
   }, [user.isAuthenticated, user.isGuest]);
 
   const getPageTitle = () => {

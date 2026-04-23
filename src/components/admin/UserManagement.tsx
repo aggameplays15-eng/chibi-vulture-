@@ -94,7 +94,7 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (id: number) => {
-    const token = sessionStorage.getItem('cv_token');
+    const token = localStorage.getItem('cv_token');
     try {
       const res = await fetch(`/api/users?id=${id}`, {
         method: 'DELETE',
