@@ -39,25 +39,29 @@ const PublicProfile = () => {
 
     const load = async () => {
       setIsLoading(true);
+      // Reset state for new profile
+      setProfile(null);
+      setPosts([]);
+      
       try {
-        const [searchData, followData] = await Promise.all([
-          apiService.search(decodedHandle.replace('@', '')),
-          apiService.getFollowCounts(decodedHandle.startsWith('@') ? decodedHandle : `@${decodedHandle}`),
+        const fullHandle = decodedHandle.startsWith('@') ? decodedHandle : `@${decodedHandle}`;
+        const [found, followData, postsData] = await Promise.all([
+          apiService.getUserByHandle(fullHandle),
+          apiService.getFollowCounts(fullHandle),
+          apiService.getUserPostCount(fullHandle)
         ]);
-        const found = searchData?.users?.find(
-          (u: PublicUser) => u.handle === decodedHandle || u.handle === `@${decodedHandle}`
-        );
+
         if (found) setProfile(found);
         if (followData) {
           setFollowersCount(followData.followersCount ?? 0);
           setFollowingCount(followData.followingCount ?? 0);
         }
-        const postsData = await apiService.getUserPostCount(
-          decodedHandle.startsWith('@') ? decodedHandle : `@${decodedHandle}`
-        );
         if (Array.isArray(postsData)) setPosts(postsData);
-      } catch { /* silent */ }
-      finally { setIsLoading(false); }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     load();
   }, [decodedHandle, isOwnProfile, navigate]);

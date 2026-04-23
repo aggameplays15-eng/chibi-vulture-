@@ -163,6 +163,11 @@ export const apiService = {
     return safeJson(response);
   },
 
+  getUserByHandle: async (handle: string) => {
+    const response = await fetchWithAuth(`/api/users?handle=${encodeURIComponent(handle)}`);
+    return safeJson(response);
+  },
+
   updateUser: async (userData: UserData) => {
     const response = await fetchWithAuth('/api/users', {
       method: 'PATCH',

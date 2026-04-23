@@ -152,8 +152,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateUser = useCallback(async (data: Partial<UserProfile>) => {
     try {
-      if (user.id) await apiService.updateUser({ id: user.id, ...data });
-      setUser(prev => ({ ...prev, ...data }));
+      if (user.id) {
+        const response = await apiService.updateUser({ id: user.id, ...data });
+        // Normalize snake_case from DB to camelCase for state
+        const normalizedData = {
+          ...data,
+          avatarImage: data.avatar_image || data.avatarImage
+        };
+        setUser(prev => ({ ...prev, ...normalizedData }));
+      }
     } catch (err) { console.error(err); }
   }, [user.id]);
 
