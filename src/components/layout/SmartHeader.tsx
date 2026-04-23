@@ -71,7 +71,13 @@ const SmartHeader = () => {
               variant="ghost"
               size="icon"
               className="w-10 h-10 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (window.history.length <= 2) {
+                  navigate('/feed');
+                } else {
+                  navigate(-1);
+                }
+              }}
             >
               <ChevronLeft size={20} strokeWidth={2.5} />
             </Button>

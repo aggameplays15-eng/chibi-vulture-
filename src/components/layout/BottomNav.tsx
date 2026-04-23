@@ -22,7 +22,7 @@ const BottomNav = () => {
     }
   });
 
-  const hiddenRoutes = ['/chat', '/onboarding', '/login', '/signup', '/checkout-success'];
+  const hiddenRoutes = ['/chat', '/onboarding', '/login', '/signup', '/checkout-success', '/post/', '/messages/', '/product/'];
   const isHiddenRoute = hiddenRoutes.some(route => location.pathname.startsWith(route));
 
   if (isHiddenRoute) return null;

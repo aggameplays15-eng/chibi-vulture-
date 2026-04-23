@@ -29,139 +29,51 @@ const Particle = ({ color, index, total }) => {
 };
 
 const BookLogo = ({ logoUrl, primaryColor }) => {
-  const isDragging = useRef(false);
-  const lastX = useRef(0);
-  const lastY = useRef(0);
-  const velocityX = useRef(0);
-  const velocityY = useRef(0);
-  
-  const rotateX = useMotionValue(-12);
-  const rotateY = useMotionValue(0);
-  const perspective = useMotionValue(2500);
-  
-  const springX = useSpring(rotateX, { stiffness: 60, damping: 35 });
-  const springY = useSpring(rotateY, { stiffness: 60, damping: 35 });
-  const springPersp = useSpring(perspective, { stiffness: 40, damping: 30 });
-  
-  const floatY = useMotionValue(0);
-  const floatSpring = useSpring(floatY, { stiffness: 20, damping: 25 });
-  
-  const slices = 80; 
-  const thickness = 60;
-
-  React.useEffect(() => {
-    let frame;
-    let t = 0;
-    
-    const tick = () => {
-      t += 0.003;
-      floatY.set(Math.sin(t) * 12);
-      
-      if (!isDragging.current) {
-        velocityX.current *= 0.95;
-        velocityY.current *= 0.95;
-        const baseSpin = 0.05; 
-        rotateY.set(rotateY.get() + velocityX.current + baseSpin);
-        const idleX = -12;
-        const currentX = rotateX.get();
-        rotateX.set(currentX + (idleX - currentX) * 0.04 + velocityY.current);
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  const handlePointerDown = (e) => {
-    isDragging.current = true;
-    lastX.current = e.clientX;
-    lastY.current = e.clientY;
-  };
-
-  const handlePointerUp = () => { isDragging.current = false; };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging.current) return;
-    const deltaX = e.clientX - lastX.current;
-    const deltaY = e.clientY - lastY.current;
-    const sensitivity = 0.4;
-    rotateY.set(rotateY.get() + deltaX * sensitivity);
-    rotateX.set(rotateX.get() - deltaY * sensitivity);
-    velocityX.current = deltaX * sensitivity;
-    velocityY.current = -deltaY * sensitivity;
-    lastX.current = e.clientX;
-    lastY.current = e.clientY;
-  };
-
-  const lighting = useTransform(springY, (y) => {
-    const angle = (Number(y) % 360 + 360) % 360;
-    const intensity = Math.abs(Math.cos((angle * Math.PI) / 180));
-    return `brightness(${0.9 + (intensity * 0.25)})`;
-  });
-
-  const glareX = useTransform(springY, (y) => ((Number(y) % 360) / 360) * 200 - 100);
-
   return (
-    <div 
-      className="relative flex items-center justify-center touch-none cursor-grab active:cursor-grabbing" 
-      style={{ perspective: springPersp, width: 450, height: 450 }} 
-      onPointerDown={handlePointerDown} 
-      onPointerMove={handlePointerMove} 
-      onPointerUp={handlePointerUp} 
-      onPointerLeave={handlePointerUp}
-    >
-      <motion.div 
-        className="absolute bottom-[-80px] left-1/2 -translate-x-1/2 rounded-full pointer-events-none" 
+    <div className="relative group cursor-pointer">
+      {/* Halo lumineux dynamique */}
+      <motion.div
+        animate={{ 
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.6, 0.3],
+          rotate: [0, 360]
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-[-40px] rounded-full blur-[60px]"
         style={{ 
-          width: 280, height: 40, 
-          background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 70%)", 
-          filter: "blur(25px)", 
-          opacity: useTransform(floatSpring, [-12, 12], [0.4, 0.2]), 
-          scale: useTransform(springX, [-30, 30], [1.2, 0.8]),
-          z: -1000 
-        }} 
+          background: `radial-gradient(circle, ${primaryColor}40 0%, transparent 70%)` 
+        }}
       />
-
-      <motion.div 
-        style={{ rotateX: springX, rotateY: springY, y: floatSpring, transformStyle: "preserve-3d" }} 
-        className="relative w-full h-full flex items-center justify-center select-none"
+      
+      {/* Rotation 360 Fluide */}
+      <motion.div
+        animate={{ rotateY: 360 }}
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        style={{ transformStyle: "preserve-3d", perspective: 1000 }}
+        className="relative z-10"
       >
-        {Array.from({ length: slices }).map((_, i) => {
-          const zPos = (i - slices / 2) * (thickness / slices);
-          const isFace = i === 0 || i === slices - 1;
-          const isFront = i === slices - 1;
-          const isBack = i === 0;
-          const ao = 0.7 + (Math.sin((i / (slices - 1)) * Math.PI) * 0.3);
-          const edgeBrightness = isFace ? 1 : 0.4 + (Math.sin((i / slices) * Math.PI) * 0.6) * ao;
-          
-          return (
-            <motion.div key={i} style={{ position: "absolute", width: 320, height: 320, transform: `translateZ(${zPos}px)`, transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}>
-              <motion.img 
-                src={logoUrl} alt="" draggable={false} 
-                style={{ 
-                  width: "100%", height: "100%", objectFit: "contain", 
-                  filter: isFace ? lighting : `brightness(${edgeBrightness})`,
-                  opacity: isFace ? 1 : 0.85,
-                  transform: isBack ? "rotateY(180deg)" : "none",
-                }} 
-              />
-              {isFront && (
-                <motion.div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%)`,
-                    backgroundSize: '200% 200%', x: glareX, mixBlendMode: 'overlay',
-                    WebkitMaskImage: `url(${logoUrl})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
-                  }}
-                />
-              )}
-              {!isFace && (
-                <div className="absolute inset-0 border-[3px] rounded-full opacity-10" style={{ borderColor: primaryColor, filter: 'blur(1px)' }} />
-              )}
-            </motion.div>
-          );
-        })}
+        <motion.img 
+          src={logoUrl} 
+          alt="Logo"
+          className="w-[280px] md:w-[320px] h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)]"
+          style={{ backfaceVisibility: "visible" }}
+        />
+        
+        {/* Reflet de balayage (Shimmer) */}
+        <motion.div 
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] pointer-events-none"
+        />
       </motion.div>
+
+      {/* Ombre portée douce */}
+      <motion.div
+        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[-40px] left-1/2 -translate-x-1/2 w-[180px] h-[20px] rounded-full blur-xl"
+        style={{ background: 'rgba(0,0,0,0.1)' }}
+      />
     </div>
   );
 };
@@ -170,7 +82,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, homeLogoUrl, primaryColor, setGuestMode } = useApp();
 
-  // Redirection automatique si déjà connecté
   React.useEffect(() => {
     if (user?.isAuthenticated && !user?.isGuest) {
       navigate('/feed', { replace: true });
@@ -180,84 +91,89 @@ const Index = () => {
   const handleGuest = () => { setGuestMode(); navigate("/feed"); };
   
   return (
-    <div className="h-screen h-[100dvh] bg-white dark:bg-[hsl(224,20%,7%)] flex flex-col items-center justify-center p-6 relative overflow-hidden select-none">
-      <div className="relative z-10 text-center space-y-6 md:space-y-10 max-w-sm w-full flex flex-col items-center">
+    <div className="h-screen h-[100dvh] bg-[#FAFAFA] dark:bg-[hsl(224,20%,7%)] flex flex-col items-center justify-center p-6 relative overflow-hidden select-none">
+      {/* Fond décoratif premium */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 pointer-events-none" style={{ backgroundColor: primaryColor }} />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full blur-[100px] opacity-10 pointer-events-none" style={{ backgroundColor: '#8B5CF6' }} />
+
+      <div className="relative z-10 text-center space-y-8 md:space-y-12 max-w-sm w-full flex flex-col items-center">
         
         {/* Logo Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 40, scale: 0.9 }} 
-          animate={{ opacity: 1, y: 0, scale: 1 }} 
-          transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }} 
-          className="flex flex-col items-center gap-4 md:gap-8"
+          initial={{ opacity: 0, scale: 0.8 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }} 
+          className="flex flex-col items-center gap-6"
         >
-          <div className="relative flex items-center justify-center scale-[0.75] md:scale-100">
+          <div className="scale-[0.85] md:scale-100">
             <BookLogo logoUrl={homeLogoUrl} primaryColor={primaryColor} />
           </div>
-          <div className="space-y-1">
-            <h1 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-[0.9]">
+          
+          <div className="space-y-2">
+            <h1 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-[0.85]">
               CHIBI<br />
-              <span className="gradient-text" style={{ backgroundImage: "linear-gradient(135deg, " + primaryColor + ", #8B5CF6, #3B82F6)" }}>
+              <span className="gradient-text animate-gradient-x" style={{ 
+                backgroundImage: `linear-gradient(90deg, ${primaryColor}, #8B5CF6, ${primaryColor})`,
+                backgroundSize: '200% auto'
+              }}>
                 VULTURE
               </span>
             </h1>
-            <p className="text-xs md:text-sm text-gray-400 dark:text-gray-500 font-semibold tracking-wide">La communaute des artistes</p>
+            <p className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 font-black uppercase tracking-[0.3em]">
+              L'excellence artistique
+            </p>
           </div>
         </motion.div>
 
-        {/* Features Chips */}
-        <div className="flex justify-center gap-1.5 flex-wrap">
-          {FEATURES.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
-              <Icon size={10} style={{ color: primaryColor }} />
-              <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Buttons Section */}
-        <div className="space-y-3 w-full">
+        {/* Action Buttons */}
+        <div className="space-y-4 w-full">
           <Link to="/login" className="block">
             <Button 
-              className="w-full h-14 md:h-16 rounded-[28px] text-white text-lg font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95 flex gap-3" 
-              style={{ backgroundColor: primaryColor, boxShadow: "0 20px 50px " + primaryColor + "45" }}
+              className="w-full h-16 rounded-[32px] text-white text-lg font-black shadow-xl transition-all hover:scale-[1.02] active:scale-95 flex gap-3 group" 
+              style={{ 
+                backgroundColor: primaryColor,
+                boxShadow: `0 20px 40px ${primaryColor}30`
+              }}
             >
-              SE CONNECTER <ArrowRight size={22} />
+              SE CONNECTER 
+              <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
           
-          <Link to="/signup" className="block">
-            <Button 
-              variant="outline" 
-              className="w-full h-12 md:h-14 rounded-[28px] text-gray-700 dark:text-gray-300 text-base font-bold border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all flex gap-2"
-            >
-              <UserPlus size={18} />CREER UN COMPTE
-            </Button>
-          </Link>
-
-          {/* Bouton Invité Premium - Uniquement si non connecté */}
-          {!user?.isAuthenticated && (
-            <div className="relative group pt-2">
-              <div 
-                className="absolute -inset-0.5 rounded-[28px] blur opacity-10 group-hover:opacity-30 transition duration-1000"
-                style={{ backgroundColor: primaryColor }}
-              ></div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/signup">
               <Button 
-                variant="ghost" 
-                onClick={handleGuest} 
-                className="relative w-full h-12 rounded-[28px] bg-white dark:bg-white/5 border-2 border-gray-100 dark:border-white/10 text-gray-600 dark:text-gray-300 text-sm font-black hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex gap-3 shadow-sm"
+                variant="outline" 
+                className="w-full h-14 rounded-3xl text-gray-700 dark:text-gray-300 text-xs font-black border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
               >
-                <Eye size={18} style={{ color: primaryColor }} />
-                EXPLORER SANS COMPTE
+                INSCRIPTION
               </Button>
-            </div>
-          )}
+            </Link>
+            
+            <Button 
+              variant="ghost" 
+              onClick={handleGuest} 
+              className="w-full h-14 rounded-3xl bg-gray-100/50 dark:bg-white/5 text-gray-600 dark:text-gray-400 text-xs font-black hover:bg-gray-200 dark:hover:bg-white/10 transition-all flex gap-2 border border-transparent"
+            >
+              INVITÉ <Eye size={14} style={{ color: primaryColor }} />
+            </Button>
+          </div>
         </div>
 
-        <div className="pt-2">
-          <Link to="/goated" className="text-[9px] text-gray-200 dark:text-gray-800 hover:text-gray-400 font-black uppercase tracking-[0.4em] transition-colors">
-            Admin Panel
-          </Link>
+        {/* Decorative footer features */}
+        <div className="flex justify-center gap-4 opacity-40">
+          {FEATURES.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex flex-col items-center gap-1">
+              <Icon size={12} className="text-gray-400" />
+              <span className="text-[7px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+            </div>
+          ))}
         </div>
+      </div>
+    </div>
+  );
+};
+
       </div>
     </div>
   );

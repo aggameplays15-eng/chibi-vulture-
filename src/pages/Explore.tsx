@@ -228,11 +228,11 @@ const Explore = () => {
 
                 {/* Masonry-style grid */}
                 <div className="grid grid-cols-2 gap-2">
-                  {(taggedPosts.length > 0 ? taggedPosts : Array.from({ length: 6 })).slice(0, 6).map((post, i) => {
+                  {taggedPosts.slice(0, 10).map((post, i) => {
                     const isWide = i === 0;
                     return (
                       <motion.div
-                        key={post ? (post as { id: number }).id : i}
+                        key={post.id}
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
@@ -241,22 +241,25 @@ const Explore = () => {
                           "rounded-[24px] bg-gray-100 dark:bg-white/5 overflow-hidden relative group cursor-pointer",
                           isWide ? "col-span-2 aspect-[2/1]" : "aspect-[3/4]"
                         )}
-                        onClick={() => post && navigate(`/post/${(post as { id: number }).id}`)}
+                        onClick={() => navigate(`/post/${post.id}`)}
                       >
                         <img
-                          src={post ? (post as { image: string }).image : `https://picsum.photos/seed/chibi${i + 10}/400/600`}
+                          src={post.image}
                           alt="Trend"
                           className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                          {post && (
-                            <p className="text-white text-[10px] font-bold truncate">{(post as { handle: string }).handle}</p>
-                          )}
+                          <p className="text-white text-[10px] font-bold truncate">{post.handle}</p>
                         </div>
                       </motion.div>
                     );
                   })}
                 </div>
+                {taggedPosts.length === 0 && (
+                  <div className="flex flex-col items-center py-10 opacity-50">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Aucune tendance pour le moment</p>
+                  </div>
+                )}
               </section>
 
               {/* Artists to follow */}

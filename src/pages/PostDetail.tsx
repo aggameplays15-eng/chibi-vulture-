@@ -133,7 +133,13 @@ const PostDetail = () => {
   return (
     <MainLayout>
       <header className="p-4 flex items-center gap-3 border-b border-pink-50 bg-white/80 backdrop-blur-md sticky top-0 z-20">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => {
+          if (window.history.length <= 2) {
+            navigate('/feed');
+          } else {
+            navigate(-1);
+          }
+        }}>
           <ChevronLeft size={24} />
         </Button>
         <h1 className="font-black text-gray-800 uppercase tracking-widest text-sm">Publication</h1>

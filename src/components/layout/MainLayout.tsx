@@ -27,7 +27,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
           transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
           className={cn(
             "relative z-10",
-            !isHome && "pt-24"
+            !isHome && "pt-24 pb-32"
           )}
         >
           {children}
