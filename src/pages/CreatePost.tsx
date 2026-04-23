@@ -14,7 +14,7 @@ import { apiService } from '@/services/api';
 
 const CreatePost = () => {
   const navigate = useNavigate();
-  const { user } = useApp();
+  const { user, addPost } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -60,7 +60,8 @@ const CreatePost = () => {
 
     setIsPublishing(true);
     try {
-      await apiService.createPost({ user_handle: user.handle, image, caption });
+      const newPost = await apiService.createPost({ user_handle: user.handle, image, caption });
+      if (newPost) addPost(newPost);
       showSuccess("Ton illustration a été publiée ! 🎨");
       navigate('/feed');
     } catch {

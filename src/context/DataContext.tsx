@@ -51,6 +51,7 @@ interface DataContextType {
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: number) => void;
   deletePost: (id: number) => void;
+  addPost: (post: any) => void;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Promise<string>;
   toggleLike: (postId: number) => void;
   toggleFavoritePost: (postId: number) => void;
@@ -71,10 +72,20 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!user.id) {
+      setLikedPosts([]);
+      setFavoritePosts([]);
+      setFavoriteProducts([]);
+      setIsLoading(false);
+      return;
+    }
+
     const load = async () => {
+      const userId = user.id;
       const loadLocal = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T>>) => {
-        const val = localStorage.getItem(key);
+        const val = localStorage.getItem(`${key}_${userId}`);
         if (val) setter(JSON.parse(val) as T);
+        else setter([] as unknown as T);
       };
       
       loadLocal('cv_likes', setLikedPosts);
@@ -83,7 +94,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
       try {
         const isAdmin = user?.role === 'Admin';
-
         const fetches: Promise<unknown>[] = [
           apiService.getProducts(),
           apiService.getPosts(1, 20),
@@ -103,19 +113,19 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     };
     
     load();
-  }, [user]);
+  }, [user.id, user.role]);
 
   useEffect(() => {
-    localStorage.setItem('cv_likes', JSON.stringify(likedPosts));
-  }, [likedPosts]);
+    if (user.id) localStorage.setItem(`cv_likes_${user.id}`, JSON.stringify(likedPosts));
+  }, [likedPosts, user.id]);
 
   useEffect(() => {
-    localStorage.setItem('cv_fav_posts', JSON.stringify(favoritePosts));
-  }, [favoritePosts]);
+    if (user.id) localStorage.setItem(`cv_fav_posts_${user.id}`, JSON.stringify(favoritePosts));
+  }, [favoritePosts, user.id]);
 
   useEffect(() => {
-    localStorage.setItem('cv_fav_prods', JSON.stringify(favoriteProducts));
-  }, [favoriteProducts]);
+    if (user.id) localStorage.setItem(`cv_fav_prods_${user.id}`, JSON.stringify(favoriteProducts));
+  }, [favoriteProducts, user.id]);
 
   const deleteProduct = useCallback(async (id: number) => {
     setProducts(prev => prev.filter(p => p.id !== id));
@@ -129,6 +139,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await apiService.deletePost(id);
     } catch (err) { console.error(err); }
+  }, []);
+
+  const addPost = useCallback((post: Post) => {
+    const normalizedPost = {
+      ...post,
+      user: post.user || post.user_name || 'Artiste',
+      handle: post.handle || post.user_handle || '@user',
+      avatar: post.avatar || post.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_handle}`,
+      time: post.time || "À l'instant",
+      likes: post.likes || 0
+    };
+    setPosts(prev => [normalizedPost, ...prev]);
   }, []);
   
   const toggleLike = useCallback(async (postId: number) => {
@@ -200,12 +222,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const contextValue = useMemo(() => ({
     products, posts, orders,
     likedPosts, favoritePosts, favoriteProducts, isLoading,
-    addProduct, updateProduct, deleteProduct, deletePost, addOrder,
+    addProduct, updateProduct, deleteProduct, deletePost, addPost, addOrder,
     toggleLike, toggleFavoritePost, toggleFavoriteProduct
   }), [
     products, posts, orders,
     likedPosts, favoritePosts, favoriteProducts, isLoading,
-    addProduct, updateProduct, deleteProduct, deletePost, addOrder,
+    addProduct, updateProduct, deleteProduct, deletePost, addPost, addOrder,
     toggleLike, toggleFavoritePost, toggleFavoriteProduct
   ]);
 

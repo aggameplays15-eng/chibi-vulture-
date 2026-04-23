@@ -66,14 +66,14 @@ const StoriesBar = ({ users, primaryColor, onStoryClick }: {
 
 const Feed = () => {
   const navigate = useNavigate();
-  const { likedPosts, favoritePosts, toggleLike, toggleFavoritePost, toggleFollow, user, primaryColor, users } = useApp();
+  const { likedPosts, favoritePosts, toggleLike, toggleFavoritePost, toggleFollow, user, primaryColor, users, deletePost } = useApp();
   const [showHeart, setShowHeart] = useState<number | null>(null);
   const { posts, loadMore, hasMore, isLoading, removePost } = useInfinitePosts();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const handleDeletePost = async (postId: number) => {
     try {
-      await apiService.deletePost(postId);
+      await deletePost(postId);
       removePost(postId);
       showSuccess("Post supprimé. 🗑️");
     } catch {
