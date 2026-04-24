@@ -72,6 +72,8 @@ const CATEGORY_FIELDS: Record<string, { label: string; key: keyof ProductForm; p
   ],
 };
 
+const DEFAULT_CATEGORIES = ['Art Digital', 'Vêtements', 'Accessoires', 'Livres', 'Limited', 'Merch'];
+
 // ─── Composant principal ──────────────────────────────────────
 const ShopManagement = () => {
   const { products, deleteProduct, addProduct, updateProduct, primaryColor } = useApp();
@@ -92,9 +94,14 @@ const ShopManagement = () => {
   const loadCategories = async () => {
     try {
       const cats = await apiService.getProductCategories();
-      setCategories(Array.isArray(cats) ? cats : []);
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategories(cats);
+      } else {
+        // Fallback : catégories par défaut si la table est vide ou inexistante
+        setCategories(DEFAULT_CATEGORIES.map((name, i) => ({ id: i + 1, name, color: '', icon: '' })));
+      }
     } catch {
-      setCategories([]);
+      setCategories(DEFAULT_CATEGORIES.map((name, i) => ({ id: i + 1, name, color: '', icon: '' })));
     }
   };
 
@@ -154,7 +161,13 @@ const ShopManagement = () => {
     const fullDescription = [form.description.trim(), extras].filter(Boolean).join('\n');
 
     const primaryImage = uploadedImages[0]?.dataUrl
-      || (editId ? undefined : `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(form.name)}`);
+      || (editId ? undefined : null);
+
+    if (!editId && !primaryImage) {
+      setErrors(prev => ({ ...prev, images: 'Au moins une image requise' }));
+      setIsSubmitting(false);
+      return;
+    }
 
     const productData: any = {
       name: form.name.trim(),

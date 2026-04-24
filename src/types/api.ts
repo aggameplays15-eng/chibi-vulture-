@@ -27,6 +27,7 @@ export interface ProductData {
   category: string;
   stock?: number;
   featured?: boolean;
+  description?: string;
 }
 
 export interface OrderData {

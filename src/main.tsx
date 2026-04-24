@@ -1,6 +1,8 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import "./globals.css";
 
 // Gestion des erreurs de chargement de modules (après déploiement Vercel)
@@ -27,5 +29,7 @@ if (savedTheme === 'dark') {
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
+    <Analytics />
+    <SpeedInsights />
   </ErrorBoundary>
 );

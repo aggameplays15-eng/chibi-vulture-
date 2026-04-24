@@ -8,6 +8,10 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/og-image",
+      "destination": "/api/og-image.js"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap.js"
     },

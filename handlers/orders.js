@@ -78,7 +78,6 @@ module.exports = async (req, res) => {
     let user = await auth.verify(req);
     if (!user) {
       // Commande invité — s'assurer que le compte @guest existe (FK constraint)
-      // Mot de passe hashé pour éviter une connexion avec 'guest' en clair
       try {
         const bcrypt = require('bcryptjs');
         const guestHash = await bcrypt.hash('guest-account-not-loginable-' + process.env.JWT_SECRET?.slice(0, 8), 10);
@@ -92,6 +91,26 @@ module.exports = async (req, res) => {
         console.error('[Orders] Failed to ensure guest user:', err.message);
       }
       user = { handle: '@guest', role: 'Member' };
+    }
+
+    // S'assurer que le handle de l'utilisateur existe en DB (FK constraint)
+    // Cas admin hardcodé (@admin) ou tout autre handle sans entrée users
+    try {
+      const { rows: existingUser } = await db.query(
+        'SELECT handle FROM users WHERE handle = $1', [user.handle]
+      );
+      if (existingUser.length === 0) {
+        // Créer une entrée minimale pour satisfaire la FK
+        const bcrypt = require('bcryptjs');
+        const dummyHash = await bcrypt.hash('not-loginable-' + process.env.JWT_SECRET?.slice(0, 8), 10);
+        await db.query(
+          "INSERT INTO users (name, handle, email, password, role, is_approved) " +
+          "VALUES ($1, $2, $3, $4, $5, true) ON CONFLICT (handle) DO NOTHING",
+          [user.name || user.handle, user.handle, `${user.handle.replace('@','')}@system.local`, dummyHash, user.role || 'Member']
+        );
+      }
+    } catch (err) {
+      console.error('[Orders] Failed to ensure user handle:', err.message);
     }
 
     const { customer_name, total, items } = req.body;
@@ -144,11 +163,15 @@ module.exports = async (req, res) => {
     const finalTotal = computedTotal + deliveryFee;
 
     try {
-      // Insert order — let DB generate the id (SERIAL)
+      // Générer un ID unique si la colonne id est TEXT NOT NULL sans séquence
+      const orderId = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+      // Insert order
       const { rows } = await db.query(
-        `INSERT INTO orders (user_handle, total, status, shipping_address, phone)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        `INSERT INTO orders (id, user_handle, total, status, shipping_address, phone)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [
+          orderId,
           user.handle,
           finalTotal,
           'En attente',
@@ -158,13 +181,18 @@ module.exports = async (req, res) => {
       );
       const order = rows[0];
 
-      // Insert order items
+      // Insert order items + décrémenter le stock
       for (const item of items) {
         const price = priceMap[item.id];
         await db.query(
           `INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
            VALUES ($1, $2, $3, $4)`,
           [order.id, item.id, item.quantity, price]
+        );
+        // Décrémenter le stock (ne pas descendre en dessous de 0)
+        await db.query(
+          `UPDATE products SET stock = GREATEST(0, stock - $1) WHERE id = $2`,
+          [item.quantity, item.id]
         );
       }
 
@@ -219,7 +247,7 @@ module.exports = async (req, res) => {
     const { id, status } = req.body;
     if (!id || !status) return res.status(400).json({ error: 'Missing id or status' });
 
-    const ALLOWED_STATUSES = ['En attente', 'Préparation', 'Expédié', 'Livré', 'Annulé'];
+    const ALLOWED_STATUSES = ['En attente', 'En préparation', 'Expédiée', 'Livrée', 'Annulée'];
     if (!ALLOWED_STATUSES.includes(status)) {
       return res.status(400).json({ error: 'Invalid status. Allowed: ' + ALLOWED_STATUSES.join(', ') });
     }
@@ -240,10 +268,10 @@ module.exports = async (req, res) => {
       );
       if (userRows.length > 0) {
         const statusMap = {
-          'Préparation': 'processing',
-          'Expédié': 'shipped',
-          'Livré': 'delivered',
-          'Annulé': 'cancelled',
+          'En préparation': 'processing',
+          'Expédiée': 'shipped',
+          'Livrée': 'delivered',
+          'Annulée': 'cancelled',
         };
         const emailStatus = statusMap[status];
         if (emailStatus) {

@@ -83,36 +83,14 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     comments_count: Number(post.comments_count || 0)
   }), []);
 
+  // Charger les produits et posts publics — indépendamment de l'auth
   useEffect(() => {
-    if (!user.id) {
-      setLikedPosts([]);
-      setFavoritePosts([]);
-      setFavoriteProducts([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const load = async () => {
-      const userId = user.id;
-      const loadLocal = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T>>) => {
-        const val = localStorage.getItem(`${key}_${userId}`);
-        if (val) setter(JSON.parse(val) as T);
-        else setter([] as unknown as T);
-      };
-
-      loadLocal('cv_likes', setLikedPosts);
-      loadLocal('cv_fav_posts', setFavoritePosts);
-      loadLocal('cv_fav_prods', setFavoriteProducts);
-
+    const loadPublic = async () => {
       try {
-        const isAdmin = user?.role === 'Admin';
-        const fetches: Promise<unknown>[] = [
+        const [realProducts, realPosts] = await Promise.allSettled([
           apiService.getProducts(),
           apiService.getPosts(1, 20),
-          isAdmin ? apiService.getOrders() : Promise.resolve(null),
-        ];
-
-        const [realProducts, realPosts, realOrders] = await Promise.allSettled(fetches);
+        ]);
 
         if (realProducts.status === 'fulfilled' && realProducts.value) {
           const list = (realProducts.value as any[]).map(p => ({
@@ -124,18 +102,49 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         if (realPosts.status === 'fulfilled' && realPosts.value) {
           setPosts((realPosts.value as any[]).map(normalizePost));
         }
-        if (realOrders.status === 'fulfilled' && realOrders.value) {
-          setOrders(realOrders.value as Order[]);
-        }
       } catch (err) {
-        console.error("Backend fetch error:", err);
+        console.error("Public fetch error:", err);
       }
-
       setIsLoading(false);
     };
 
-    load();
-  }, [user.id, user.role, normalizePost]);
+    loadPublic();
+  }, [normalizePost]);
+
+  // Charger les données liées à l'utilisateur connecté
+  useEffect(() => {
+    if (!user.id) {
+      setLikedPosts([]);
+      setFavoritePosts([]);
+      setFavoriteProducts([]);
+      return;
+    }
+
+    const loadUserData = async () => {
+      const userId = user.id;
+      const loadLocal = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T>>) => {
+        const val = localStorage.getItem(`${key}_${userId}`);
+        if (val) setter(JSON.parse(val) as T);
+        else setter([] as unknown as T);
+      };
+
+      loadLocal('cv_likes', setLikedPosts);
+      loadLocal('cv_fav_posts', setFavoritePosts);
+      loadLocal('cv_fav_prods', setFavoriteProducts);
+
+      // Charger les commandes admin
+      if (user.role === 'Admin') {
+        try {
+          const realOrders = await apiService.getOrders();
+          if (realOrders) setOrders(realOrders as Order[]);
+        } catch (err) {
+          console.error("Failed to fetch orders:", err);
+        }
+      }
+    };
+
+    loadUserData();
+  }, [user.id, user.role]);
 
   useEffect(() => {
     if (user.id) localStorage.setItem(`cv_likes_${user.id}`, JSON.stringify(likedPosts));
@@ -221,7 +230,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const result = await apiService.createOrder({
         id: localId,
-        customer_name: orderData.customer,
+        customer: orderData.customer,
         total: orderData.total,
         items: orderData.items,
         phone: orderData.phone,

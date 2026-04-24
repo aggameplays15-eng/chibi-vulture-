@@ -30,6 +30,11 @@ interface OrderDetail {
 
 const statusConfig: Record<string, { color: string; bg: string; icon: React.ElementType; label: string }> = {
   'En attente':     { color: 'text-yellow-600', bg: 'bg-yellow-50', icon: Clock,        label: 'En attente' },
+  'Préparation':    { color: 'text-blue-600',   bg: 'bg-blue-50',   icon: Package,      label: 'En préparation' },
+  'Expédié':        { color: 'text-purple-600', bg: 'bg-purple-50', icon: Truck,        label: 'Expédié' },
+  'Livré':          { color: 'text-green-600',  bg: 'bg-green-50',  icon: CheckCircle2, label: 'Livré' },
+  'Annulé':         { color: 'text-red-600',    bg: 'bg-red-50',    icon: XCircle,      label: 'Annulé' },
+  // Aliases pour compatibilité
   'En préparation': { color: 'text-blue-600',   bg: 'bg-blue-50',   icon: Package,      label: 'En préparation' },
   'Expédiée':       { color: 'text-purple-600', bg: 'bg-purple-50', icon: Truck,        label: 'Expédiée' },
   'Livrée':         { color: 'text-green-600',  bg: 'bg-green-50',  icon: CheckCircle2, label: 'Livrée' },
@@ -54,10 +59,7 @@ const OrderDetail = () => {
 
   useEffect(() => {
     if (!id || isNaN(Number(id))) { setIsLoading(false); setError(true); return; }
-    apiService.getMyOrders()
-      .then(() => {}) // ensure token is fresh
-      .catch(() => {});
-    const token = sessionStorage.getItem('cv_token');
+    const token = localStorage.getItem('cv_token');
     fetch(`/api/orders?id=${Number(id)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })

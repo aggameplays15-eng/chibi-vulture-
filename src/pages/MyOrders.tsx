@@ -19,11 +19,16 @@ interface Order {
 }
 
 const statusColor: Record<string, string> = {
-  'En attente':   'bg-yellow-50 text-yellow-600',
+  'En attente':     'bg-yellow-50 text-yellow-600',
+  'Préparation':    'bg-blue-50 text-blue-600',
+  'Expédié':        'bg-purple-50 text-purple-600',
+  'Livré':          'bg-green-50 text-green-600',
+  'Annulé':         'bg-red-50 text-red-600',
+  // Aliases pour compatibilité
   'En préparation': 'bg-blue-50 text-blue-600',
-  'Expédiée':     'bg-purple-50 text-purple-600',
-  'Livrée':       'bg-green-50 text-green-600',
-  'Annulée':      'bg-red-50 text-red-600',
+  'Expédiée':       'bg-purple-50 text-purple-600',
+  'Livrée':         'bg-green-50 text-green-600',
+  'Annulée':        'bg-red-50 text-red-600',
 };
 
 const MyOrders = () => {
